@@ -24,7 +24,7 @@ def grant_debug_inventory():
     Give the player a full test kit in the hotbar for quick testing.
     Only applied when DEBUG_MODE is True and a NEW world is created.
     """
-    kit = ["sword", "pickaxe", "ladder", "bed", "chest", "dirt", "stone", "coal", "iron", "magic_staff"]
+    kit = ["sword", "pickaxe", "ladder", "bed", "chest", "dirt", "stone", "coal", "iron"]
     player["inventory"] = [{"type": it, "count": 64} for it in kit[:9]]
     player["selected"] = 0
 
@@ -47,15 +47,10 @@ def update_chest_ui_geometry():
 
 # Initialize
 import pygame
-from mod_system import load_all_mods, call_mod_hook
 
 pygame.init()
 
-# Load all mods before setting up the game
-load_all_mods("mods")
 
-# Call mod hook for game start
-call_mod_hook("on_game_start")
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TILE_SIZE = 32
@@ -191,7 +186,6 @@ textures = {
     "leaves": load_texture(os.path.join(TILE_DIR, "leaves.png")),
     "sword": load_texture(os.path.join(ITEM_DIR, "sword.png")),
     "pickaxe": load_texture(os.path.join(ITEM_DIR, "pickaxe.png")),
-    "magic_staff": load_texture(os.path.join("mods", "example_mod", "textures", "magic_staff.png")),
     "water": load_texture(os.path.join(TILE_DIR, "water.png")),
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
@@ -643,12 +637,6 @@ def draw_world():
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - 100
             pygame.draw.rect(screen, (200, 50, 50), (ex + 12, ey + 12, 8, 8))
-        elif entity["type"] == "magic_projectile":
-            ex = int(entity["x"] * TILE_SIZE) - camera_x
-            ey = int(entity["y"] * TILE_SIZE) - 100
-            # Draw magic projectile as a glowing blue orb
-            pygame.draw.circle(screen, (0, 150, 255), (ex + 16, ey + 16), 8)
-            pygame.draw.circle(screen, (255, 255, 255), (ex + 16, ey + 16), 4)
         elif entity["type"] == "villager":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - 100
@@ -722,8 +710,6 @@ def break_block(mx, my):
             world_data.pop((bx, by))
             # Generate air block to allow digging down
             world_data[(bx, by)] = "air"
-            # Call mod hook for block breaking
-            call_mod_hook("on_block_break", block, bx, by, player)
             return
         # Chest: pick up contents and the chest itself
         if block == "chest":
@@ -738,8 +724,6 @@ def break_block(mx, my):
             add_to_inventory("chest", 1)
             # Remove the chest block from the world
             world_data.pop((bx, by), None)
-            # Call mod hook for block breaking
-            call_mod_hook("on_block_break", block, bx, by, player)
             return
         # Soft blocks (now includes "bed" so you can pick it up)
         if block in ["dirt", "grass", "leaves", "carrot", "log", "ladder", "bed"]:
@@ -747,8 +731,6 @@ def break_block(mx, my):
             world_data.pop((bx, by))
             # Generate air block to allow digging down
             world_data[(bx, by)] = "air"
-            # Call mod hook for block breaking
-            call_mod_hook("on_block_break", block, bx, by, player)
 
 def place_block(mx, my):
     px, py = int(player["x"]), int(player["y"])
@@ -778,12 +760,8 @@ def place_block(mx, my):
                 set_block(bx, by, "chest")
                 # Always create an empty inventory for player-placed chests
                 chest_inventories[(bx, by)] = make_empty_slots(CHEST_SLOTS)
-                # Call mod hook for block placement
-                call_mod_hook("on_block_place", item_type, bx, by, player)
             else:
                 set_block(bx, by, item_type)
-                # Call mod hook for block placement
-                call_mod_hook("on_block_place", item_type, bx, by, player)
 
             # consume one item
             item["count"] -= 1
@@ -815,16 +793,13 @@ def update_world_interactions():
     if block_at == "lava" or block_below == "lava":
         player["health"] -= 1
         damage_sound.play()
-        call_mod_hook("on_player_damage", 1, player)
         if player["health"] <= 0:
-            call_mod_hook("on_death", player)
             show_death_screen()
 
     # Carrots: eat if health not full, otherwise collect
     if block_at == "carrot":
         if player["health"] < 10:
             player["health"] += 1
-            call_mod_hook("on_player_heal", 1, player)
             world_data.pop((px, py))
         else:
             add_to_inventory("carrot")
@@ -832,7 +807,6 @@ def update_world_interactions():
     elif block_below == "carrot":
         if player["health"] < 10:
             player["health"] += 1
-            call_mod_hook("on_player_heal", 1, player)
             world_data.pop((px, py + 1))
         else:
             add_to_inventory("carrot")
@@ -846,7 +820,6 @@ def update_world_interactions():
         if fall_start_y is not None and player["y"] - fall_start_y >= 4:
             player["health"] -= 1
             damage_sound.play()
-            call_mod_hook("on_player_damage", 1, player)
         fall_start_y = None
 
 # --- Chest UI & logic ---
@@ -882,12 +855,7 @@ def generate_chest_loot(pos):
             idx = random.choice(empty_idxs)
             slots[idx] = {"type": "diamond", "count": 1}
     
-    # 15% chance magic staff appears in a random empty slot
-    if random.random() < 0.15:
-        empty_idxs = [i for i, it in enumerate(slots) if it is None]
-        if empty_idxs:
-            idx = random.choice(empty_idxs)
-            slots[idx] = {"type": "magic_staff", "count": 1}
+
 
 def open_chest_at(bx, by):
     global chest_open, open_chest_pos, drag_item, drag_from
@@ -895,8 +863,6 @@ def open_chest_at(bx, by):
     open_chest_pos = (bx, by)
     drag_item = None
     drag_from = None
-    # Call mod hook for chest opening
-    call_mod_hook("on_chest_open", (bx, by), player)
     # Only generate loot for naturally spawned chests, not player-placed ones
     if (bx, by) not in chest_inventories:
         # Check if this is a naturally spawned chest (not player-placed)
@@ -976,9 +942,6 @@ def draw_chest_ui():
 # --- Chest UI close helper ---
 def close_chest_ui():
     global chest_open, open_chest_pos, drag_item, drag_from
-    # Call mod hook for chest closing
-    if open_chest_pos:
-        call_mod_hook("on_chest_close", open_chest_pos, player)
     # If dragging an item, return it to its origin before closing
     if drag_item and drag_from:
         if drag_from[0] == "chest":
@@ -1028,40 +991,6 @@ def consume_carrot_from_inventory():
             if item["count"] <= 0:
                 # remove empty slot
                 player["inventory"].pop(player["selected"])
-
-
-def use_magic_staff():
-    """Use the magic staff - creates a magic projectile"""
-    if player["selected"] < len(player["inventory"]):
-        item = player["inventory"][player["selected"]]
-        if item and isinstance(item, dict) and item.get("type") == "magic_staff":
-            # Get mouse position for aiming
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            # Convert to world coordinates
-            world_x = (mouse_x + camera_x) / TILE_SIZE
-            world_y = (mouse_y + 100) / TILE_SIZE
-            
-            # Calculate direction from player to mouse
-            dx = world_x - player["x"]
-            dy = world_y - player["y"]
-            dist = math.hypot(dx, dy)
-            
-            if dist > 0:
-                # Create magic projectile
-                entities.append({
-                    "type": "magic_projectile",
-                    "x": player["x"],
-                    "y": player["y"],
-                    "dx": 0.3 * dx / dist,  # Faster than monster projectiles
-                    "dy": 0.3 * dy / dist,
-                    "damage": 5,  # More damage than sword
-                    "lifetime": 120  # Frames before disappearing
-                })
-                
-                # Call mod hook for item usage
-                call_mod_hook("on_item_use", "magic_staff", player)
-                
-                show_message("Magic staff used! Casting spell...")
 
 
 # --- Missing Update Functions ---
@@ -1309,24 +1238,7 @@ def update_monsters():
                     show_death_screen()
             elif proj["x"] < -100 or proj["x"] > 100 or proj["y"] > 100:
                 entities.remove(proj)
-        elif proj["type"] == "magic_projectile":
-            proj["x"] += proj["dx"]
-            proj["y"] += proj["dy"]
-            proj["lifetime"] = proj.get("lifetime", 120) - 1
-            
-            # Check collision with monsters
-            for mob in entities[:]:
-                if mob["type"] == "monster":
-                    if abs(mob["x"] - proj["x"]) < 0.5 and abs(mob["y"] - proj["y"]) < 0.5:
-                        mob["hp"] = mob.get("hp", 7) - proj.get("damage", 5)
-                        if mob["hp"] <= 0:
-                            entities.remove(mob)
-                        entities.remove(proj)
-                        break
-            
-            # Remove if lifetime expired or out of bounds
-            if proj["lifetime"] <= 0 or proj["x"] < -100 or proj["x"] > 100 or proj["y"] > 100:
-                entities.remove(proj)
+
 
 # --- Villager update logic ---
 def update_hunger():
@@ -1607,15 +1519,9 @@ while running:
                     if get_block(bx, by) == "chest":
                         open_chest_at(bx, by)
                         continue
-                    # If selected carrot, eat it; if magic staff, use it; otherwise place block
-                    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
-                        item_type = player["inventory"][player["selected"]]["type"]
-                        if item_type == "carrot":
-                            consume_carrot_from_inventory()
-                        elif item_type == "magic_staff":
-                            use_magic_staff()
-                        else:
-                            place_block(mx, my)
+                    # If selected carrot, eat it; otherwise place block
+                    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]] and player["inventory"][player["selected"]]["type"] == "carrot":
+                        consume_carrot_from_inventory()
                     else:
                         place_block(mx, my)
             elif game_state == STATE_TITLE:
@@ -1735,9 +1641,6 @@ while running:
         update_villagers()
         update_hunger()  # Update hunger system
         
-        # Call mod tick hook
-        call_mod_hook("on_tick")
-
         draw_world()
         draw_inventory()
         draw_status_bars()
