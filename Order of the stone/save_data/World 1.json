@@ -1,0 +1,16 @@
+{
+  "player": {
+    "x": 10,
+    "y": 0,
+    "vel_y": 0,
+    "on_ground": false,
+    "health": 10,
+    "hunger": 10,
+    "inventory": [],
+    "selected": 0
+  },
+  "world": {},
+  "entities": [],
+  "chest_inventories": {},
+  "created": 1755215547.5959418
+}

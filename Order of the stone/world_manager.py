@@ -61,25 +61,20 @@ class WorldManager:
         # Sort worlds by last modified (newest first)
         self.worlds.sort(key=lambda w: w['last_modified'], reverse=True)
     
-    def create_world(self, world_name: str) -> bool:
-        """Create a new world with the given name"""
-        if len(world_name.strip()) < 8:
-            return False
-            
-        # Clean the world name (remove invalid characters)
-        clean_name = "".join(c for c in world_name if c.isalnum() or c in " -_")
-        clean_name = clean_name.strip()
-        
-        if not clean_name:
-            return False
-            
-        # Check if world name already exists
-        for world in self.worlds:
-            if world['name'].lower() == clean_name.lower():
-                return False
+    def create_world(self) -> bool:
+        """Create a new world with an auto-generated name"""
+        # Generate a unique world name
+        world_number = 1
+        while True:
+            world_name = f"World {world_number}"
+            # Check if world name already exists
+            name_exists = any(world["name"] == world_name for world in self.worlds)
+            if not name_exists:
+                break
+            world_number += 1
         
         # Create the world file
-        filename = f"{clean_name}.json"
+        filename = f"{world_name}.json"
         filepath = os.path.join(self.save_dir, filename)
         
         # Create empty world data
@@ -106,13 +101,13 @@ class WorldManager:
             
             # Add to worlds list
             self.worlds.append({
-                'name': clean_name,
+                'name': world_name,
                 'filename': filename,
                 'last_modified': time.strftime('%Y-%m-%d %H:%M'),
                 'player_info': "New world"
             })
             
-            self.current_world_name = clean_name
+            self.current_world_name = world_name
             return True
             
         except Exception as e:
