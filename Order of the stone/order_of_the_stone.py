@@ -7,6 +7,10 @@ import shutil
 import sys
 import math
 
+# Ensure the game runs from the correct directory (where the game files are located)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 # Allow proper macOS fullscreen Spaces behavior (must be set before set_mode)
 if sys.platform == 'darwin':
     os.environ.setdefault('SDL_VIDEO_MAC_FULLSCREEN_SPACES', '1')
