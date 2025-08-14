@@ -337,10 +337,11 @@ def ground_y_of_column(x: int):
 
 # --- Village and House helpers ---
 def build_house(origin_x, ground_y, width=7, height=5):
-    """Build a simple log house with stone floor and an open doorway."""
+    """Build an improved log house with stone floor, open doorway, and interior chest."""
     # Floor
     for dx in range(width):
         set_block(origin_x + dx, ground_y, "stone")
+    
     # Walls
     for dy in range(1, height + 1):
         for dx in range(width):
@@ -360,6 +361,27 @@ def build_house(origin_x, ground_y, width=7, height=5):
                 if get_block(x, y) not in (None, "air"):
                     # clear any leaves/logs, etc.
                     world_data.pop((x, y), None)
+    
+    # Add a chest inside the house (left side, away from door)
+    chest_x = origin_x + 1
+    chest_y = ground_y - 1
+    if get_block(chest_x, chest_y) is None:
+        set_block(chest_x, chest_y, "chest")
+        # Initialize chest inventory with good loot
+        chest_inventories[(chest_x, chest_y)] = []
+        # Add various items to the chest
+        loot_items = [
+            {"type": "carrot", "count": random.randint(3, 8)},
+            {"type": "sword", "count": 1},
+            {"type": "pickaxe", "count": 1},
+            {"type": "dirt", "count": random.randint(5, 15)},
+            {"type": "stone", "count": random.randint(3, 10)},
+            {"type": "coal", "count": random.randint(2, 6)},
+            {"type": "iron", "count": random.randint(1, 3)},
+        ]
+        # Randomly select 3-5 items from the loot pool
+        selected_loot = random.sample(loot_items, random.randint(3, 5))
+        chest_inventories[(chest_x, chest_y)] = selected_loot
 
 def spawn_villager(x, y):
     """Create a villager entity at tile x,y."""
@@ -393,6 +415,18 @@ def maybe_generate_village_for_chunk(chunk_id, base_x):
                 for y in range(gy + 1, gy + 7):
                     set_block(hx, y, "dirt" if y < gy + 4 else "stone")
                 set_block(hx, gy + 7, "bedrock")
+            
+            # Fill any holes under the house foundation
+            house_width = 7  # Same width as used in build_house
+            for dx in range(house_width):
+                for y in range(gy + 1, gy + 8):
+                    if get_block(hx + dx, y) is None:
+                        if y < gy + 4:
+                            set_block(hx + dx, y, "dirt")
+                        elif y < gy + 7:
+                            set_block(hx + dx, y, "stone")
+                        else:
+                            set_block(hx + dx, y, "bedrock")
             # build the house aligned to current ground
             build_house(hx, gy, width=7, height=5)
             # spawn 1–2 villagers near the doorway
@@ -538,7 +572,10 @@ def show_death_screen():
                     player["hunger"] = 10
                     player["x"] = 10
                     player["y"] = 0
+                    player["vel_y"] = 0
+                    player["on_ground"] = False
                     game_state = STATE_GAME
+                    break  # Exit the death screen loop
 
 
 
@@ -675,6 +712,8 @@ def break_block(mx, my):
                 return
             add_to_inventory(block)
             world_data.pop((bx, by))
+            # Generate air block to allow digging down
+            world_data[(bx, by)] = "air"
             return
         # Chest: pick up contents and the chest itself
         if block == "chest":
@@ -706,6 +745,11 @@ def place_block(mx, my):
             # Disallow placing tools and fluids
             if item_type in ["sword", "pickaxe", "water", "lava"]:
                 return
+            
+            # Special handling for carrots - only allow placing on grass
+            if item_type == "carrot":
+                if get_block(bx, by + 1) != "grass":
+                    return  # Can only place carrots on grass
 
             # If placing ladders, forbid positions at or below bedrock level
             if item_type == "ladder":
@@ -1038,12 +1082,18 @@ def update_player():
         # Normal horizontal movement with collision
         if move_left:
             new_x = px - speed
-            if is_non_solid_block(get_block(int(new_x), int(player["y"]))) and is_non_solid_block(get_block(int(new_x), int(player["y"] + 0.9))):
+            # Check both head and feet positions for collision
+            left_head = get_block(int(new_x), int(player["y"]))
+            left_feet = get_block(int(new_x), int(player["y"] + 0.9))
+            if is_non_solid_block(left_head) and is_non_solid_block(left_feet):
                 player["x"] = new_x
 
         if move_right:
             new_x = px + speed
-            if is_non_solid_block(get_block(int(new_x + 0.9), int(player["y"]))) and is_non_solid_block(get_block(int(new_x + 0.9), int(player["y"] + 0.9))):
+            # Check both head and feet positions for collision
+            right_head = get_block(int(new_x + 0.9), int(player["y"]))
+            right_feet = get_block(int(new_x + 0.9), int(player["y"] + 0.9))
+            if is_non_solid_block(right_head) and is_non_solid_block(right_feet):
                 player["x"] = new_x
 
         # Gravity
@@ -1052,8 +1102,12 @@ def update_player():
             player["vel_y"] = MAX_FALL_SPEED
 
         next_y = player["y"] + player["vel_y"] / TILE_SIZE
-        # Only treat solid blocks as colliding (not None or other non-solids)
-        if not is_non_solid_block(get_block(int(player["x"]), int(next_y + 1))) or not is_non_solid_block(get_block(int(player["x"] + 0.9), int(next_y + 1))):
+        # Check both head and feet positions for collision
+        head_block = get_block(int(player["x"]), int(next_y + 1))
+        feet_block = get_block(int(player["x"] + 0.9), int(next_y + 1))
+        
+        # Only treat solid blocks as colliding (not None/air or other non-solids)
+        if not is_non_solid_block(head_block) or not is_non_solid_block(feet_block):
             player["vel_y"] = 0
             player["on_ground"] = True
             player["y"] = int(next_y)
@@ -1172,6 +1226,15 @@ def update_monsters():
                 entities.remove(proj)
 
 # --- Villager update logic ---
+def update_hunger():
+    """Update hunger system - decrease hunger every 200 seconds"""
+    global hunger_timer
+    current_time = time.time()
+    if current_time - hunger_timer >= 200:  # 200 seconds = ~3.33 minutes
+        if player["hunger"] > 0:
+            player["hunger"] -= 1
+        hunger_timer = current_time
+
 def update_villagers():
     """Simple wander AI for villagers. They avoid walking off cliffs and bump into walls."""
     for v in entities:
@@ -1527,23 +1590,26 @@ while running:
                         for dy in [-3, -4]:
                             set_block(x + dx, ground_y + dy, "leaves")
 
-                # Carrots: dense if we're in a carrot biome (10% of 50‑wide chunks), else sparse
+                # Carrots: only spawn when not in trees and with better placement logic
                 if in_carrot_biome(x):
-                    if can_place_surface_item(x, ground_y) and random.random() < 0.7:
+                    if can_place_surface_item(x, ground_y) and random.random() < 0.6:
                         set_block(x, ground_y - 1, "carrot")
+                    # Reduced neighbor spawning to avoid tree conflicts
                     gy_r = ground_y_of_column(x + 1)
-                    if gy_r is not None and can_place_surface_item(x + 1, gy_r) and random.random() < 0.35:
+                    if gy_r is not None and can_place_surface_item(x + 1, gy_r) and random.random() < 0.25:
                         set_block(x + 1, gy_r - 1, "carrot")
                     gy_l = ground_y_of_column(x - 1)
-                    if gy_l is not None and can_place_surface_item(x - 1, gy_l) and random.random() < 0.35:
+                    if gy_l is not None and can_place_surface_item(x - 1, gy_l) and random.random() < 0.25:
                         set_block(x - 1, gy_l - 1, "carrot")
                 else:
-                    if can_place_surface_item(x, ground_y) and random.random() < 0.05:
+                    if can_place_surface_item(x, ground_y) and random.random() < 0.03:
                         set_block(x, ground_y - 1, "carrot")
 
-                # Chests: never inside trees
-                if can_place_surface_item(x, ground_y) and random.random() < 0.05:
+                # Chests: never inside trees, reduced spawn rate
+                if can_place_surface_item(x, ground_y) and random.random() < 0.03:
                     set_block(x, ground_y - 1, "chest")
+                    # Initialize empty chest inventory
+                    chest_inventories[(x, ground_y - 1)] = []
                 if not is_day and random.random() < 0.03:
                     entities.append({
                         "type": "monster",
@@ -1558,6 +1624,7 @@ while running:
         update_world_interactions()
         update_monsters()
         update_villagers()
+        update_hunger()  # Update hunger system
 
         draw_world()
         draw_inventory()
