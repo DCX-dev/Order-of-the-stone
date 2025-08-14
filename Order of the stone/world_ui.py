@@ -18,8 +18,6 @@ class WorldUI:
         self.BUTTON_COLOR = (100, 100, 100)
         self.BUTTON_HOVER_COLOR = (150, 150, 150)
         self.BUTTON_DISABLED_COLOR = (70, 70, 70)
-        self.INPUT_BG_COLOR = (80, 80, 80)
-        self.INPUT_BORDER_COLOR = (120, 120, 120)
         self.WORLD_ITEM_COLOR = (90, 90, 90)
         self.WORLD_ITEM_HOVER_COLOR = (120, 120, 120)
         
@@ -27,7 +25,6 @@ class WorldUI:
         self.BUTTON_WIDTH = 200
         self.BUTTON_HEIGHT = 50
         self.WORLD_ITEM_HEIGHT = 60
-        self.INPUT_HEIGHT = 40
         
         # Scroll position for world list
         self.scroll_y = 0
@@ -139,58 +136,7 @@ class WorldUI:
             if pygame.mouse.get_pressed()[0] and create_btn.collidepoint(pygame.mouse.get_pos()):
                 action = 'create'
             
-            # Show create world interface if in typing mode
-            if world_manager.is_typing:
-                # Overlay the create world interface
-                overlay_surface = pygame.Surface((self.screen_width, self.screen_height))
-                overlay_surface.set_alpha(200)
-                overlay_surface.fill(self.BACKGROUND_COLOR)
-                screen.blit(overlay_surface, (0, 0))
-                
-                # Create world title
-                create_title = self.title_font.render("Create New World", True, self.TEXT_COLOR)
-                create_title_rect = create_title.get_rect(center=(self.screen_width // 2, 200))
-                screen.blit(create_title, create_title_rect)
-                
-                # Instructions
-                instructions = self.subtitle_font.render("Enter a world name (at least 8 characters):", True, self.TEXT_COLOR)
-                instructions_rect = instructions.get_rect(center=(self.screen_width // 2, 260))
-                screen.blit(instructions, instructions_rect)
-                
-                # Input box
-                input_rect = pygame.Rect(
-                    self.center_x(400), 300, 400, self.INPUT_HEIGHT
-                )
-                pygame.draw.rect(screen, self.INPUT_BG_COLOR, input_rect)
-                pygame.draw.rect(screen, self.INPUT_BORDER_COLOR, input_rect, 2)
-                
-                # Input text
-                input_text = self.font.render(world_manager.get_new_world_name(), True, self.TEXT_COLOR)
-                screen.blit(input_text, (input_rect.x + 10, input_rect.y + 10))
-                
-                # Cursor
-                if world_manager.cursor_blink:
-                    cursor_x = input_rect.x + 10 + input_text.get_width()
-                    pygame.draw.line(screen, self.TEXT_COLOR, 
-                                   (cursor_x, input_rect.y + 10), 
-                                   (cursor_x, input_rect.y + self.INPUT_HEIGHT - 10), 2)
-                
-                # Create button
-                can_create = world_manager.can_create_world()
-                create_world_btn = self.draw_button("Create World", 
-                                            self.center_x(self.BUTTON_WIDTH), 370,
-                                            enabled=can_create)
-                
-                # Check for create world button click
-                if can_create and pygame.mouse.get_pressed()[0] and create_world_btn.collidepoint(pygame.mouse.get_pos()):
-                    action = 'create'
-                    world_name = world_manager.get_new_world_name()
-                
-                # Cancel button
-                cancel_btn = self.draw_button("Cancel", 
-                                            self.center_x(self.BUTTON_WIDTH) + 220, 370)
-                if pygame.mouse.get_pressed()[0] and cancel_btn.collidepoint(pygame.mouse.get_pos()):
-                    world_manager.stop_typing()
+
             
             # Delete button (if a world is selected)
             if world_name:
@@ -206,38 +152,17 @@ class WorldUI:
             screen.blit(subtitle, subtitle_rect)
             
             # Instructions
-            instructions = self.subtitle_font.render("Enter a world name (at least 8 characters):", True, self.TEXT_COLOR)
+            instructions = self.subtitle_font.render("Click the button below to create your first world:", True, self.TEXT_COLOR)
             instructions_rect = instructions.get_rect(center=(self.screen_width // 2, 200))
             screen.blit(instructions, instructions_rect)
             
-            # Input box
-            input_rect = pygame.Rect(
-                self.center_x(400), 250, 400, self.INPUT_HEIGHT
-            )
-            pygame.draw.rect(screen, self.INPUT_BG_COLOR, input_rect)
-            pygame.draw.rect(screen, self.INPUT_BORDER_COLOR, input_rect, 2)
-            
-            # Input text
-            input_text = self.font.render(world_manager.get_new_world_name(), True, self.TEXT_COLOR)
-            screen.blit(input_text, (input_rect.x + 10, input_rect.y + 10))
-            
-            # Cursor
-            if world_manager.is_typing and world_manager.cursor_blink:
-                cursor_x = input_rect.x + 10 + input_text.get_width()
-                pygame.draw.line(screen, self.TEXT_COLOR, 
-                               (cursor_x, input_rect.y + 10), 
-                               (cursor_x, input_rect.y + self.INPUT_HEIGHT - 10), 2)
-            
             # Create button
-            can_create = world_manager.can_create_world()
             create_btn = self.draw_button("Create World", 
-                                        self.center_x(self.BUTTON_WIDTH), 320,
-                                        enabled=can_create)
+                                        self.center_x(self.BUTTON_WIDTH), 250)
             
             # Check for create button click
-            if can_create and pygame.mouse.get_pressed()[0] and create_btn.collidepoint(pygame.mouse.get_pos()):
+            if pygame.mouse.get_pressed()[0] and create_btn.collidepoint(pygame.mouse.get_pos()):
                 action = 'create'
-                world_name = world_manager.get_new_world_name()
         
         # Back button
         back_btn = self.draw_button("Back", 20, 20)
@@ -246,25 +171,4 @@ class WorldUI:
         
         return action, world_name
     
-    def handle_key_input(self, world_manager: WorldManager, event: pygame.event.Event):
-        """Handle keyboard input for world naming"""
-        if not world_manager.is_typing:
-            return
-            
-        print(f"[DEBUG] Key pressed: {event.key}, unicode: {event.unicode}, typing: {world_manager.is_typing}")
-        
-        if event.key == pygame.K_RETURN:
-            if world_manager.can_create_world():
-                world_manager.stop_typing()
-        elif event.key == pygame.K_ESCAPE:
-            world_manager.stop_typing()
-        elif event.key == pygame.K_BACKSPACE:
-            world_manager.remove_character()
-            print(f"[DEBUG] Removed character, new name: '{world_manager.get_new_world_name()}'")
-        elif event.unicode.isprintable():
-            world_manager.add_character(event.unicode)
-            print(f"[DEBUG] Added character '{event.unicode}', new name: '{world_manager.get_new_world_name()}'")
-    
-    def update_cursor(self, world_manager: WorldManager):
-        """Update cursor blink animation"""
-        world_manager.update_cursor()
+

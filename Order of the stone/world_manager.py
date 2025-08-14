@@ -11,10 +11,7 @@ class WorldManager:
         self.save_dir = save_dir
         self.worlds: List[Dict] = []
         self.current_world_name: Optional[str] = None
-        self.new_world_name: str = ""
-        self.is_typing: bool = False
-        self.cursor_blink: bool = True
-        self.cursor_timer: float = 0
+
         
         # Ensure save directory exists
         if not os.path.exists(save_dir):
@@ -193,39 +190,4 @@ class WorldManager:
         """Get the name of the currently loaded world"""
         return self.current_world_name
     
-    def start_typing(self):
-        """Start typing mode for new world name"""
-        self.is_typing = True
-        self.new_world_name = ""
-        self.cursor_timer = time.time()
-    
-    def stop_typing(self):
-        """Stop typing mode"""
-        self.is_typing = False
-        self.new_world_name = ""
-    
-    def add_character(self, char: str):
-        """Add a character to the new world name"""
-        if self.is_typing and len(self.new_world_name) < 20:  # Limit to 20 characters
-            self.new_world_name += char
-            print(f"[DEBUG] Added '{char}', name now: '{self.new_world_name}'")
-    
-    def remove_character(self):
-        """Remove the last character from the new world name"""
-        if self.is_typing and self.new_world_name:
-            self.new_world_name = self.new_world_name[:-1]
-    
-    def can_create_world(self) -> bool:
-        """Check if world can be created (name is long enough)"""
-        return len(self.new_world_name.strip()) >= 8
-    
-    def get_new_world_name(self) -> str:
-        """Get the current new world name being typed"""
-        return self.new_world_name
-    
-    def update_cursor(self):
-        """Update cursor blink animation"""
-        current_time = time.time()
-        if current_time - self.cursor_timer > 0.5:
-            self.cursor_blink = not self.cursor_blink
-            self.cursor_timer = current_time
+

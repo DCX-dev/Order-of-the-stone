@@ -1443,9 +1443,7 @@ while running:
             if pygame.K_1 <= event.key <= pygame.K_9:
                 player["selected"] = event.key - pygame.K_1
             
-            # Handle world selection keyboard input
-            if game_state == STATE_WORLD_SELECT:
-                world_ui.handle_key_input(world_manager, event)
+
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == STATE_GAME:
@@ -1687,35 +1685,19 @@ while running:
                 show_message("Failed to load world!")
                 
         elif action == 'create':
-            if not world_manager.has_worlds():
-                # Start typing mode for first world
-                world_manager.start_typing()
+            # Create a new world with auto-generated name
+            if world_manager.create_world():
+                world_name = world_manager.get_current_world_name()
+                show_message(f"Created world: {world_name}")
+                # Generate initial world data
+                generate_initial_world()
+                # Load the newly created world
+                world_data = world_manager.load_world(world_name)
+                if world_data:
+                    load_game_data(world_data)
+                    game_state = STATE_GAME
             else:
-                # Go to create world mode
-                world_manager.start_typing()
-                
-        # Handle world creation when typing is complete
-        if world_manager.is_typing and not world_manager.can_create_world():
-            # Still typing, continue
-            pass
-        elif world_manager.is_typing and world_manager.can_create_world():
-            # Check if Enter was pressed or create button was clicked
-            world_name = world_manager.get_new_world_name()
-            if world_name and len(world_name.strip()) >= 8:
-                # Create the world
-                if world_manager.create_world(world_name):
-                    show_message(f"Created world: {world_name}")
-                    # Generate initial world data
-                    generate_initial_world()
-                    # Load the newly created world
-                    world_data = world_manager.load_world(world_name)
-                    if world_data:
-                        load_game_data(world_data)
-                        game_state = STATE_GAME
-                    world_manager.stop_typing()
-                else:
-                    show_message("Failed to create world!")
-                    world_manager.stop_typing()
+                show_message("Failed to create world!")
                 
         elif action == 'delete' and world_name:
             # Delete world confirmation
@@ -1727,8 +1709,7 @@ while running:
         elif action == 'back':
             game_state = STATE_TITLE
             
-        # Update cursor animation
-        world_ui.update_cursor(world_manager)
+
         
     elif game_state == STATE_MENU:
         draw_game_menu()
