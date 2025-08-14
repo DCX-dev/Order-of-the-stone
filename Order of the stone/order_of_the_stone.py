@@ -1096,22 +1096,33 @@ def update_player():
             player["vel_y"] = MAX_FALL_SPEED
 
         next_y = player["y"] + player["vel_y"] / TILE_SIZE
-        # Check both head and feet positions for collision
-        head_block = get_block(int(player["x"]), int(next_y + 1))
-        feet_block = get_block(int(player["x"] + 0.9), int(next_y + 1))
         
-        # Only treat solid blocks as colliding (not None/air or other non-solids)
+        # Check collision at the target position (both head and feet)
+        target_y = int(next_y + 1)
+        head_block = get_block(int(player["x"]), target_y)
+        feet_block = get_block(int(player["x"] + 0.9), target_y)
+        
+        # Check if we're trying to move into a solid block
         if not is_non_solid_block(head_block) or not is_non_solid_block(feet_block):
+            # Collision detected - stop falling and place player on top of the block
             player["vel_y"] = 0
             player["on_ground"] = True
-            player["y"] = int(next_y)
+            player["y"] = target_y - 1  # Position player on top of the block
         else:
+            # No collision - continue falling
             player["on_ground"] = False
             player["y"] = next_y
 
     # Optional: disable jump while on ladder to avoid launch
     if (keys[pygame.K_SPACE] and player.get("on_ground", False)) and (not on_ladder):
-        player["vel_y"] = JUMP_STRENGTH
+        # Check if there's a block above the player before jumping
+        head_y = int(player["y"])
+        head_block = get_block(int(player["x"]), head_y)
+        head_block_right = get_block(int(player["x"] + 0.9), head_y)
+        
+        # Only jump if there's no solid block above
+        if is_non_solid_block(head_block) and is_non_solid_block(head_block_right):
+            player["vel_y"] = JUMP_STRENGTH
 # --- Title Screen Drawing Function ---
 def save_game():
     # Serialize world blocks
