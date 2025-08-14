@@ -304,8 +304,8 @@ def bedrock_level_at(x):
 
 # Helper for non-solid blocks
 def is_non_solid_block(block):
-    # Non-colliding blocks the player can pass through
-    return block in (None, "air", "water", "lava", "carrot", "chest", "ladder")
+    # Only air and None (empty space) are non-solid - all blocks are now solid on all sides
+    return block in (None, "air")
 
 # Terrain helper: which blocks count as real ground for column generation
 TERRAIN_BLOCKS = {"grass","dirt","stone","bedrock","coal","iron","gold","diamond"}
