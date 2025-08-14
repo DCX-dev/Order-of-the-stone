@@ -36,6 +36,8 @@ def update_chest_ui_geometry():
 
 # Initialize
 import pygame
+from world_manager import WorldManager
+from world_ui import WorldUI
 
 pygame.init()
 
@@ -213,8 +215,13 @@ damage_sound = pygame.mixer.Sound(os.path.join(SOUND_DIR, "damage_sound.wav"))
 font = pygame.font.SysFont("Arial", 24)
 BIG_FONT = pygame.font.SysFont("Arial", 48)
 
+# Initialize world management system
+world_manager = WorldManager("save_data")
+world_ui = WorldUI(SCREEN_WIDTH, SCREEN_HEIGHT, font)
+
 # Game states
 STATE_TITLE = "title"
+STATE_WORLD_SELECT = "world_select"
 STATE_GAME = "game"
 STATE_CONTROLS = "controls"
 STATE_ABOUT = "about"
@@ -1123,6 +1130,7 @@ def update_player():
             player["vel_y"] = JUMP_STRENGTH
 # --- Title Screen Drawing Function ---
 def save_game():
+    """Save the current game state"""
     # Serialize world blocks
     world_ser = {f"{x},{y}": block for (x, y), block in world_data.items() if block}
     # Serialize chest inventories, preserving empty (None) slots
@@ -1141,39 +1149,59 @@ def save_game():
     data = {
         "player": player,
         "world": world_ser,
-        "chests": chests_ser,
+        "entities": entities,
+        "chest_inventories": chests_ser,
     }
-    with open(os.path.join(SAVE_DIR, "save.json"), "w") as f:
-        json.dump(data, f)
+    
+    # Save to current world if one is loaded, otherwise save to legacy save.json
+    current_world = world_manager.get_current_world_name()
+    if current_world:
+        world_manager.save_world(current_world, data)
+    else:
+        # Legacy save
+        with open(os.path.join(SAVE_DIR, "save.json"), "w") as f:
+            json.dump(data, f)
+
+def load_game_data(data):
+    """Load game data from a world save"""
+    global world_data, player, chest_inventories, entities
+    
+    # Restore player
+    if "player" in data:
+        player.update(data["player"])
+    
+    # Restore world
+    world_raw = data.get("world", {})
+    world_data = {(int(k.split(",")[0]), int(k.split(",")[1])): v for k, v in world_raw.items() if v}
+    
+    # Restore entities
+    entities = data.get("entities", [])
+    
+    # Restore chest inventories
+    chest_inventories = {}
+    for key, slots in data.get("chest_inventories", {}).items():
+        cx, cy = map(int, key.split(","))
+        safe_slots = []
+        for it in slots:
+            if it and isinstance(it, dict) and "type" in it:
+                safe_slots.append({"type": it["type"], "count": int(it.get("count", 1))})
+            else:
+                safe_slots.append(None)
+        chest_inventories[(cx, cy)] = safe_slots
+    
+    # Ensure player stands on ground
+    if get_block(int(player["x"]), int(player["y"])) in [None, "air"]:
+        for y in range(100):
+            if get_block(int(player["x"]), y) == "grass":
+                player["y"] = y - 1
+                break
 
 def load_game():
-    global world_data, player, chest_inventories
+    """Load the legacy save.json file (for backward compatibility)"""
     try:
         with open(os.path.join(SAVE_DIR, "save.json"), "r") as f:
             data = json.load(f)
-            # Restore player
-            if "player" in data:
-                player.update(data["player"])
-            # Restore world
-            world_raw = data.get("world", {})
-            world_data = {(int(k.split(",")[0]), int(k.split(",")[1])): v for k, v in world_raw.items() if v}
-            # Restore chest inventories
-            chest_inventories = {}
-            for key, slots in data.get("chests", {}).items():
-                cx, cy = map(int, key.split(","))
-                safe_slots = []
-                for it in slots:
-                    if it and isinstance(it, dict) and "type" in it:
-                        safe_slots.append({"type": it["type"], "count": int(it.get("count", 1))})
-                    else:
-                        safe_slots.append(None)
-                chest_inventories[(cx, cy)] = safe_slots
-            # Ensure player stands on ground
-            if get_block(int(player["x"]), int(player["y"])) in [None, "air"]:
-                for y in range(100):
-                    if get_block(int(player["x"]), y) == "grass":
-                        player["y"] = y - 1
-                        break
+            load_game_data(data)
     except FileNotFoundError:
         generate_initial_world()
 
@@ -1399,6 +1427,8 @@ while running:
                     game_state = STATE_MENU
                 elif game_state == STATE_MENU:
                     game_state = STATE_GAME
+                elif game_state == STATE_WORLD_SELECT:
+                    game_state = STATE_TITLE
             # Toggle fullscreen on F11
             if event.key == pygame.K_F11:
                 FULLSCREEN = not FULLSCREEN
@@ -1412,6 +1442,10 @@ while running:
                 player["vel_y"] = JUMP_STRENGTH
             if pygame.K_1 <= event.key <= pygame.K_9:
                 player["selected"] = event.key - pygame.K_1
+            
+            # Handle world selection keyboard input
+            if game_state == STATE_WORLD_SELECT:
+                world_ui.handle_key_input(world_manager, event)
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == STATE_GAME:
@@ -1515,12 +1549,8 @@ while running:
                         place_block(mx, my)
             elif game_state == STATE_TITLE:
                 if play_btn.collidepoint(event.pos):
-                    save_path = os.path.join(SAVE_DIR, "save.json")
-                    if os.path.exists(save_path):
-                        load_game()
-                    else:
-                        generate_initial_world()
-                    game_state = STATE_GAME
+                    game_state = STATE_WORLD_SELECT
+                    world_manager.load_worlds()  # Refresh world list
                 elif controls_btn.collidepoint(event.pos):
                     game_state = STATE_CONTROLS
                 elif about_btn.collidepoint(event.pos):
@@ -1643,6 +1673,63 @@ while running:
             show_death_screen()
     elif game_state == STATE_TITLE:
         draw_title_screen()
+    elif game_state == STATE_WORLD_SELECT:
+        # Handle world selection screen
+        action, world_name = world_ui.draw_world_selection_screen(world_manager)
+        
+        if action == 'play' and world_name:
+            # Load existing world
+            world_data = world_manager.load_world(world_name)
+            if world_data:
+                load_game_data(world_data)
+                game_state = STATE_GAME
+            else:
+                show_message("Failed to load world!")
+                
+        elif action == 'create':
+            if not world_manager.has_worlds():
+                # Start typing mode for first world
+                world_manager.start_typing()
+            else:
+                # Go to create world mode
+                world_manager.start_typing()
+                
+        # Handle world creation when typing is complete
+        if world_manager.is_typing and not world_manager.can_create_world():
+            # Still typing, continue
+            pass
+        elif world_manager.is_typing and world_manager.can_create_world():
+            # Check if Enter was pressed or create button was clicked
+            world_name = world_manager.get_new_world_name()
+            if world_name and len(world_name.strip()) >= 8:
+                # Create the world
+                if world_manager.create_world(world_name):
+                    show_message(f"Created world: {world_name}")
+                    # Generate initial world data
+                    generate_initial_world()
+                    # Load the newly created world
+                    world_data = world_manager.load_world(world_name)
+                    if world_data:
+                        load_game_data(world_data)
+                        game_state = STATE_GAME
+                    world_manager.stop_typing()
+                else:
+                    show_message("Failed to create world!")
+                    world_manager.stop_typing()
+                
+        elif action == 'delete' and world_name:
+            # Delete world confirmation
+            if world_manager.delete_world(world_name):
+                show_message(f"Deleted world: {world_name}")
+            else:
+                show_message("Failed to delete world!")
+                
+        elif action == 'back':
+            game_state = STATE_TITLE
+            
+        # Update cursor animation
+        world_ui.update_cursor(world_manager)
+        
     elif game_state == STATE_MENU:
         draw_game_menu()
     elif game_state == STATE_CONTROLS:
