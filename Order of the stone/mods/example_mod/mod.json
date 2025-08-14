@@ -1,0 +1,9 @@
+{
+    "name": "Example Mod",
+    "version": "1.0.0",
+    "description": "A sample mod that demonstrates the mod system",
+    "author": "Player",
+    "main": "main.py",
+    "dependencies": [],
+    "tags": ["example", "demo"]
+}

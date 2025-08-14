@@ -47,8 +47,15 @@ def update_chest_ui_geometry():
 
 # Initialize
 import pygame
+from mod_system import load_all_mods, call_mod_hook
 
 pygame.init()
+
+# Load all mods before setting up the game
+load_all_mods("mods")
+
+# Call mod hook for game start
+call_mod_hook("on_game_start")
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TILE_SIZE = 32
@@ -708,6 +715,8 @@ def break_block(mx, my):
             world_data.pop((bx, by))
             # Generate air block to allow digging down
             world_data[(bx, by)] = "air"
+            # Call mod hook for block breaking
+            call_mod_hook("on_block_break", block, bx, by, player)
             return
         # Chest: pick up contents and the chest itself
         if block == "chest":
@@ -722,11 +731,17 @@ def break_block(mx, my):
             add_to_inventory("chest", 1)
             # Remove the chest block from the world
             world_data.pop((bx, by), None)
+            # Call mod hook for block breaking
+            call_mod_hook("on_block_break", block, bx, by, player)
             return
         # Soft blocks (now includes "bed" so you can pick it up)
         if block in ["dirt", "grass", "leaves", "carrot", "log", "ladder", "bed"]:
             add_to_inventory(block)
             world_data.pop((bx, by))
+            # Generate air block to allow digging down
+            world_data[(bx, by)] = "air"
+            # Call mod hook for block breaking
+            call_mod_hook("on_block_break", block, bx, by, player)
 
 def place_block(mx, my):
     px, py = int(player["x"]), int(player["y"])
@@ -756,8 +771,12 @@ def place_block(mx, my):
                 set_block(bx, by, "chest")
                 # Always create an empty inventory for player-placed chests
                 chest_inventories[(bx, by)] = make_empty_slots(CHEST_SLOTS)
+                # Call mod hook for block placement
+                call_mod_hook("on_block_place", item_type, bx, by, player)
             else:
                 set_block(bx, by, item_type)
+                # Call mod hook for block placement
+                call_mod_hook("on_block_place", item_type, bx, by, player)
 
             # consume one item
             item["count"] -= 1
@@ -789,13 +808,16 @@ def update_world_interactions():
     if block_at == "lava" or block_below == "lava":
         player["health"] -= 1
         damage_sound.play()
+        call_mod_hook("on_player_damage", 1, player)
         if player["health"] <= 0:
+            call_mod_hook("on_death", player)
             show_death_screen()
 
     # Carrots: eat if health not full, otherwise collect
     if block_at == "carrot":
         if player["health"] < 10:
             player["health"] += 1
+            call_mod_hook("on_player_heal", 1, player)
             world_data.pop((px, py))
         else:
             add_to_inventory("carrot")
@@ -803,6 +825,7 @@ def update_world_interactions():
     elif block_below == "carrot":
         if player["health"] < 10:
             player["health"] += 1
+            call_mod_hook("on_player_heal", 1, player)
             world_data.pop((px, py + 1))
         else:
             add_to_inventory("carrot")
@@ -816,6 +839,7 @@ def update_world_interactions():
         if fall_start_y is not None and player["y"] - fall_start_y >= 4:
             player["health"] -= 1
             damage_sound.play()
+            call_mod_hook("on_player_damage", 1, player)
         fall_start_y = None
 
 # --- Chest UI & logic ---
@@ -857,7 +881,12 @@ def open_chest_at(bx, by):
     open_chest_pos = (bx, by)
     drag_item = None
     drag_from = None
+    # Call mod hook for chest opening
+    call_mod_hook("on_chest_open", (bx, by), player)
+    # Only generate loot for naturally spawned chests, not player-placed ones
     if (bx, by) not in chest_inventories:
+        # Check if this is a naturally spawned chest (not player-placed)
+        # If it's not in chest_inventories, it's likely a natural chest
         generate_chest_loot((bx, by))
 
 
@@ -933,6 +962,9 @@ def draw_chest_ui():
 # --- Chest UI close helper ---
 def close_chest_ui():
     global chest_open, open_chest_pos, drag_item, drag_from
+    # Call mod hook for chest closing
+    if open_chest_pos:
+        call_mod_hook("on_chest_close", open_chest_pos, player)
     # If dragging an item, return it to its origin before closing
     if drag_item and drag_from:
         if drag_from[0] == "chest":
@@ -1630,6 +1662,9 @@ while running:
         update_monsters()
         update_villagers()
         update_hunger()  # Update hunger system
+        
+        # Call mod tick hook
+        call_mod_hook("on_tick")
 
         draw_world()
         draw_inventory()
