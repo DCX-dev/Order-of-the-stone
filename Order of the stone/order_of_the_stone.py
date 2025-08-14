@@ -1189,6 +1189,13 @@ def load_game_data(data):
                 safe_slots.append(None)
         chest_inventories[(cx, cy)] = safe_slots
     
+    # Ensure all chests in the world have proper inventories
+    # This handles cases where chests were placed but inventories weren't saved
+    for (x, y), block_type in world_data.items():
+        if block_type == "chest" and (x, y) not in chest_inventories:
+            # This is a naturally spawned chest that needs loot
+            generate_chest_loot((x, y))
+    
     # Ensure player stands on ground
     if get_block(int(player["x"]), int(player["y"])) in [None, "air"]:
         for y in range(100):
@@ -1356,6 +1363,8 @@ def generate_initial_world():
         # Chests never inside trees
         if can_place_surface_item(x, ground_y) and random.random() < 0.05:
             set_block(x, ground_y - 1, "chest")
+            # Generate loot for naturally spawned chests
+            generate_chest_loot((x, ground_y - 1))
     # Maybe place a starter village in the initial chunk
     maybe_generate_village_for_chunk(0, -25)
     # Ensure fresh starts also spawn player on solid ground
@@ -1638,8 +1647,8 @@ while running:
                 # Chests: never inside trees, reduced spawn rate
                 if can_place_surface_item(x, ground_y) and random.random() < 0.03:
                     set_block(x, ground_y - 1, "chest")
-                    # Initialize empty chest inventory
-                    chest_inventories[(x, ground_y - 1)] = []
+                    # Generate loot for naturally spawned chests
+                    generate_chest_loot((x, ground_y - 1))
                 if not is_day and random.random() < 0.03:
                     entities.append({
                         "type": "monster",
@@ -1691,6 +1700,8 @@ while running:
                 show_message(f"Created world: {world_name}")
                 # Generate initial world data
                 generate_initial_world()
+                # Save the generated world data immediately
+                save_game()
                 # Load the newly created world
                 world_data = world_manager.load_world(world_name)
                 if world_data:
