@@ -557,6 +557,30 @@ def draw_status_bars():
 
 
 # --- Part Four ---
+def draw_held_item(px, py):
+    """Draw the currently held item on the player's right hand"""
+    # Check if player has a selected item
+    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
+        item = player["inventory"][player["selected"]]
+        if item and isinstance(item, dict) and "type" in item:
+            item_type = item["type"]
+            # Check if we have a texture for this item
+            if item_type in textures:
+                # Position the item on the player's right hand
+                # Adjust these offsets to change which hand and position:
+                # hand_x = px + 20  # Right side of player (change to px - 20 for left hand)
+                # hand_y = py + 8   # Slightly above center (adjust for different heights)
+                hand_x = px + 20  # Right side of player
+                hand_y = py + 8   # Slightly above center
+                
+                # Get the item texture and scale it down slightly for the hand
+                item_texture = textures[item_type]
+                # Scale down to 24x24 pixels (smaller than the 32x32 tile size)
+                scaled_texture = pygame.transform.scale(item_texture, (24, 24))
+                
+                # Draw the item on the hand
+                screen.blit(scaled_texture, (hand_x, hand_y))
+
 def draw_world():
     # Draw blocks safely (skip None or unknown keys)
     for (x, y), block in world_data.items():
@@ -589,6 +613,9 @@ def draw_world():
     px = int(player["x"] * TILE_SIZE) - camera_x
     py = int(player["y"] * TILE_SIZE) - 100
     screen.blit(player_image, (px, py))
+    
+    # Draw held item on player's right hand
+    draw_held_item(px, py)
 
 
 def draw_inventory():
