@@ -15,18 +15,7 @@ os.chdir(script_dir)
 if sys.platform == 'darwin':
     os.environ.setdefault('SDL_VIDEO_MAC_FULLSCREEN_SPACES', '1')
 
-# --- Debug toggle ---
-# Set this to True to enable a debug kit for new worlds and a DEBUG HUD label.
-DEBUG_MODE = False
 
-def grant_debug_inventory():
-    """
-    Give the player a full test kit in the hotbar for quick testing.
-    Only applied when DEBUG_MODE is True and a NEW world is created.
-    """
-    kit = ["sword", "pickaxe", "ladder", "bed", "chest", "dirt", "stone", "coal", "iron"]
-    player["inventory"] = [{"type": it, "count": 64} for it in kit[:9]]
-    player["selected"] = 0
 
 # --- Fullscreen/window settings ---
 FULLSCREEN = False            # toggled via F11 or Options menu
@@ -1531,8 +1520,6 @@ while running:
                         load_game()
                     else:
                         generate_initial_world()
-                        if DEBUG_MODE:
-                            grant_debug_inventory()
                     game_state = STATE_GAME
                 elif controls_btn.collidepoint(event.pos):
                     game_state = STATE_CONTROLS
@@ -1644,10 +1631,6 @@ while running:
         draw_world()
         draw_inventory()
         draw_status_bars()
-        # DEBUG HUD label
-        if DEBUG_MODE:
-            dbg = font.render("DEBUG", True, (255, 80, 80))
-            screen.blit(dbg, (8, 72))
         # Draw temporary message if any
         now_ms = pygame.time.get_ticks()
         if message_until > now_ms and message_text:
