@@ -47,14 +47,8 @@ def update_chest_ui_geometry():
 
 # Initialize
 import pygame
-from loader import load_all_mods, emit
-import registries as R
 
 pygame.init()
-
-# Load all mods before you load textures/world/loot
-load_all_mods("mods")
-emit("game_start", {"player_name": "Player"})  # optional event for mods
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TILE_SIZE = 32
