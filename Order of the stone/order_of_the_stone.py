@@ -24,7 +24,7 @@ def grant_debug_inventory():
     Give the player a full test kit in the hotbar for quick testing.
     Only applied when DEBUG_MODE is True and a NEW world is created.
     """
-    kit = ["sword", "pickaxe", "ladder", "bed", "chest", "dirt", "stone", "coal", "iron"]
+    kit = ["sword", "pickaxe", "ladder", "bed", "chest", "dirt", "stone", "coal", "iron", "magic_staff"]
     player["inventory"] = [{"type": it, "count": 64} for it in kit[:9]]
     player["selected"] = 0
 
@@ -191,6 +191,7 @@ textures = {
     "leaves": load_texture(os.path.join(TILE_DIR, "leaves.png")),
     "sword": load_texture(os.path.join(ITEM_DIR, "sword.png")),
     "pickaxe": load_texture(os.path.join(ITEM_DIR, "pickaxe.png")),
+    "magic_staff": load_texture(os.path.join("mods", "example_mod", "textures", "magic_staff.png")),
     "water": load_texture(os.path.join(TILE_DIR, "water.png")),
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
@@ -642,6 +643,12 @@ def draw_world():
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - 100
             pygame.draw.rect(screen, (200, 50, 50), (ex + 12, ey + 12, 8, 8))
+        elif entity["type"] == "magic_projectile":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - 100
+            # Draw magic projectile as a glowing blue orb
+            pygame.draw.circle(screen, (0, 150, 255), (ex + 16, ey + 16), 8)
+            pygame.draw.circle(screen, (255, 255, 255), (ex + 16, ey + 16), 4)
         elif entity["type"] == "villager":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - 100
@@ -874,6 +881,13 @@ def generate_chest_loot(pos):
         if empty_idxs:
             idx = random.choice(empty_idxs)
             slots[idx] = {"type": "diamond", "count": 1}
+    
+    # 15% chance magic staff appears in a random empty slot
+    if random.random() < 0.15:
+        empty_idxs = [i for i, it in enumerate(slots) if it is None]
+        if empty_idxs:
+            idx = random.choice(empty_idxs)
+            slots[idx] = {"type": "magic_staff", "count": 1}
 
 def open_chest_at(bx, by):
     global chest_open, open_chest_pos, drag_item, drag_from
@@ -1008,12 +1022,46 @@ def consume_carrot_from_inventory():
         player["hunger"] = min(10, player["hunger"] + 1)
         restored = True
 
-    # Only consume a carrot if something was restored
-    if restored:
-        item["count"] -= 1
-        if item["count"] <= 0:
-            # remove empty slot
-            player["inventory"].pop(player["selected"])
+            # Only consume a carrot if something was restored
+        if restored:
+            item["count"] -= 1
+            if item["count"] <= 0:
+                # remove empty slot
+                player["inventory"].pop(player["selected"])
+
+
+def use_magic_staff():
+    """Use the magic staff - creates a magic projectile"""
+    if player["selected"] < len(player["inventory"]):
+        item = player["inventory"][player["selected"]]
+        if item and isinstance(item, dict) and item.get("type") == "magic_staff":
+            # Get mouse position for aiming
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            # Convert to world coordinates
+            world_x = (mouse_x + camera_x) / TILE_SIZE
+            world_y = (mouse_y + 100) / TILE_SIZE
+            
+            # Calculate direction from player to mouse
+            dx = world_x - player["x"]
+            dy = world_y - player["y"]
+            dist = math.hypot(dx, dy)
+            
+            if dist > 0:
+                # Create magic projectile
+                entities.append({
+                    "type": "magic_projectile",
+                    "x": player["x"],
+                    "y": player["y"],
+                    "dx": 0.3 * dx / dist,  # Faster than monster projectiles
+                    "dy": 0.3 * dy / dist,
+                    "damage": 5,  # More damage than sword
+                    "lifetime": 120  # Frames before disappearing
+                })
+                
+                # Call mod hook for item usage
+                call_mod_hook("on_item_use", "magic_staff", player)
+                
+                show_message("Magic staff used! Casting spell...")
 
 
 # --- Missing Update Functions ---
@@ -1260,6 +1308,24 @@ def update_monsters():
                 if player["health"] <= 0:
                     show_death_screen()
             elif proj["x"] < -100 or proj["x"] > 100 or proj["y"] > 100:
+                entities.remove(proj)
+        elif proj["type"] == "magic_projectile":
+            proj["x"] += proj["dx"]
+            proj["y"] += proj["dy"]
+            proj["lifetime"] = proj.get("lifetime", 120) - 1
+            
+            # Check collision with monsters
+            for mob in entities[:]:
+                if mob["type"] == "monster":
+                    if abs(mob["x"] - proj["x"]) < 0.5 and abs(mob["y"] - proj["y"]) < 0.5:
+                        mob["hp"] = mob.get("hp", 7) - proj.get("damage", 5)
+                        if mob["hp"] <= 0:
+                            entities.remove(mob)
+                        entities.remove(proj)
+                        break
+            
+            # Remove if lifetime expired or out of bounds
+            if proj["lifetime"] <= 0 or proj["x"] < -100 or proj["x"] > 100 or proj["y"] > 100:
                 entities.remove(proj)
 
 # --- Villager update logic ---
@@ -1541,9 +1607,15 @@ while running:
                     if get_block(bx, by) == "chest":
                         open_chest_at(bx, by)
                         continue
-                    # If selected carrot, eat it; otherwise place block
-                    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]] and player["inventory"][player["selected"]]["type"] == "carrot":
-                        consume_carrot_from_inventory()
+                    # If selected carrot, eat it; if magic staff, use it; otherwise place block
+                    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
+                        item_type = player["inventory"][player["selected"]]["type"]
+                        if item_type == "carrot":
+                            consume_carrot_from_inventory()
+                        elif item_type == "magic_staff":
+                            use_magic_staff()
+                        else:
+                            place_block(mx, my)
                     else:
                         place_block(mx, my)
             elif game_state == STATE_TITLE:
