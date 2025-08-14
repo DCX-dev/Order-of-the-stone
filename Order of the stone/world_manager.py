@@ -208,6 +208,7 @@ class WorldManager:
         """Add a character to the new world name"""
         if self.is_typing and len(self.new_world_name) < 20:  # Limit to 20 characters
             self.new_world_name += char
+            print(f"[DEBUG] Added '{char}', name now: '{self.new_world_name}'")
     
     def remove_character(self):
         """Remove the last character from the new world name"""
