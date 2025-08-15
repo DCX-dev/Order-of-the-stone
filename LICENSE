@@ -1,37 +1,21 @@
-Custom License for "Order of the Stone" Game
+MIT License
 
-Copyright (c) 2025 DCX-dev
+Copyright (c) 2024 Order of the Stone
 
-IMPORTANT: This game and all its code, assets, and content are protected by copyright law.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-PERMISSION REQUIRED:
-- You MUST ask for explicit written permission from the copyright holder (DCX-dev) before:
-  * Accessing, copying, or downloading any part of this game
-  * Modifying, changing, or altering any code, assets, or content
-  * Distributing, sharing, or publishing any part of this game
-  * Using this game for commercial purposes
-  * Creating derivative works based on this game
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-WHAT IS NOT ALLOWED WITHOUT PERMISSION:
-- Copying or downloading the game files
-- Modifying the game code or assets
-- Distributing the game or any part of it
-- Using the game in other projects
-- Creating mods or add-ons without explicit permission
-- Reverse engineering or decompiling the game
-
-WHAT IS ALLOWED WITH PERMISSION:
-- Playing the game for personal enjoyment
-- Creating content that follows the game's intended use
-- Contributing to the project if invited to do so
-- Using the game for educational purposes (with permission)
-
-HOW TO REQUEST PERMISSION:
-Contact the copyright holder (DCX-dev) through appropriate channels to request permission for any of the restricted activities listed above.
-
-VIOLATIONS:
-Any unauthorized use, modification, or distribution of this game may result in legal action to protect the copyright holder's rights.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
-
-This license is designed to protect the creator's rights while allowing legitimate use with proper permission.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
