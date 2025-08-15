@@ -176,8 +176,12 @@ class WorldUI:
                     
                     # Check for click
                     if pygame.mouse.get_pressed()[0] and world_rect.collidepoint(pygame.mouse.get_pos()):
-                        selected_world = world_info['name']  # Select the world
-                        action = None  # Don't immediately play, just select
+                        # Toggle selection: if already selected, unselect; otherwise select
+                        if selected_world == world_info['name']:
+                            selected_world = None  # Unselect if already selected
+                        else:
+                            selected_world = world_info['name']  # Select if not already selected
+                        action = None  # Don't immediately play, just toggle selection
             
             # Update max scroll
             self.max_scroll = max(0, len(worlds) * self.WORLD_ITEM_HEIGHT - list_height)
