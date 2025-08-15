@@ -5,7 +5,8 @@ __pycache__/
 
 # Save data files
 save.json
-world1.json
+# World save files (max 12 worlds)
+world*.json
 
 # IDE files (optional but common)
 .vscode/
