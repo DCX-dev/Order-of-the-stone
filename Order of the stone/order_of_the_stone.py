@@ -1209,6 +1209,11 @@ def load_game_data(data):
             if get_block(int(player["x"]), y) == "grass":
                 player["y"] = y - 1
                 break
+    
+    # If this is a new world with a seed, regenerate the world consistently
+    if "world_seed" in data and not world_data:
+        print(f"Regenerating world with seed: {data['world_seed']}")
+        generate_initial_world(data["world_seed"])
 
 def load_game():
     """Load the legacy save.json file (for backward compatibility)"""
@@ -1217,7 +1222,7 @@ def load_game():
             data = json.load(f)
             load_game_data(data)
     except FileNotFoundError:
-        generate_initial_world()
+        generate_initial_world()  # Generate with random seed for legacy saves
 
 def update_monsters():
     # Move and attack monsters
@@ -1342,16 +1347,43 @@ def update_villagers():
 
 
 # --- World Generation Function ---
-def generate_initial_world():
-    for x in range(-25, 25):
-        # Add some hills using sine wave pattern
-        height_offset = int(3 * math.sin(x * 0.2))
+def generate_initial_world(world_seed=None):
+    """Generate a unique world with optional seed for consistency"""
+    if world_seed is None:
+        world_seed = random.randint(1, 999999)
+    
+    # Set random seed for this world generation
+    world_rng = random.Random(world_seed)
+    
+    # Generate a random starting area for the player
+    start_x = world_rng.randint(-100, 100)  # Random starting X position
+    world_width = world_rng.randint(80, 150)  # Random world width
+    
+    # Generate terrain around the starting area
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        # Use world-specific random for consistent terrain
+        height_offset = int(4 * world_rng.uniform(-1, 1) * world_rng.uniform(0.5, 1.5))
         ground_y = 10 + height_offset
+        
+        # Add some variation to terrain generation
+        terrain_type = world_rng.random()
+        if terrain_type < 0.3:
+            # Flat plains
+            ground_y = 10
+        elif terrain_type < 0.6:
+            # Gentle hills
+            height_offset = int(2 * world_rng.uniform(-1, 1))
+            ground_y = 10 + height_offset
+        else:
+            # More varied terrain
+            height_offset = int(5 * world_rng.uniform(-1, 1))
+            ground_y = 10 + height_offset
+        
         set_block(x, ground_y, "grass")
         for y in range(ground_y + 1, ground_y + 4):
             set_block(x, y, "dirt")
         for y in range(ground_y + 4, ground_y + 12):
-            ore_chance = random.random()
+            ore_chance = world_rng.random()
             if ore_chance < 0.05:
                 set_block(x, y, "coal")
             elif ore_chance < 0.08:
@@ -1364,9 +1396,8 @@ def generate_initial_world():
                 set_block(x, y, "stone")
         set_block(x, ground_y + 12, "bedrock")
 
-
-        # Random chance to spawn trees
-        if random.random() < 0.1:
+        # Random chance to spawn trees (world-specific)
+        if world_rng.random() < 0.08:  # Slightly reduced tree density
             if get_block(x, ground_y - 1) is None:
                 set_block(x, ground_y - 1, "log")
             if get_block(x, ground_y - 2) is None:
@@ -1378,31 +1409,39 @@ def generate_initial_world():
 
         # Carrot biome: heavy carrot spawning; otherwise, default light spawning
         if in_carrot_biome(x):
-            if can_place_surface_item(x, ground_y) and random.random() < 0.7:
+            if can_place_surface_item(x, ground_y) and world_rng.random() < 0.6:
                 set_block(x, ground_y - 1, "carrot")
             # small clumps to neighbours, using their actual ground levels
             gy_r = ground_y_of_column(x + 1)
-            if gy_r is not None and can_place_surface_item(x + 1, gy_r) and random.random() < 0.35:
+            if gy_r is not None and can_place_surface_item(x + 1, gy_r) and world_rng.random() < 0.35:
                 set_block(x + 1, gy_r - 1, "carrot")
             gy_l = ground_y_of_column(x - 1)
-            if gy_l is not None and can_place_surface_item(x - 1, gy_l) and random.random() < 0.35:
-                set_block(x - 1, gy_l - 1, "carrot")
+            if gy_l is not None and can_place_surface_item(x - 1, gy_l) and world_rng.random() < 0.35:
+                set_block(x + 1, gy_l - 1, "carrot")
         else:
-            if can_place_surface_item(x, ground_y) and random.random() < 0.05:
+            if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:
                 set_block(x, ground_y - 1, "carrot")
 
         # Chests never inside trees
-        if can_place_surface_item(x, ground_y) and random.random() < 0.05:
+        if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:
             set_block(x, ground_y - 1, "chest")
             # Generate loot for naturally spawned chests
             chest_system.generate_natural_chest_loot((x, ground_y - 1))
-    # Maybe place a starter village in the initial chunk
-    maybe_generate_village_for_chunk(0, -25)
-    # Ensure fresh starts also spawn player on solid ground
+    
+    # Place starter village in a random chunk near the starting area
+    village_chunk = world_rng.randint(-2, 2)  # Random chunk offset
+    maybe_generate_village_for_chunk(village_chunk, start_x + village_chunk * 50)
+    
+    # Set player spawn position to the starting area
+    player["x"] = start_x
+    # Ensure player spawns on solid ground
     for y in range(100):
         if get_block(int(player["x"]), y) == "grass":
             player["y"] = y - 1
             break
+    
+    print(f"Generated new world with seed: {world_seed}, starting at X: {start_x}")
+    return world_seed
 
 # --- Title Screen Drawing Function ---
 def draw_title_screen():
@@ -1780,17 +1819,27 @@ while running:
                 if world:
                     world_name = world.name
                     show_message(f"Created world: {world_name}")
-                    # Generate initial world data
-                    generate_initial_world()
+                    # Generate initial world data with unique seed
+                    world_seed = generate_initial_world()
+                    # Store the seed in the world data for consistency
+                    new_world_data = {
+                        'player': player,
+                        'world': world_data,
+                        'entities': entities,
+                        'chest_inventories': chest_system.serialize_for_save()['chest_inventories'],
+                        'player_placed_chests': chest_system.serialize_for_save()['player_placed_chests'],
+                        'world_seed': world_seed,
+                        'created': time.time()
+                    }
                     # Ensure new worlds start in daytime
                     is_day = True
                     day_start_time = time.time()
                     # Save the generated world data immediately
                     save_game()
                     # Load the newly created world
-                    world_data = world_manager.load_world(world_name)
-                    if world_data:
-                        load_game_data(world_data)
+                    loaded_world_data = world_manager.load_world(world_name)
+                    if loaded_world_data:
+                        load_game_data(loaded_world_data)
                         game_state = STATE_GAME
                         update_pause_state()  # Resume time when entering new game
                 else:
