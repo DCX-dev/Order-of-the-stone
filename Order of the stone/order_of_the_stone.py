@@ -548,6 +548,7 @@ def show_death_screen():
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if respawn_btn.collidepoint(pygame.mouse.get_pos()):
+                    # Reset player to spawn position
                     player["inventory"] = []
                     player["health"] = 10
                     player["hunger"] = 10
@@ -556,7 +557,7 @@ def show_death_screen():
                     player["vel_y"] = 0
                     player["on_ground"] = False
                     game_state = STATE_GAME
-                    break  # Exit the death screen loop
+                    return  # Exit the death screen function completely
 
 
 
