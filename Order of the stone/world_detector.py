@@ -184,3 +184,37 @@ class WorldDetector:
             'has_legacy': self.has_legacy_save(),
             'worlds': [world.name for world in self.worlds]
         }
+    
+    def load_world_data(self, world_name: str) -> Optional[Dict]:
+        """Load world data directly from the detected world files"""
+        try:
+            if world_name == "Legacy Save":
+                # Load legacy save.json
+                legacy_save_path = os.path.join(self.save_dir, "save.json")
+                if os.path.exists(legacy_save_path):
+                    with open(legacy_save_path, 'r') as f:
+                        data = json.load(f)
+                    return data
+                return None
+            
+            # Look for the world file
+            for world in self.worlds:
+                if world.name == world_name:
+                    filepath = os.path.join(self.save_dir, world.filename)
+                    if os.path.exists(filepath):
+                        with open(filepath, 'r') as f:
+                            data = json.load(f)
+                        
+                        # Update world metadata
+                        world.last_modified = time.time()
+                        if 'player' in data:
+                            world.update_player_info(data['player'])
+                        
+                        return data
+            
+            print(f"Debug: World '{world_name}' not found in detected worlds")
+            return None
+            
+        except Exception as e:
+            print(f"Error loading world data for {world_name}: {e}")
+            return None

@@ -1665,19 +1665,16 @@ while running:
             world_ui.pending_world_name = None
         
         if action == 'play' and world_name:
-            # Load existing world
-            if world_name == "Legacy Save":
-                # Load legacy save.json
-                world_data = world_manager.load_legacy_save()
-            else:
-                # Load specific world
-                world_data = world_manager.load_world(world_name)
+            # Load existing world using WorldDetector
+            world_data = world_ui.world_detector.load_world_data(world_name)
             
             if world_data:
                 load_game_data(world_data)
                 game_state = STATE_GAME
+                print(f"Successfully loaded world: {world_name}")
             else:
-                show_message("Failed to load world!")
+                show_message(f"Failed to load world: {world_name}")
+                print(f"Debug: Failed to load world '{world_name}' - no data returned")
                 
         elif action == 'create':
             # Check if we can create a new world (under 12 limit)
