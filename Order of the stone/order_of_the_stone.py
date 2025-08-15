@@ -1667,15 +1667,18 @@ def validate_and_fix_terrain():
     
     # FINAL VERIFICATION: Double-check no grass exists underground
     underground_grass_found = 0
-    for (x, y), block in world_data.items():
-        if block == "grass":
-            # Check if this grass has any blocks above it
-            for check_y in range(y + 1, 100):
-                if get_block(x, check_y) is not None:
-                    # This grass is underground - CRITICAL ERROR
-                    world_data.pop((x, y), None)
-                    underground_grass_found += 1
-                    print(f"🚨 CRITICAL: Found and removed underground grass at ({x}, {y})")
+    # Create a copy of items to avoid RuntimeError when modifying dictionary
+    grass_positions = [(x, y) for (x, y), block in world_data.items() if block == "grass"]
+    
+    for x, y in grass_positions:
+        # Check if this grass has any blocks above it
+        for check_y in range(y + 1, 100):
+            if get_block(x, check_y) is not None:
+                # This grass is underground - CRITICAL ERROR
+                world_data.pop((x, y), None)
+                underground_grass_found += 1
+                print(f"🚨 CRITICAL: Found and removed underground grass at ({x}, {y})")
+                break  # Exit inner loop once we find this grass is underground
     
     if fixes_applied > 0:
         print(f"🔧 Applied {fixes_applied} terrain fixes")
