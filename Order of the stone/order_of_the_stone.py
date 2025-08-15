@@ -335,6 +335,12 @@ drag_item = None           # {'type': str, 'count': int} currently held by mouse
 drag_from = None           # ('chest', index) or ('hotbar', index)
 mouse_pos = (0, 0)
 
+# --- FPS and Performance Settings ---
+fps_limit = 120  # Default FPS limit
+show_fps = False  # F3 debug info
+fps_counter = 0  # Actual FPS counter
+last_fps_time = time.time()
+
 def get_block(x, y):
     return world_data.get((x, y), None)
 
@@ -559,8 +565,8 @@ def draw_about():
     back_btn = draw_button("Back", 320, 500, 160, 40)
 
 def draw_options():
-    """Options page: toggle fullscreen, toggle music, or go back to title."""
-    global back_btn, fullscreen_btn, music_btn
+    """Options page: toggle fullscreen, FPS limiter, or go back to title."""
+    global back_btn, fullscreen_btn, fps_btn
     screen.fill((20, 20, 20))
 
     title = BIG_FONT.render("Options", True, (255, 255, 255))
@@ -571,19 +577,45 @@ def draw_options():
     y0 = 180
 
     fs_label = f"Fullscreen: {'ON' if FULLSCREEN else 'OFF'}"
+    fps_label = f"FPS Limit: {fps_limit}"
 
     fullscreen_btn = centered_button(y0, btn_w, btn_h)
-    music_btn      = centered_button(y0 + btn_h + gap, btn_w, btn_h)
-    back_btn       = centered_button(y0 + 2 * (btn_h + gap), btn_w, btn_h)
+    fps_btn       = centered_button(y0 + btn_h + gap, btn_w, btn_h)
+    back_btn      = centered_button(y0 + 2 * (btn_h + gap), btn_w, btn_h)
 
     for rect, label in [
         (fullscreen_btn, fs_label),
+        (fps_btn,        fps_label),
         (back_btn,       "Back"),
     ]:
         pygame.draw.rect(screen, (60, 60, 60), rect)
         pygame.draw.rect(screen, (220, 220, 220), rect, 2)
         txt = font.render(label, True, (255, 255, 255))
         screen.blit(txt, (rect.x + 12, rect.y + 12))
+    
+    # FPS limit info
+    info_text = font.render("Click FPS button to cycle: 30 → 60 → 120 → Unlimited", True, (200, 200, 200))
+    screen.blit(info_text, (center_x(info_text.get_width()), y0 + 3 * (btn_h + gap) + 20))
+
+def draw_fps_display():
+    """Display actual FPS counter and FPS limit info"""
+    global fps_counter, last_fps_time
+    
+    if not show_fps:
+        return
+    
+    # Calculate actual FPS
+    current_time = time.time()
+    if current_time - last_fps_time >= 1.0:  # Update every second
+        fps_counter = int(1.0 / (current_time - last_fps_time))
+        last_fps_time = current_time
+    
+    # Draw FPS info
+    fps_text = font.render(f"FPS: {fps_counter}", True, (255, 255, 0))
+    limit_text = font.render(f"Limit: {fps_limit}", True, (255, 255, 0))
+    
+    screen.blit(fps_text, (10, 70))
+    screen.blit(limit_text, (10, 90))
 
 # --- Part Three ---
 def delete_save_data():
@@ -1453,6 +1485,11 @@ def generate_initial_world(world_seed=None):
         bedrock_y = 22  # Fixed bedrock level
         set_block(x, bedrock_y, "bedrock")
         
+        # CRITICAL: Remove ANY grass blocks that might be underground
+        for y in range(ground_y + 1, 100):
+            if get_block(x, y) == "grass":
+                world_data.pop((x, y), None)  # Remove underground grass
+        
         # Ensure NO blocks generate below bedrock
         for y in range(bedrock_y + 1, 100):
             if get_block(x, y) is not None:
@@ -1524,7 +1561,36 @@ def generate_initial_world(world_seed=None):
     print(f"Clean terrain: Grass → Dirt → Stone → Bedrock")
     print(f"Mountains: {len(mountain_positions)} mountains at positions: {mountain_positions}")
     print(f"Surface height range: 8-15 (mountains), Bedrock at Y: 22")
+    
+    # FINAL CLEANUP: Remove ALL underground grass from the entire world
+    cleanup_underground_grass()
+    
     return world_seed
+
+def cleanup_underground_grass():
+    """Remove ALL grass blocks that are underground (not on the surface)"""
+    global world_data
+    
+    # Find all grass blocks
+    grass_positions = [(x, y) for (x, y), block in world_data.items() if block == "grass"]
+    
+    # Remove grass that's not on the surface (has blocks above it)
+    removed_count = 0
+    for x, y in grass_positions:
+        # Check if there are any blocks above this grass
+        has_blocks_above = False
+        for check_y in range(y + 1, 100):
+            if get_block(x, check_y) is not None:
+                has_blocks_above = True
+                break
+        
+        # If grass has blocks above it, it's underground and should be removed
+        if has_blocks_above:
+            world_data.pop((x, y), None)
+            removed_count += 1
+    
+    if removed_count > 0:
+        print(f"Cleaned up {removed_count} underground grass blocks")
 
 # --- Title Screen Drawing Function ---
 def draw_title_screen():
@@ -1602,6 +1668,9 @@ while running:
                 FULLSCREEN = not FULLSCREEN
                 apply_display_mode()
                 update_chest_ui_geometry()
+            # Toggle FPS display on F3
+            if event.key == pygame.K_F3:
+                show_fps = not show_fps
             # Close chest UI with E, U, or ESC
             if chest_open and event.key in (pygame.K_e, pygame.K_u, pygame.K_ESCAPE):
                 close_chest_ui()
@@ -1755,6 +1824,16 @@ while running:
                     FULLSCREEN = not FULLSCREEN
                     apply_display_mode()
                     update_chest_ui_geometry()
+                elif fps_btn.collidepoint(event.pos):
+                    # Cycle through FPS limits: 30 → 60 → 120 → Unlimited
+                    if fps_limit == 30:
+                        fps_limit = 60
+                    elif fps_limit == 60:
+                        fps_limit = 120
+                    elif fps_limit == 120:
+                        fps_limit = 0  # Unlimited (0 means no limit)
+                    else:
+                        fps_limit = 30  # Back to 30
                 elif back_btn.collidepoint(event.pos):
                     game_state = STATE_TITLE
                     update_pause_state()  # Pause time when returning to title
@@ -1852,6 +1931,7 @@ while running:
         draw_world()
         draw_inventory()
         draw_status_bars()
+        draw_fps_display()
         
         # Take world preview screenshot every 5 minutes
         current_world = world_manager.get_current_world_name()
@@ -1955,7 +2035,7 @@ while running:
         draw_options()
 
     pygame.display.flip()
-    clock.tick(60)
+    clock.tick(fps_limit)
 
 
 if game_state == STATE_GAME:
