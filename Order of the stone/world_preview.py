@@ -2,8 +2,6 @@ import pygame
 import os
 import time
 from typing import Optional, Tuple
-from PIL import Image
-import io
 
 class WorldPreview:
     """Manages world preview screenshots and thumbnails"""
@@ -32,12 +30,9 @@ class WorldPreview:
             # Scale down the screen surface
             thumbnail = pygame.transform.scale(screen, thumbnail_size)
             
-            # Convert to PIL Image for saving
-            pil_image = self.surface_to_pil(thumbnail)
-            
-            # Save the preview
+            # Save the preview directly with pygame
             preview_path = os.path.join(self.preview_dir, f"{world_name}_preview.png")
-            pil_image.save(preview_path, "PNG")
+            pygame.image.save(thumbnail, preview_path)
             
             # Update last screenshot time
             self.last_screenshot_time = time.time()
@@ -49,18 +44,7 @@ class WorldPreview:
             print(f"Error taking world preview: {e}")
             return False
     
-    def surface_to_pil(self, surface: pygame.Surface) -> Image.Image:
-        """Convert pygame surface to PIL Image"""
-        # Get the surface data
-        view = pygame.surfarray.array3d(surface)
-        
-        # Convert from (width, height, 3) to (height, width, 3)
-        view = view.transpose([1, 0, 2])
-        
-        # Convert to PIL Image
-        pil_image = Image.fromarray(view)
-        
-        return pil_image
+
     
     def get_world_preview(self, world_name: str) -> Optional[pygame.Surface]:
         """Load and return a world preview thumbnail"""
