@@ -1102,7 +1102,12 @@ def save_game():
     # Save to current world if one is loaded, otherwise save to legacy save.json
     current_world = world_manager.get_current_world_name()
     if current_world:
-        world_manager.save_world(current_world, data)
+        if current_world == "Legacy Save":
+            # Save to legacy save.json
+            world_manager.save_to_legacy(data)
+        else:
+            # Save to specific world file
+            world_manager.save_world(current_world, data)
     else:
         # Legacy save
         with open(os.path.join(SAVE_DIR, "save.json"), "w") as f:
@@ -1625,7 +1630,13 @@ while running:
         
         if action == 'play' and world_name:
             # Load existing world
-            world_data = world_manager.load_world(world_name)
+            if world_name == "Legacy Save":
+                # Load legacy save.json
+                world_data = world_manager.load_legacy_save()
+            else:
+                # Load specific world
+                world_data = world_manager.load_world(world_name)
+            
             if world_data:
                 load_game_data(world_data)
                 game_state = STATE_GAME

@@ -25,6 +25,29 @@ class WorldManager:
         self.worlds = []
         
         try:
+            # First, check for legacy save.json
+            legacy_save_path = os.path.join(self.save_dir, "save.json")
+            if os.path.exists(legacy_save_path):
+                try:
+                    with open(legacy_save_path, 'r') as f:
+                        legacy_data = json.load(f)
+                    
+                    # Create a special "Legacy Save" world
+                    legacy_world = World("Legacy Save", "save.json")
+                    legacy_world.created = time.time() - 86400  # Set to 1 day ago
+                    legacy_world.last_modified = time.time()
+                    
+                    # Update metadata from legacy save
+                    if 'player' in legacy_data:
+                        legacy_world.update_player_info(legacy_data['player'])
+                        legacy_world.player_info = "Legacy save file"
+                    
+                    self.worlds.append(legacy_world)
+                    print("Legacy save.json detected and loaded")
+                    
+                except (json.JSONDecodeError, KeyError) as e:
+                    print(f"Error loading legacy save.json: {e}")
+            
             # Look for world JSON files
             for filename in os.listdir(self.save_dir):
                 if filename.startswith("world") and filename.endswith(".json"):
@@ -146,6 +169,24 @@ class WorldManager:
         
         return None
     
+    def load_legacy_save(self) -> Optional[Dict]:
+        """Load the legacy save.json file"""
+        try:
+            legacy_save_path = os.path.join(self.save_dir, "save.json")
+            if os.path.exists(legacy_save_path):
+                with open(legacy_save_path, 'r') as f:
+                    data = json.load(f)
+                
+                # Create a temporary legacy world for loading
+                legacy_world = World("Legacy Save", "save.json")
+                self.current_world = legacy_world
+                
+                return data
+            return None
+        except Exception as e:
+            print(f"Error loading legacy save: {e}")
+            return None
+    
     def save_world(self, world_name: str, game_data: Dict) -> bool:
         """Save game data to a specific world"""
         for world in self.worlds:
@@ -169,6 +210,21 @@ class WorldManager:
                     return False
         
         return False
+    
+    def save_to_legacy(self, game_data: Dict) -> bool:
+        """Save game data to legacy save.json"""
+        try:
+            legacy_save_path = os.path.join(self.save_dir, "save.json")
+            
+            # Save the game data
+            with open(legacy_save_path, 'w') as f:
+                json.dump(game_data, f, indent=2)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error saving to legacy save: {e}")
+            return False
     
     def delete_world(self, world_name: str) -> bool:
         """Delete a world"""
