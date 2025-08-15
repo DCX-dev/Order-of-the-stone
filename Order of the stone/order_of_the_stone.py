@@ -450,17 +450,23 @@ def maybe_generate_village_for_chunk(chunk_id, base_x):
                     set_block(hx, y, "dirt" if y < gy + 4 else "stone")
                 set_block(hx, gy + 7, "bedrock")
             
-            # Fill any holes under the house foundation
+            # Fill any holes under the house foundation with clean layering
             house_width = 7  # Same width as used in build_house
             for dx in range(house_width):
+                # Ensure clean layer hierarchy under houses
                 for y in range(gy + 1, 22):  # Fill down to flat bedrock at Y=22
                     if get_block(hx + dx, y) is None:
                         if y < gy + 4:
-                            set_block(hx + dx, y, "dirt")
+                            set_block(hx + dx, y, "dirt")      # Dirt layer
                         elif y < 22:
-                            set_block(hx + dx, y, "stone")
+                            set_block(hx + dx, y, "stone")     # Stone layer
                         else:
-                            set_block(hx + dx, y, "bedrock")
+                            set_block(hx + dx, y, "bedrock")   # Bedrock layer
+                
+                # Ensure NO blocks below bedrock
+                for y in range(23, 100):
+                    if get_block(hx + dx, y) is not None:
+                        world_data.pop((hx + dx, y), None)  # Remove any blocks below bedrock
             # build the house aligned to current ground
             build_house(hx, gy, width=7, height=5)
             # spawn 1–2 villagers near the doorway
@@ -1348,7 +1354,7 @@ def update_villagers():
 
 # --- World Generation Function ---
 def generate_initial_world(world_seed=None):
-    """Generate a unique world with flat bedrock and gentle surface terrain"""
+    """Generate a clean, organized world with proper layer hierarchy"""
     if world_seed is None:
         world_seed = random.randint(1, 999999)
     
@@ -1359,34 +1365,78 @@ def generate_initial_world(world_seed=None):
     start_x = world_rng.randint(-100, 100)  # Random starting X position
     world_width = world_rng.randint(80, 150)  # Random world width
     
-    # Generate terrain around the starting area
-    for x in range(start_x - world_width//2, start_x + world_width//2):
-        # Create gentle surface terrain (not too extreme)
-        # Use a smoother sine wave with reduced amplitude for gentler hills
-        height_offset = int(2 * world_rng.uniform(-1, 1))  # Reduced from 4 to 2
-        ground_y = 10 + height_offset
-        
-        # Add some controlled variation to terrain generation
-        terrain_type = world_rng.random()
-        if terrain_type < 0.4:
-            # Flat plains (increased chance for villages)
-            ground_y = 10
-        elif terrain_type < 0.8:
-            # Gentle hills (suitable for building)
-            height_offset = int(1 * world_rng.uniform(-1, 1))  # Very gentle
-            ground_y = 10 + height_offset
+    # Generate clean, organized terrain with only 2-3 mountains
+    # First, decide where to place mountains (only 2-3 total)
+    mountain_count = world_rng.randint(2, 3)  # Only 2-3 mountains
+    mountain_positions = []
+    
+    # Place mountains at random positions, but not too close together
+    for i in range(mountain_count):
+        if i == 0:
+            # First mountain: random position
+            mountain_x = world_rng.randint(start_x - world_width//3, start_x + world_width//3)
         else:
-            # Slightly more varied terrain (but still gentle)
-            height_offset = int(2 * world_rng.uniform(-1, 1))  # Moderate variation
-            ground_y = 10 + height_offset
+            # Additional mountains: ensure they're not too close to existing ones
+            attempts = 0
+            while attempts < 20:  # Limit attempts to avoid infinite loop
+                new_mountain_x = world_rng.randint(start_x - world_width//3, start_x + world_width//3)
+                # Check distance from existing mountains
+                too_close = False
+                for existing_mountain in mountain_positions:
+                    if abs(new_mountain_x - existing_mountain) < 15:  # Minimum 15 blocks apart
+                        too_close = True
+                        break
+                if not too_close:
+                    mountain_x = new_mountain_x
+                    break
+                attempts += 1
+            else:
+                # If we can't find a good position, skip this mountain
+                continue
         
-        # Ensure ground_y doesn't go too extreme
-        ground_y = max(8, min(12, ground_y))  # Keep surface between Y=8 and Y=12
+        mountain_positions.append(mountain_x)
+    
+    # Generate terrain with clean layering
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        # Check if this X position should be a mountain
+        is_mountain = False
+        mountain_height = 0
         
+        for mountain_x in mountain_positions:
+            distance = abs(x - mountain_x)
+            if distance < 8:  # Mountain influence radius
+                is_mountain = True
+                # Calculate mountain height based on distance from center
+                mountain_height = max(0, 8 - distance)  # Height decreases with distance
+                break
+        
+        # Set ground height based on terrain type
+        if is_mountain:
+            # Mountain: grass on top, dirt below, stone underneath
+            ground_y = 10 + mountain_height  # Base 10 + mountain height
+        else:
+            # Flat area: mostly flat with very gentle variation
+            if world_rng.random() < 0.8:  # 80% chance of completely flat
+                ground_y = 10
+            else:
+                # 20% chance of very gentle slope (only 1 block variation)
+                ground_y = 10 + world_rng.choice([-1, 1])
+        
+        # Ensure clean terrain boundaries
+        ground_y = max(8, min(15, ground_y))  # Allow mountains up to Y=15
+        
+        # CLEAN LAYER GENERATION - Always follow proper hierarchy
+        
+        # 1. GRASS LAYER (Surface)
         set_block(x, ground_y, "grass")
+        
+        # 2. DIRT LAYER (Below grass, always 3 blocks deep)
         for y in range(ground_y + 1, ground_y + 4):
             set_block(x, y, "dirt")
+        
+        # 3. STONE LAYER (Below dirt, always 8 blocks deep)
         for y in range(ground_y + 4, ground_y + 12):
+            # Clean ore generation within stone layer
             ore_chance = world_rng.random()
             if ore_chance < 0.05:
                 set_block(x, y, "coal")
@@ -1399,71 +1449,81 @@ def generate_initial_world(world_seed=None):
             else:
                 set_block(x, y, "stone")
         
-        # FLAT BEDROCK - always at the same level regardless of surface height
+        # 4. BEDROCK LAYER (Completely flat, nothing below)
         bedrock_y = 22  # Fixed bedrock level
         set_block(x, bedrock_y, "bedrock")
-
-        # Random chance to spawn trees (world-specific)
-        if world_rng.random() < 0.08:  # Slightly reduced tree density
+        
+        # Ensure NO blocks generate below bedrock
+        for y in range(bedrock_y + 1, 100):
+            if get_block(x, y) is not None:
+                world_data.pop((x, y), None)  # Remove any blocks below bedrock
+        
+        # Clean tree generation (only on grass, no messy placement)
+        if world_rng.random() < 0.08:  # Reduced tree density for cleaner look
+            # Only place trees if there's clean space
             if get_block(x, ground_y - 1) is None:
                 set_block(x, ground_y - 1, "log")
             if get_block(x, ground_y - 2) is None:
                 set_block(x, ground_y - 2, "log")
+            
+            # Clean leaf placement (only in empty spaces)
             for dx in [-1, 0, 1]:
                 for dy in [-3, -4]:
-                    if get_block(x + dx, ground_y + dy) is None:
-                        set_block(x + dx, ground_y + dy, "leaves")
+                    leaf_x, leaf_y = x + dx, ground_y + dy
+                    if get_block(leaf_x, leaf_y) is None:
+                        set_block(leaf_x, leaf_y, "leaves")
 
-        # Carrot biome: heavy carrot spawning; otherwise, default light spawning
+        # Clean carrot placement (only on grass, no messy spawning)
         if in_carrot_biome(x):
             if can_place_surface_item(x, ground_y) and world_rng.random() < 0.6:
                 set_block(x, ground_y - 1, "carrot")
-            # small clumps to neighbours, using their actual ground levels
+            
+            # Clean neighbor carrot spawning
             gy_r = ground_y_of_column(x + 1)
             if gy_r is not None and can_place_surface_item(x + 1, gy_r) and world_rng.random() < 0.35:
                 set_block(x + 1, gy_r - 1, "carrot")
             gy_l = ground_y_of_column(x - 1)
             if gy_l is not None and can_place_surface_item(x - 1, gy_l) and world_rng.random() < 0.35:
-                set_block(x + 1, gy_l - 1, "carrot")
+                set_block(x - 1, gy_l - 1, "carrot")
         else:
             if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:
                 set_block(x, ground_y - 1, "carrot")
 
-        # Chests never inside trees
+        # Clean chest placement (only on grass, no messy spawning)
         if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:
             set_block(x, ground_y - 1, "chest")
-            # Generate loot for naturally spawned chests
             chest_system.generate_natural_chest_loot((x, ground_y - 1))
     
-    # Find flat areas for village placement (only on flat ground)
+    # Find clean flat areas for village placement
     flat_areas = []
     for x in range(start_x - world_width//2, start_x + world_width//2):
-        if get_block(x, 10) == "grass":  # Check if it's flat ground (Y=10)
+        if get_block(x, 10) == "grass":  # Only on clean flat ground (Y=10)
             flat_areas.append(x)
     
-    # Place starter village only if we have flat areas
+    # Place starter village in clean flat area
     if flat_areas:
-        # Choose a random flat area for the village
         village_x = world_rng.choice(flat_areas)
-        village_chunk = (village_x // 50)  # Convert to chunk coordinates
+        village_chunk = (village_x // 50)
         maybe_generate_village_for_chunk(village_chunk, village_chunk * 50)
-        print(f"Placed village in flat area at X: {village_x}")
+        print(f"Placed village in clean flat area at X: {village_x}")
     else:
         # Fallback: place village near starting area
         village_chunk = world_rng.randint(-2, 2)
         maybe_generate_village_for_chunk(village_chunk, start_x + village_chunk * 50)
         print(f"Placed village in fallback location at chunk: {village_chunk}")
     
-    # Set player spawn position to the starting area
+    # Set player spawn position
     player["x"] = start_x
-    # Ensure player spawns on solid ground
+    # Ensure player spawns on clean ground
     for y in range(100):
         if get_block(int(player["x"]), y) == "grass":
             player["y"] = y - 1
             break
     
-    print(f"Generated new world with seed: {world_seed}, starting at X: {start_x}")
-    print(f"Surface height range: 8-12, Bedrock at Y: 22")
+    print(f"Generated clean world with seed: {world_seed}, starting at X: {start_x}")
+    print(f"Clean terrain: Grass → Dirt → Stone → Bedrock")
+    print(f"Mountains: {len(mountain_positions)} mountains at positions: {mountain_positions}")
+    print(f"Surface height range: 8-15 (mountains), Bedrock at Y: 22")
     return world_seed
 
 # --- Title Screen Drawing Function ---
