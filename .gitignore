@@ -5,6 +5,7 @@ __pycache__/
 
 # Save data files
 save.json
+world1.json
 
 # IDE files (optional but common)
 .vscode/
