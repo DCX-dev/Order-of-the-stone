@@ -1564,6 +1564,31 @@ def generate_initial_world(world_seed=None):
     
     return world_seed
 
+def cleanup_underground_grass():
+    """Remove ALL grass blocks that are underground (not on the surface)"""
+    global world_data
+    
+    # Find all grass blocks
+    grass_positions = [(x, y) for (x, y), block in world_data.items() if block == "grass"]
+    
+    # Remove grass that's not on the surface (has blocks above it)
+    removed_count = 0
+    for x, y in grass_positions:
+        # Check if there are any blocks above this grass
+        has_blocks_above = False
+        for check_y in range(y + 1, 100):
+            if get_block(x, check_y) is not None:
+                has_blocks_above = True
+                break
+        
+        # If grass has blocks above it, it's underground and should be removed
+        if has_blocks_above:
+            world_data.pop((x, y), None)
+            removed_count += 1
+    
+    if removed_count > 0:
+        print(f"Cleaned up {removed_count} underground grass blocks")
+
 # --- Title Screen Drawing Function ---
 def draw_title_screen():
     global play_btn, controls_btn, about_btn, options_btn, quit_btn
