@@ -1,10 +1,10 @@
 # Order of the Stone
 
-A 2D sandbox survival game built with Python and Pygame, featuring procedurally generated worlds, crafting, combat, and a modular architecture.
+A 2D sandbox survival game built with Python and Pygame, featuring procedurally generated worlds, crafting, combat, and an enhanced world management system.
 
 ## 🎮 Game Overview
 
-Order of the Stone is a 2D block-based sandbox game where players explore, mine resources, build structures, and survive in a procedurally generated world. The game features day/night cycles, hunger mechanics, village generation, and a comprehensive modding system.
+Order of the Stone is a 2D block-based sandbox game where players explore, mine resources, build structures, and survive in a procedurally generated world. The game features day/night cycles, hunger mechanics, village generation, and a comprehensive world management system with up to 12 worlds and automatic preview screenshots.
 
 ## ✨ Features
 
@@ -16,12 +16,18 @@ Order of the Stone is a 2D block-based sandbox game where players explore, mine 
 - **Building**: Place and destroy blocks, construct structures
 - **Village Generation**: Procedurally generated villages with villagers
 
+### World Management System
+- **Multiple Worlds**: Create and manage up to 12 different worlds
+- **World Selection**: Enhanced UI with world previews and selection
+- **Automatic Screenshots**: World previews taken every 5 minutes
+- **World Persistence**: Save and load multiple worlds independently
+- **Legacy Support**: Automatic detection and integration of old save files
+
 ### Technical Features
-- **Modular Architecture**: Plugin system for custom items, blocks, and entities
 - **Performance Optimized**: Chunk-based rendering and lazy world generation
 - **Cross-platform**: Windows, macOS, and Linux support
-- **Save System**: Persistent world and player progress
-- **Debug Mode**: Development tools and testing utilities
+- **Enhanced Save System**: Multiple world support with automatic saving
+- **Professional UI**: Modern world selection and management interface
 
 ## 🚀 Quick Start
 
@@ -59,7 +65,7 @@ Order of the Stone is a 2D block-based sandbox game where players explore, mine 
 | **Place/Remove Block** | Right Click |
 | **Open Menu** | ESC |
 | **Fullscreen Toggle** | F11 |
-| **Save & Quit** | ESC → Quit |
+| **Save & Return to Title** | ESC → Quit to Title |
 
 ## 🏗️ Architecture
 
@@ -74,24 +80,40 @@ The primary game file containing:
 - **UI System**: Menus, HUD, chest interface
 - **Physics**: Gravity, collision detection, block placement
 
-#### `loader.py` - Mod Loading System
-- **Dynamic Mod Loading**: Hot-loading of Python mods
-- **Event System**: Mod event emission and handling
-- **Error Handling**: Graceful mod failure recovery
+#### `world_manager_v2.py` - World Management System
+Advanced world management with:
+- **World Creation**: Automatic world generation and naming
+- **World Loading**: Efficient save/load system for multiple worlds
+- **World Limits**: Maximum 12 worlds with slot management
+- **Legacy Support**: Integration with old save.json files
 
-#### `api/mod_api.py` - Mod API
-Public interface for mods to:
-- Register custom items, blocks, and entities
-- Define item behavior and interactions
-- Add loot tables and chest contents
-- Access game systems safely
+#### `world_detector.py` - Automatic World Detection
+Intelligent world file detection:
+- **Real-time Scanning**: Automatic detection of world files
+- **File Management**: Handles World X.json and legacy save.json
+- **Metadata Extraction**: World creation dates and modification times
+- **Smart Sorting**: Worlds ordered by last played
 
-#### `registries.py` - Game Registry System
-Centralized storage for:
-- **Items**: Definitions, textures, properties
-- **Blocks**: Block types and behaviors
-- **Entities**: Entity factories and properties
-- **Loot Tables**: Weighted random item generation
+#### `world_ui_v2.py` - Enhanced User Interface
+Modern world selection interface:
+- **World Previews**: Thumbnail screenshots for each world
+- **Selection System**: Click to select, click again to unselect
+- **Button Management**: Play, Create, Delete, and Back buttons
+- **Responsive Design**: Adapts to different screen sizes
+
+#### `world_preview.py` - Screenshot System
+Automatic world preview management:
+- **Timed Screenshots**: Every 5 minutes while playing
+- **Thumbnail Generation**: 160x120 pixel preview images
+- **File Management**: Automatic cleanup and organization
+- **Error Handling**: Fallback previews for missing images
+
+#### `chest_system.py` - Enhanced Chest Management
+Minecraft-style chest system:
+- **Natural vs Player-placed**: Different behavior for different chest types
+- **Loot Generation**: Automatic loot for naturally spawned chests
+- **Inventory Management**: 27-slot chest interface with drag-and-drop
+- **Persistence**: Chest contents saved with world data
 
 ### Asset Management
 
@@ -111,46 +133,25 @@ assets/
 └── damage/         # Sound effects
 ```
 
-## 🔧 Modding System
+## 🌍 World Management
 
-### Creating a Mod
+### Creating Worlds
+1. **Click "Play"** → Opens world selection screen
+2. **Click "Create New World"** → Generates new world automatically
+3. **World Naming** → Automatic naming (World 1, World 2, etc.)
+4. **World Limits** → Maximum of 12 worlds supported
 
-1. **Create Mod Directory**
-   ```
-   mods/your_mod_name/
-   ├── main.py
-   └── assets/
-   ```
+### World Selection
+1. **Browse Worlds** → See all available worlds with previews
+2. **Click World** → Select it (highlighted)
+3. **Click Again** → Unselect the same world
+4. **Choose Action** → Play, Delete, or Create New World
 
-2. **Basic Mod Structure**
-   ```python
-   # mods/your_mod_name/main.py
-   MOD_INFO = {"id": "your_mod", "version": "1.0.0"}
-   
-   def register(api):
-       # Register custom items
-       api.register_item("custom_item", "assets/custom_item.png")
-       
-       # Define item behavior
-       def use_custom_item(ctx):
-           # Custom logic here
-           pass
-       
-       api.set_item_use("custom_item", use_custom_item)
-   ```
-
-3. **Mod API Methods**
-   - `register_item()`: Add new items to the game
-   - `set_item_use()`: Define custom item interactions
-   - `add_chest_loot()`: Add items to loot tables
-   - `register_block()`: Create new block types
-
-### Example Mod: Blaster
-The included `blaster` mod demonstrates:
-- Custom weapon registration
-- Projectile spawning
-- Loot table integration
-- Mouse-based targeting
+### World Features
+- **Automatic Screenshots**: Previews taken every 5 minutes
+- **World Information**: Creation date, last played, player status
+- **Smart Organization**: Worlds sorted by most recently played
+- **Legacy Integration**: Old save.json automatically detected
 
 ## 🌍 World Generation
 
@@ -169,22 +170,23 @@ The included `blaster` mod demonstrates:
 ## 💾 Save System
 
 ### Data Persistence
+- **Multiple Worlds**: Independent save files for each world
 - **Player State**: Position, health, hunger, inventory
 - **World Data**: Block positions and types
 - **Chest Contents**: Inventory of placed chests
 - **Auto-save**: Automatic saving on game exit
 
-### Save File Location
+### Save File Structure
 ```
-save_data/save.json
+save_data/
+├── World 1.json              # World 1 data
+├── World 2.json              # World 2 data
+├── save.json                 # Legacy save (if exists)
+└── previews/                 # World preview screenshots
+    ├── World 1_preview.png
+    ├── World 2_preview.png
+    └── Legacy Save_preview.png
 ```
-
-## 🐛 Debug Features
-
-Enable debug mode by setting `DEBUG_MODE = True` in `order_of_the_stone.py`:
-- **Debug HUD**: Visual indicator in-game
-- **Test Inventory**: Full item kit for development
-- **Enhanced Logging**: Detailed system information
 
 ## 🔧 Development
 
@@ -193,24 +195,25 @@ Enable debug mode by setting `DEBUG_MODE = True` in `order_of_the_stone.py`:
 Order-of-the-stone/
 ├── Order of the stone/          # Main game directory
 │   ├── order_of_the_stone.py   # Main game engine
-│   ├── loader.py               # Mod loading system
-│   ├── registries.py           # Game registries
-│   ├── api/                    # Mod API
-│   │   └── mod_api.py         # Public mod interface
-│   ├── mods/                   # Mod directory
-│   │   └── blaster/           # Example mod
+│   ├── world_manager_v2.py     # World management system
+│   ├── world_detector.py       # Automatic world detection
+│   ├── world_ui_v2.py         # Enhanced world selection UI
+│   ├── world_preview.py        # Screenshot and preview system
+│   ├── chest_system.py         # Enhanced chest management
+│   ├── world.py                # World class definition
 │   ├── assets/                 # Game assets
 │   ├── damage/                 # Sound effects
-│   └── save_data/              # Save files
+│   └── save_data/              # Save files and previews
 └── README.md                   # This file
 ```
 
 ### Key Functions
 
-#### World Generation
-- `generate_initial_world()`: Creates new game world
-- `maybe_generate_village_for_chunk()`: Village generation logic
-- `build_house()`: Procedural house construction
+#### World Management
+- `world_manager.create_world()`: Creates new world with auto-naming
+- `world_detector.scan_for_worlds()`: Detects all world files
+- `world_preview.take_world_screenshot()`: Captures world previews
+- `chest_system.generate_natural_chest_loot()`: Generates chest contents
 
 #### Game Systems
 - `update_player()`: Player physics and movement
@@ -219,6 +222,7 @@ Order-of-the-stone/
 - `draw_world()`: Rendering system
 
 #### UI Management
+- `draw_world_selection_screen()`: Enhanced world selection interface
 - `draw_inventory()`: Hotbar and inventory display
 - `draw_chest_ui()`: Chest interaction interface
 - `show_message()`: Temporary notification system
@@ -249,7 +253,7 @@ Order-of-the-stone/
 - Follow PEP 8 Python conventions
 - Add docstrings for public functions
 - Include type hints where appropriate
-- Test mods before submission
+- Test thoroughly before submission
 
 ## 📝 License
 
@@ -276,7 +280,12 @@ brew install pygame
 #### Performance Issues
 - Reduce world generation distance in the main loop
 - Lower tile size (affects all textures)
-- Disable debug mode in production
+- Ensure save_data directory has proper permissions
+
+#### World Loading Issues
+- Check console for debug messages about world loading
+- Verify world files exist in save_data directory
+- Ensure preview images are not corrupted
 
 ### Getting Help
 - Check the debug console for error messages
@@ -293,13 +302,13 @@ brew install pygame
 - **Enhanced AI**: Smarter monsters and villagers
 - **Sound System**: Background music and ambient sounds
 
-### Modding Enhancements
-- **Block Behaviors**: Custom block physics and interactions
-- **Entity AI**: Custom monster and NPC behaviors
-- **World Generation**: Custom terrain and structure generation
-- **UI Extensions**: Custom menus and HUD elements
+### World System Enhancements
+- **World Templates**: Pre-built world types and themes
+- **World Sharing**: Export/import world files
+- **Backup System**: Automatic world backups
+- **World Statistics**: Detailed analytics and progress tracking
 
 ---
 
-**Order of the Stone** - Where creativity meets survival in a blocky 2D world.
+**Order of the Stone** - Where creativity meets survival in a blocky 2D world with professional world management.
 
