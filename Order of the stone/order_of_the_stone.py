@@ -815,7 +815,13 @@ def break_block(mx, my):
 def place_block(mx, my):
     px, py = int(player["x"]), int(player["y"])
     bx, by = (mx + camera_x) // TILE_SIZE, (my + 100) // TILE_SIZE
+    
+    print(f"🔍 DEBUG: Trying to place block at mouse ({mx}, {my}) -> world ({bx}, {by})")
+    print(f"🔍 DEBUG: Player at ({px}, {py})")
+    print(f"🔍 DEBUG: Distance check: |{bx}-{px}|={abs(bx-px)}, |{by}-{py}|={abs(by-py)}")
+    
     if abs(bx - px) <= 2 and abs(by - py) <= 2:
+        print(f"✅ DEBUG: Within range, checking inventory...")
         if player["selected"] < len(player["inventory"]):
             item = player["inventory"][player["selected"]]
             item_type = item["type"]
@@ -837,6 +843,8 @@ def place_block(mx, my):
 
             # Check if we can place the block at this location
             current_block = get_block(bx, by)
+            print(f"🔍 DEBUG: Current block at ({bx}, {by}): {current_block}")
+            print(f"🔍 DEBUG: Trying to place: {item_type}")
             
             # Handle chest placement separately (special logic)
             if item_type == "chest":
@@ -1467,6 +1475,8 @@ def generate_initial_world(world_seed=None):
     
     # Generate COMPLETELY FLAT terrain (no mountains, no variation)
     print("🌍 Generating completely flat world...")
+    print(f"🌍 World width: {world_width}, Start X: {start_x}")
+    print(f"🌍 Generating from X={start_x - world_width//2} to X={start_x + world_width//2}")
     
     # Generate terrain with clean layering - ALL FLAT
     for x in range(start_x - world_width//2, start_x + world_width//2):
