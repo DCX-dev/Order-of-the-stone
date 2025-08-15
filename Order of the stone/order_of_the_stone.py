@@ -27,8 +27,8 @@ def center_x(w):
 
 def update_chest_ui_geometry():
     global CHEST_UI_W, CHEST_UI_H, CHEST_UI_X, CHEST_UI_Y, SLOT_SIZE, SLOT_MARGIN
-    CHEST_UI_W = 360
-    CHEST_UI_H = 220
+    CHEST_UI_W = 480
+    CHEST_UI_H = 210
     CHEST_UI_X = center_x(CHEST_UI_W)
     CHEST_UI_Y = (SCREEN_HEIGHT - CHEST_UI_H) // 2
     SLOT_SIZE = 40
@@ -694,13 +694,15 @@ def break_block(mx, my):
             return
         # Chest: pick up contents and the chest itself
         if block == "chest":
-            inv = chest_inventories.get((bx, by), [])
+            inv = chest_system.get_chest_inventory((bx, by))
             # Move all items (with counts) into the player's inventory
             for it in inv:
                 if it and isinstance(it, dict) and "type" in it:
                     add_to_inventory(it["type"], it.get("count", 1))
-            # Remove the chest inventory entry
-            chest_inventories.pop((bx, by), None)
+            # Remove the chest from the chest system
+            chest_system.chest_inventories.pop((bx, by), None)
+            # Also remove player-placed marker if it exists
+            chest_system.player_placed_chests.discard((bx, by))
             # Give the empty chest item back to player
             add_to_inventory("chest", 1)
             # Remove the chest block from the world
