@@ -1359,7 +1359,7 @@ def draw_game_menu():
     global resume_btn, quit_btn
     screen.fill((50, 50, 50))
     resume_btn = draw_button("Resume", 320, 260, 160, 50)
-    quit_btn = draw_button("Quit", 320, 320, 160, 50)
+    quit_btn = draw_button("Quit to Title", 320, 320, 160, 50)
 
 # --- Main Game Loop ---
 # Add game menu toggle state
@@ -1534,7 +1534,7 @@ while running:
                     game_state = STATE_GAME
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
-                    running = False
+                    game_state = STATE_TITLE
             elif game_state == STATE_OPTIONS:
                 if fullscreen_btn.collidepoint(event.pos):
                     FULLSCREEN = not FULLSCREEN
