@@ -1,5 +1,6 @@
 import pygame
 from world_manager_v2 import WorldManager
+from world_detector import WorldDetector
 from typing import Optional, Tuple
 
 class WorldUI:
@@ -32,6 +33,9 @@ class WorldUI:
         # Scroll position for world list
         self.scroll_y = 0
         self.max_scroll = 0
+        
+        # Initialize world detector
+        self.world_detector = WorldDetector()
     
     def center_x(self, width: int) -> int:
         """Center an element horizontally"""
@@ -110,9 +114,12 @@ class WorldUI:
         title_rect = title.get_rect(center=(self.screen_width // 2, 50))
         screen.blit(title, title_rect)
         
+        # Refresh world detection
+        self.world_detector.refresh_worlds()
+        
         # World count and slot info
-        world_count = world_manager.get_world_count()
-        available_slots = world_manager.get_available_slots()
+        world_count = self.world_detector.get_world_count()
+        available_slots = self.world_detector.get_available_slots()
         
         count_text = self.subtitle_font.render(f"Worlds: {world_count}/12", True, self.TEXT_COLOR)
         count_rect = count_text.get_rect(center=(self.screen_width // 2, 100))
@@ -133,9 +140,9 @@ class WorldUI:
         action = None
         world_name = None
         
-        if world_manager.has_worlds():
+        if self.world_detector.get_world_count() > 0:
             # Draw existing worlds
-            worlds = world_manager.get_worlds_info()
+            worlds = self.world_detector.get_world_info_for_display()
             
             # Calculate scroll area
             list_height = min(len(worlds) * self.WORLD_ITEM_HEIGHT, 400)
@@ -168,7 +175,7 @@ class WorldUI:
             self.max_scroll = max(0, len(worlds) * self.WORLD_ITEM_HEIGHT - list_height)
             
             # Create new world button (only if slots available)
-            if world_manager.can_create_world():
+            if self.world_detector.can_create_world():
                 create_btn = self.draw_button("Create New World", 
                                             self.center_x(self.BUTTON_WIDTH), 580)
                 
