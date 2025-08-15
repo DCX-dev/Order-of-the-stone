@@ -141,12 +141,17 @@ class WorldUI:
         world_name = None
         
         if self.world_detector.get_world_count() > 0:
-            # Draw existing worlds
+            # Worlds exist - show world selection with create option
             worlds = self.world_detector.get_world_info_for_display()
             
+            # Subtitle for existing worlds
+            subtitle = self.subtitle_font.render("Select a World or Create New", True, self.TEXT_COLOR)
+            subtitle_rect = subtitle.get_rect(center=(self.screen_width // 2, 200))
+            screen.blit(subtitle, subtitle_rect)
+            
             # Calculate scroll area
-            list_height = min(len(worlds) * self.WORLD_ITEM_HEIGHT, 400)
-            list_y = 160
+            list_height = min(len(worlds) * self.WORLD_ITEM_HEIGHT, 300)
+            list_y = 240
             list_width = self.screen_width - 100
             
             # Draw world list
