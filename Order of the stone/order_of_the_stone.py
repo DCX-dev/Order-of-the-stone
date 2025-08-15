@@ -146,6 +146,53 @@ def make_bed_texture(size):
 
     return surf
 
+# --- Door Texture Generator ---
+def make_door_texture(size):
+    """Procedurally draw a simple wooden door with handle."""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+
+    # Colors
+    wood = (140, 90, 40)
+    wood_dark = (110, 70, 30)
+    wood_light = (160, 100, 50)
+    handle = (200, 150, 50)
+    outline = (20, 20, 20, 180)
+
+    # Main door panel (full size)
+    pygame.draw.rect(surf, wood, (0, 0, size, size))
+    
+    # Door frame/trim (darker wood around edges)
+    trim_width = max(2, size // 16)
+    pygame.draw.rect(surf, wood_dark, (0, 0, size, trim_width))  # Top
+    pygame.draw.rect(surf, wood_dark, (0, size - trim_width, size, trim_width))  # Bottom
+    pygame.draw.rect(surf, wood_dark, (0, 0, trim_width, size))  # Left
+    pygame.draw.rect(surf, wood_dark, (size - trim_width, 0, trim_width, size))  # Right
+
+    # Door panels (lighter wood sections)
+    panel_width = (size - 2 * trim_width) // 2
+    panel_height = (size - 2 * trim_width) // 2
+    
+    # Top left panel
+    pygame.draw.rect(surf, wood_light, (trim_width, trim_width, panel_width, panel_height))
+    # Top right panel
+    pygame.draw.rect(surf, wood_light, (size - trim_width - panel_width, trim_width, panel_width, panel_height))
+    # Bottom left panel
+    pygame.draw.rect(surf, wood_light, (trim_width, size - trim_width - panel_height, panel_width, panel_height))
+    # Bottom right panel
+    pygame.draw.rect(surf, wood_light, (size - trim_width - panel_width, size - trim_width - panel_height, panel_width, panel_height))
+
+    # Door handle (right side, middle height)
+    handle_size = max(3, size // 10)
+    handle_x = size - trim_width - handle_size - 2
+    handle_y = size // 2 - handle_size // 2
+    pygame.draw.circle(surf, handle, (handle_x, handle_y), handle_size)
+    pygame.draw.circle(surf, wood_dark, (handle_x, handle_y), handle_size, 1)
+
+    # Simple outline
+    pygame.draw.rect(surf, outline, (0, 0, size, size), 1)
+
+    return surf
+
 # --- Villager Texture Generator ---
 def make_villager_texture(size):
     """Procedural placeholder villager texture (used if mobs/villager.png is missing)."""
@@ -183,6 +230,7 @@ textures = {
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
     "ladder": make_ladder_texture(TILE_SIZE),
+    "door": make_door_texture(TILE_SIZE),
 }
 
 # --- Villager texture (tries file, falls back to procedural) ---
@@ -242,6 +290,8 @@ clock = pygame.time.Clock()
 day_start_time = time.time()
 is_day = True
 hunger_timer = time.time()
+paused_time = 0  # Track how long the game has been paused
+last_pause_time = None  # Track when we last paused
 
 # Player Data
 player = {
@@ -305,7 +355,7 @@ def bedrock_level_at(x):
 # Helper for non-solid blocks
 def is_non_solid_block(block):
     # Non-colliding blocks the player can pass through horizontally
-    return block in (None, "air", "water", "lava", "carrot", "chest", "ladder")
+    return block in (None, "air", "water", "lava", "carrot", "chest", "ladder", "door")
 
 # Terrain helper: which blocks count as real ground for column generation
 TERRAIN_BLOCKS = {"grass","dirt","stone","bedrock","coal","iron","gold","diamond"}
@@ -331,7 +381,7 @@ def ground_y_of_column(x: int):
 
 # --- Village and House helpers ---
 def build_house(origin_x, ground_y, width=7, height=5):
-    """Build an improved log house with stone floor, open doorway, and interior chest."""
+    """Build an improved log house with stone floor, wooden door, and interior chest."""
     # Floor
     for dx in range(width):
         set_block(origin_x + dx, ground_y, "stone")
@@ -346,7 +396,7 @@ def build_house(origin_x, ground_y, width=7, height=5):
             # doorway in the middle (2 blocks tall)
             door_x = origin_x + width // 2
             if (x == door_x and (y == ground_y - 1 or y == ground_y - 2)):
-                # leave doorway empty
+                # leave doorway empty for now, we'll add doors after
                 continue
             if edge or top:
                 set_block(x, y, "log")
@@ -355,6 +405,13 @@ def build_house(origin_x, ground_y, width=7, height=5):
                 if get_block(x, y) not in (None, "air"):
                     # clear any leaves/logs, etc.
                     world_data.pop((x, y), None)
+    
+    # Add doors in the doorway (2 blocks tall)
+    door_x = origin_x + width // 2
+    # Bottom door (ground level)
+    set_block(door_x, ground_y - 1, "door")
+    # Top door (above ground level)
+    set_block(door_x, ground_y - 2, "door")
     
     # Add a chest inside the house (left side, away from door)
     chest_x = origin_x + 1
@@ -557,6 +614,7 @@ def show_death_screen():
                     player["vel_y"] = 0
                     player["on_ground"] = False
                     game_state = STATE_GAME
+                    update_pause_state()  # Resume time when respawning
                     return  # Exit the death screen function completely
 
 
@@ -950,10 +1008,13 @@ def consume_carrot_from_inventory():
 
 # --- Missing Update Functions ---
 def update_daylight():
-    global is_day, day_start_time
-    if time.time() - day_start_time >= 120:
-        is_day = not is_day
-        day_start_time = time.time()
+    global is_day, day_start_time, paused_time
+    # Only update time when in the game state
+    if game_state == STATE_GAME:
+        if time.time() - day_start_time - paused_time >= 120:
+            is_day = not is_day
+            day_start_time = time.time()
+            paused_time = 0  # Reset paused time after day/night change
 
 # --- Bed sleep: fade to black -> set day -> fade in ---
 def sleep_in_bed():
@@ -1217,12 +1278,36 @@ def update_monsters():
 # --- Villager update logic ---
 def update_hunger():
     """Update hunger system - decrease hunger every 200 seconds"""
-    global hunger_timer
-    current_time = time.time()
-    if current_time - hunger_timer >= 200:  # 200 seconds = ~3.33 minutes
-        if player["hunger"] > 0:
-            player["hunger"] -= 1
-        hunger_timer = current_time
+    global hunger_timer, paused_time
+    # Only update hunger when in the game state
+    if game_state == STATE_GAME:
+        current_time = time.time()
+        if current_time - hunger_timer - paused_time >= 200:  # 200 seconds = ~3.33 minutes
+            if player["health"] > 0:
+                player["hunger"] -= 1
+            hunger_timer = current_time
+            paused_time = 0  # Reset paused time after hunger update
+
+# --- Pause Management Functions ---
+def pause_game_time():
+    """Pause the game time when leaving the game state"""
+    global last_pause_time
+    if game_state != STATE_GAME and last_pause_time is None:
+        last_pause_time = time.time()
+
+def resume_game_time():
+    """Resume the game time when returning to the game state"""
+    global last_pause_time, paused_time
+    if game_state == STATE_GAME and last_pause_time is not None:
+        paused_time += time.time() - last_pause_time
+        last_pause_time = None
+
+def update_pause_state():
+    """Update pause state based on current game state"""
+    if game_state == STATE_GAME:
+        resume_game_time()
+    else:
+        pause_game_time()
 
 def update_villagers():
     """Simple wander AI for villagers. They avoid walking off cliffs and bump into walls."""
@@ -1367,6 +1452,9 @@ STATE_MENU = "menu"
 
 running = True
 load_game()
+# Initialize pause state - start paused since we begin at title screen
+update_pause_state()
+
 while running:
     screen.fill((0, 191, 255) if is_day else (0, 0, 0))
 
@@ -1384,10 +1472,13 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 if game_state == STATE_GAME:
                     game_state = STATE_MENU
+                    update_pause_state()  # Pause time when leaving game
                 elif game_state == STATE_MENU:
                     game_state = STATE_GAME
+                    update_pause_state()  # Resume time when returning to game
                 elif game_state == STATE_WORLD_SELECT:
                     game_state = STATE_TITLE
+                    update_pause_state()  # Pause time when leaving world select
             # Toggle fullscreen on F11
             if event.key == pygame.K_F11:
                 FULLSCREEN = not FULLSCREEN
@@ -1519,22 +1610,28 @@ while running:
             elif game_state == STATE_TITLE:
                 if play_btn.collidepoint(event.pos):
                     game_state = STATE_WORLD_SELECT
+                    update_pause_state()  # Pause time when leaving title
                     world_manager.load_worlds()  # Refresh world list
                 elif controls_btn.collidepoint(event.pos):
                     game_state = STATE_CONTROLS
+                    update_pause_state()  # Pause time when leaving title
                 elif about_btn.collidepoint(event.pos):
                     game_state = STATE_ABOUT
+                    update_pause_state()  # Pause time when leaving title
                 elif options_btn.collidepoint(event.pos):
                     game_state = STATE_OPTIONS
+                    update_pause_state()  # Pause time when leaving title
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
                     running = False
             elif game_state == STATE_MENU:
                 if resume_btn.collidepoint(event.pos):
                     game_state = STATE_GAME
+                    update_pause_state()  # Resume time when returning to game
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
                     game_state = STATE_TITLE
+                    update_pause_state()  # Pause time when returning to title
             elif game_state == STATE_OPTIONS:
                 if fullscreen_btn.collidepoint(event.pos):
                     FULLSCREEN = not FULLSCREEN
@@ -1542,9 +1639,11 @@ while running:
                     update_chest_ui_geometry()
                 elif back_btn.collidepoint(event.pos):
                     game_state = STATE_TITLE
+                    update_pause_state()  # Pause time when returning to title
             elif game_state in [STATE_CONTROLS, STATE_ABOUT]:
                 if back_btn.collidepoint(event.pos):
                     game_state = STATE_TITLE
+                    update_pause_state()  # Pause time when returning to title
         elif event.type == pygame.MOUSEMOTION:
             mouse_pos = event.pos
         
@@ -1671,6 +1770,7 @@ while running:
             if world_data:
                 load_game_data(world_data)
                 game_state = STATE_GAME
+                update_pause_state()  # Resume time when entering game
                 print(f"Successfully loaded world: {world_name}")
             else:
                 show_message(f"Failed to load world: {world_name}")
@@ -1686,6 +1786,9 @@ while running:
                     show_message(f"Created world: {world_name}")
                     # Generate initial world data
                     generate_initial_world()
+                    # Ensure new worlds start in daytime
+                    is_day = True
+                    day_start_time = time.time()
                     # Save the generated world data immediately
                     save_game()
                     # Load the newly created world
@@ -1693,6 +1796,7 @@ while running:
                     if world_data:
                         load_game_data(world_data)
                         game_state = STATE_GAME
+                        update_pause_state()  # Resume time when entering new game
                 else:
                     show_message("Failed to create world!")
             else:
@@ -1709,6 +1813,7 @@ while running:
                 
         elif action == 'back':
             game_state = STATE_TITLE
+            update_pause_state()  # Pause time when returning to title
             
 
         
