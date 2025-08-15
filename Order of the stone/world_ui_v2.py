@@ -40,6 +40,16 @@ class WorldUI:
         # Instance variables for world selection
         self.selected_world = None
         self.world_rects = {}
+        
+        # Button references for click detection
+        self.create_btn = None
+        self.play_btn = None
+        self.delete_btn = None
+        self.back_btn = None
+        
+        # Pending actions for button clicks
+        self.pending_action = None
+        self.pending_world_name = None
     
     def center_x(self, width: int) -> int:
         """Center an element horizontally"""
@@ -194,34 +204,30 @@ class WorldUI:
             if self.world_detector.can_create_world():
                 create_btn = self.draw_button("Create New World", 
                                             self.center_x(self.BUTTON_WIDTH), 580)
-                
-                if pygame.mouse.get_pressed()[0] and create_btn.collidepoint(pygame.mouse.get_pos()):
-                    action = 'create'
+                # Store button for click detection
+                self.create_btn = create_btn
             else:
                 # Show "no slots available" message
                 no_slots_text = self.subtitle_font.render("Maximum worlds reached (12/12)", True, self.SLOT_COUNT_FULL_COLOR)
                 no_slots_rect = no_slots_text.get_rect(center=(self.screen_width // 2, 580))
                 screen.blit(no_slots_text, no_slots_rect)
+                self.create_btn = None
             
             # Play World button (only enabled if a world is selected)
             play_enabled = self.selected_world is not None
             play_btn = self.draw_button("Play World", 
                                         self.center_x(self.BUTTON_WIDTH) - 220, 580,
                                         enabled=play_enabled)
-            
-            if pygame.mouse.get_pressed()[0] and play_btn.collidepoint(pygame.mouse.get_pos()) and play_enabled:
-                action = 'play'
-                world_name = self.selected_world
+            # Store button for click detection
+            self.play_btn = play_btn
             
             # Delete button (only enabled if a world is selected)
             delete_enabled = self.selected_world is not None
             delete_btn = self.draw_button("Delete World", 
                                         self.center_x(self.BUTTON_WIDTH) + 220, 580,
                                         enabled=delete_enabled)
-            
-            if pygame.mouse.get_pressed()[0] and delete_btn.collidepoint(pygame.mouse.get_pos()) and delete_enabled:
-                action = 'delete'
-                world_name = self.selected_world
+            # Store button for click detection
+            self.delete_btn = delete_btn
         else:
             # No worlds exist - show create world interface
             subtitle = self.subtitle_font.render("Create Your First World", True, self.TEXT_COLOR)
@@ -236,6 +242,8 @@ class WorldUI:
             # Create button
             create_btn = self.draw_button("Create World", 
                                         self.center_x(self.BUTTON_WIDTH), 300)
+            # Store button for click detection
+            self.create_btn = create_btn
             
             # Check for create button click
             if pygame.mouse.get_pressed()[0] and create_btn.collidepoint(pygame.mouse.get_pos()):
@@ -243,8 +251,7 @@ class WorldUI:
         
         # Back button
         back_btn = self.draw_button("Back to Title", self.center_x(self.BUTTON_WIDTH), 650)
-        if pygame.mouse.get_pressed()[0] and back_btn.collidepoint(pygame.mouse.get_pos()):
-            action = 'back'
+        self.back_btn = back_btn
         
         return action, world_name
     
@@ -266,3 +273,23 @@ class WorldUI:
                     else:
                         return 'select', world_name, world_name  # Select
         return 'none', None, None
+    
+    def handle_button_click(self, pos: tuple) -> tuple:
+        """Handle button clicks and return (action, world_name)"""
+        # Check create button
+        if self.create_btn and self.create_btn.collidepoint(pos):
+            return 'create', None
+        
+        # Check play button (only if world is selected)
+        if self.play_btn and self.play_btn.collidepoint(pos) and self.selected_world:
+            return 'play', self.selected_world
+        
+        # Check delete button (only if world is selected)
+        if self.delete_btn and self.delete_btn.collidepoint(pos) and self.selected_world:
+            return 'delete', self.selected_world
+        
+        # Check back button
+        if self.back_btn and self.back_btn.collidepoint(pos):
+            return 'back', None
+        
+        return 'none', None

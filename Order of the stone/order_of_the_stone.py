@@ -1410,6 +1410,13 @@ while running:
                 action, world_name, new_selection = world_ui.handle_mouse_click(event.pos, world_ui.world_rects)
                 if action == 'select':
                     world_ui.selected_world = new_selection
+                
+                # Handle button clicks
+                button_action, button_world_name = world_ui.handle_button_click(event.pos)
+                if button_action != 'none':
+                    # Store the action to be processed in the main loop
+                    world_ui.pending_action = button_action
+                    world_ui.pending_world_name = button_world_name
             elif game_state == STATE_GAME:
                 if chest_open:
                     mx, my = event.pos
@@ -1648,6 +1655,14 @@ while running:
     elif game_state == STATE_WORLD_SELECT:
         # Handle world selection screen
         action, world_name = world_ui.draw_world_selection_screen(world_manager)
+        
+        # Check for pending button actions
+        if world_ui.pending_action:
+            action = world_ui.pending_action
+            world_name = world_ui.pending_world_name
+            # Clear pending actions
+            world_ui.pending_action = None
+            world_ui.pending_world_name = None
         
         if action == 'play' and world_name:
             # Load existing world
