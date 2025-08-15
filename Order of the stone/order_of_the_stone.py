@@ -1448,18 +1448,22 @@ def generate_initial_world(world_seed=None):
         # EVERYTHING is completely flat at Y=10
         ground_y = 10  # Fixed height for entire world
         
-        # CLEAN LAYER GENERATION - Always follow proper hierarchy
+        # CLEAN LAYER GENERATION - Stone closer to surface for building
+        # Surface: Y=10 (grass)
+        # Dirt: Y=11-12 (2 blocks deep)
+        # Stone: Y=13-21 (9 blocks deep, starts at Y=13)
+        # Bedrock: Y=22
         
         # 1. GRASS LAYER (Surface) - CRITICAL: This MUST work!
         set_block(x, ground_y, "grass")
         print(f"🌱 Placed grass at ({x}, {ground_y})")
         
-        # 2. DIRT LAYER (Below grass, always 3 blocks deep)
-        for y in range(ground_y + 1, ground_y + 4):
+        # 2. DIRT LAYER (Below grass, always 2 blocks deep)
+        for y in range(ground_y + 1, ground_y + 3):
             set_block(x, y, "dirt")
         
-        # 3. STONE LAYER (Below dirt, always 8 blocks deep)
-        for y in range(ground_y + 4, ground_y + 12):
+        # 3. STONE LAYER (Below dirt, starts closer to surface)
+        for y in range(ground_y + 3, ground_y + 12):
             # Clean ore generation within stone layer (REDUCED spawn rates)
             ore_chance = world_rng.random()
             if ore_chance < 0.02:  # Reduced from 0.05 to 0.02
@@ -1548,8 +1552,9 @@ def generate_initial_world(world_seed=None):
             break
     
     print(f"Generated COMPLETELY FLAT world with seed: {world_seed}, starting at X: {start_x}")
-    print(f"Clean terrain: Grass → Dirt → Stone → Bedrock")
+    print(f"Clean terrain: Grass (Y=10) → Dirt (Y=11-12) → Stone (Y=13-21) → Bedrock (Y=22)")
     print(f"Surface height: Y=10 (completely flat)")
+    print(f"Stone starts at Y=13 (3 blocks below surface)")
     print(f"Bedrock at Y: 22")
     
     # TEMPORARILY DISABLE VALIDATION TO SEE IF GRASS GENERATES
