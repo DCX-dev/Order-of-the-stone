@@ -1090,6 +1090,8 @@ def update_player():
 # --- Title Screen Drawing Function ---
 def save_game():
     """Save the current game state"""
+    global world_data
+    
     # Ensure world_data exists and is not None
     if world_data is None:
         world_data = {}
