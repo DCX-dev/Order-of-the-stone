@@ -36,6 +36,10 @@ class WorldUI:
         
         # Initialize world detector
         self.world_detector = WorldDetector()
+        
+        # Instance variables for world selection
+        self.selected_world = None
+        self.world_rects = {}
     
     def center_x(self, width: int) -> int:
         """Center an element horizontally"""
@@ -139,7 +143,7 @@ class WorldUI:
         
         action = None
         world_name = None
-        selected_world = None  # Track which world is selected
+        # Use instance variables for selection state
         
         if self.world_detector.get_world_count() > 0:
             # Worlds exist - show world selection with create option
@@ -170,25 +174,19 @@ class WorldUI:
                     except:
                         pass  # Fallback if preview system fails
                     
-                    # Check if this world is selected
-                    is_selected = selected_world == world_info['name']
-                    world_rect = self.draw_world_item(world_info, 50, world_y, list_width, is_selected, preview_surface)
-                    
-                    # Check for click
-                    if pygame.mouse.get_pressed()[0] and world_rect.collidepoint(pygame.mouse.get_pos()):
-                        # Toggle selection: if already selected, unselect; otherwise select
-                        if selected_world == world_info['name']:
-                            selected_world = None  # Unselect if already selected
-                        else:
-                            selected_world = world_info['name']  # Select if not already selected
-                        action = None  # Don't immediately play, just toggle selection
+                                    # Check if this world is selected
+                is_selected = self.selected_world == world_info['name']
+                world_rect = self.draw_world_item(world_info, 50, world_y, list_width, is_selected, preview_surface)
+                
+                # Store world info for click detection (we'll handle clicks in the main event loop)
+                self.world_rects[i] = world_rect
             
             # Update max scroll
             self.max_scroll = max(0, len(worlds) * self.WORLD_ITEM_HEIGHT - list_height)
             
             # Show selected world info
-            if selected_world:
-                selected_text = self.subtitle_font.render(f"Selected: {selected_world}", True, (100, 255, 100))
+            if self.selected_world:
+                selected_text = self.subtitle_font.render(f"Selected: {self.selected_world}", True, (100, 255, 100))
                 selected_rect = selected_text.get_rect(center=(self.screen_width // 2, 520))
                 screen.blit(selected_text, selected_rect)
             
@@ -206,24 +204,24 @@ class WorldUI:
                 screen.blit(no_slots_text, no_slots_rect)
             
             # Play World button (only enabled if a world is selected)
-            play_enabled = selected_world is not None
+            play_enabled = self.selected_world is not None
             play_btn = self.draw_button("Play World", 
                                         self.center_x(self.BUTTON_WIDTH) - 220, 580,
                                         enabled=play_enabled)
             
             if pygame.mouse.get_pressed()[0] and play_btn.collidepoint(pygame.mouse.get_pos()) and play_enabled:
                 action = 'play'
-                world_name = selected_world
+                world_name = self.selected_world
             
             # Delete button (only enabled if a world is selected)
-            delete_enabled = selected_world is not None
+            delete_enabled = self.selected_world is not None
             delete_btn = self.draw_button("Delete World", 
                                         self.center_x(self.BUTTON_WIDTH) + 220, 580,
                                         enabled=delete_enabled)
             
             if pygame.mouse.get_pressed()[0] and delete_btn.collidepoint(pygame.mouse.get_pos()) and delete_enabled:
                 action = 'delete'
-                world_name = selected_world
+                world_name = self.selected_world
         else:
             # No worlds exist - show create world interface
             subtitle = self.subtitle_font.render("Create Your First World", True, self.TEXT_COLOR)
@@ -253,3 +251,18 @@ class WorldUI:
     def handle_scroll(self, scroll_amount: int):
         """Handle mouse wheel scrolling"""
         self.scroll_y = max(0, min(self.scroll_y - scroll_amount, self.max_scroll))
+    
+    def handle_mouse_click(self, pos: tuple, world_rects: dict) -> tuple:
+        """Handle mouse click and return (action, world_name, new_selection)"""
+        for i, world_rect in world_rects.items():
+            if world_rect.collidepoint(pos):
+                # Get world info from the world detector
+                worlds = self.world_detector.get_world_info_for_display()
+                if i < len(worlds):
+                    world_name = worlds[i]['name']
+                    # Toggle selection: if already selected, unselect; otherwise select
+                    if self.selected_world == world_name:
+                        return 'select', None, None  # Unselect
+                    else:
+                        return 'select', world_name, world_name  # Select
+        return 'none', None, None

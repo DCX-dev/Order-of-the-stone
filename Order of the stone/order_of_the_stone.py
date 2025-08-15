@@ -1405,7 +1405,12 @@ while running:
 
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if game_state == STATE_GAME:
+            if game_state == STATE_WORLD_SELECT:
+                # Handle world selection clicks
+                action, world_name, new_selection = world_ui.handle_mouse_click(event.pos, world_ui.world_rects)
+                if action == 'select':
+                    world_ui.selected_world = new_selection
+            elif game_state == STATE_GAME:
                 if chest_open:
                     mx, my = event.pos
                     # Left click: pick up or place item
