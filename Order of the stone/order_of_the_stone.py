@@ -38,6 +38,7 @@ def update_chest_ui_geometry():
 import pygame
 from world_manager import WorldManager
 from world_ui import WorldUI
+from chest_system import ChestSystem
 
 pygame.init()
 
@@ -219,6 +220,9 @@ BIG_FONT = pygame.font.SysFont("Arial", 48)
 world_manager = WorldManager("save_data")
 world_ui = WorldUI(SCREEN_WIDTH, SCREEN_HEIGHT, font)
 
+# Initialize chest system
+chest_system = ChestSystem()
+
 # Game states
 STATE_TITLE = "title"
 STATE_WORLD_SELECT = "world_select"
@@ -271,10 +275,6 @@ def show_message(text, ms=1500):
     message_until = pygame.time.get_ticks() + ms
 
 # --- Chest & Drag-and-Drop UI state ---
-CHEST_COLS = 6
-CHEST_ROWS = 2
-CHEST_SLOTS = CHEST_COLS * CHEST_ROWS
-chest_inventories = {}  # {(x,y): [ {type, count} | None, ... ]}
 chest_open = False
 open_chest_pos = None
 drag_item = None           # {'type': str, 'count': int} currently held by mouse
@@ -287,9 +287,7 @@ def get_block(x, y):
 def set_block(x, y, block_type):
     world_data[(x, y)] = block_type
 
-# Helper to create empty slot lists for chests
-def make_empty_slots(n):
-    return [None for _ in range(n)]
+
 
 # --- Bedrock helper ---
 def bedrock_level_at(x):
@@ -359,21 +357,8 @@ def build_house(origin_x, ground_y, width=7, height=5):
     chest_y = ground_y - 1
     if get_block(chest_x, chest_y) is None:
         set_block(chest_x, chest_y, "chest")
-        # Initialize chest inventory with good loot
-        chest_inventories[(chest_x, chest_y)] = []
-        # Add various items to the chest
-        loot_items = [
-            {"type": "carrot", "count": random.randint(3, 8)},
-            {"type": "sword", "count": 1},
-            {"type": "pickaxe", "count": 1},
-            {"type": "dirt", "count": random.randint(5, 15)},
-            {"type": "stone", "count": random.randint(3, 10)},
-            {"type": "coal", "count": random.randint(2, 6)},
-            {"type": "iron", "count": random.randint(1, 3)},
-        ]
-        # Randomly select 3-5 items from the loot pool
-        selected_loot = random.sample(loot_items, random.randint(3, 5))
-        chest_inventories[(chest_x, chest_y)] = selected_loot
+        # Generate natural chest loot for village houses
+        chest_system.generate_natural_chest_loot((chest_x, chest_y))
 
 def spawn_villager(x, y):
     """Create a villager entity at tile x,y."""
@@ -754,8 +739,8 @@ def place_block(mx, my):
             # If placing a chest, make it EMPTY (no auto-generated loot)
             if item_type == "chest":
                 set_block(bx, by, "chest")
-                # Always create an empty inventory for player-placed chests
-                chest_inventories[(bx, by)] = make_empty_slots(CHEST_SLOTS)
+                # Create empty player-placed chest
+                chest_system.create_player_placed_chest((bx, by))
             else:
                 set_block(bx, by, item_type)
 
@@ -819,37 +804,7 @@ def update_world_interactions():
         fall_start_y = None
 
 # --- Chest UI & logic ---
-def ensure_chest_slots(pos):
-    if pos not in chest_inventories:
-        chest_inventories[pos] = make_empty_slots(CHEST_SLOTS)
 
-def generate_chest_loot(pos):
-    ensure_chest_slots(pos)
-    slots = chest_inventories[pos]
-    # Always include sword and pickaxe in first two slots
-    slots[0] = {"type": "sword", "count": 1}
-    slots[1] = {"type": "pickaxe", "count": 1}
-    # 99% chance to include ladders in a random empty slot
-    if random.random() < 0.99:
-        empty_idxs = [i for i, it in enumerate(slots) if it is None]
-        if empty_idxs:
-            slots[random.choice(empty_idxs)] = {"type": "ladder", "count": random.randint(3, 8)}
-    # Fill a few random slots with blocks
-    choices = ["dirt", "stone", "coal", "iron", "gold"]
-    for i in range(2, CHEST_SLOTS):
-        if random.random() < 0.5:
-            slots[i] = {"type": random.choice(choices), "count": random.randint(1, 5)}
-    # ~40% chance to include a bed in a random empty slot
-    if random.random() < 0.40:
-        empty_idxs = [i for i, it in enumerate(slots) if it is None]
-        if empty_idxs:
-            slots[random.choice(empty_idxs)] = {"type": "bed", "count": 1}
-    # 1% chance diamond appears in a random empty slot
-    if random.randint(1, 100) == 1:
-        empty_idxs = [i for i, it in enumerate(slots) if it is None]
-        if empty_idxs:
-            idx = random.choice(empty_idxs)
-            slots[idx] = {"type": "diamond", "count": 1}
     
 
 
@@ -859,11 +814,8 @@ def open_chest_at(bx, by):
     open_chest_pos = (bx, by)
     drag_item = None
     drag_from = None
-    # Only generate loot for naturally spawned chests, not player-placed ones
-    if (bx, by) not in chest_inventories:
-        # Check if this is a naturally spawned chest (not player-placed)
-        # If it's not in chest_inventories, it's likely a natural chest
-        generate_chest_loot((bx, by))
+    # Open chest using chest system (handles loot generation for natural chests)
+    chest_system.open_chest((bx, by))
 
 
 def chest_slot_rect(col, row):
@@ -875,10 +827,10 @@ def hotbar_slot_rect(idx):
     return pygame.Rect(10 + idx * 50, SCREEN_HEIGHT - 60, 40, 40)
 
 def find_chest_slot_at(mx, my):
-    for r in range(CHEST_ROWS):
-        for c in range(CHEST_COLS):
+    for r in range(chest_system.CHEST_ROWS):
+        for c in range(chest_system.CHEST_COLS):
             if chest_slot_rect(c, r).collidepoint(mx, my):
-                return r * CHEST_COLS + c
+                return r * chest_system.CHEST_COLS + c
     return None
 
 def find_hotbar_slot_at(mx, my):
@@ -911,11 +863,11 @@ def draw_chest_ui():
     title = BIG_FONT.render("Chest", True, (255, 255, 255))
     screen.blit(title, (CHEST_UI_X + 20, CHEST_UI_Y + 10))
 
-    slots = chest_inventories.get(open_chest_pos, [])
+    slots = chest_system.get_chest_inventory(open_chest_pos)
     # Draw chest slots
-    for r in range(CHEST_ROWS):
-        for c in range(CHEST_COLS):
-            idx = r * CHEST_COLS + c
+    for r in range(chest_system.CHEST_ROWS):
+        for c in range(chest_system.CHEST_COLS):
+            idx = r * chest_system.CHEST_COLS + c
             rect = chest_slot_rect(c, r)
             pygame.draw.rect(screen, (90, 90, 90), rect)
             pygame.draw.rect(screen, (200, 200, 200), rect, 2)
@@ -941,7 +893,7 @@ def close_chest_ui():
     # If dragging an item, return it to its origin before closing
     if drag_item and drag_from:
         if drag_from[0] == "chest":
-            slots = chest_inventories.get(open_chest_pos, [])
+            slots = chest_system.get_chest_inventory(open_chest_pos)
             idx = drag_from[1]
             if idx < len(slots) and slots[idx] is None:
                 slots[idx] = drag_item
@@ -1133,24 +1085,16 @@ def save_game():
     """Save the current game state"""
     # Serialize world blocks
     world_ser = {f"{x},{y}": block for (x, y), block in world_data.items() if block}
-    # Serialize chest inventories, preserving empty (None) slots
-    chests_ser = {}
-    for (cx, cy), slots in chest_inventories.items():
-        key = f"{cx},{cy}"
-        # Each slot is either None or a dict {"type": str, "count": int}
-        # Ensure well-formed for JSON
-        safe_slots = []
-        for it in slots:
-            if it and isinstance(it, dict) and "type" in it:
-                safe_slots.append({"type": it["type"], "count": int(it.get("count", 1))})
-            else:
-                safe_slots.append(None)
-        chests_ser[key] = safe_slots
+    
+    # Get chest data from chest system
+    chest_data = chest_system.serialize_for_save()
+    
     data = {
         "player": player,
         "world": world_ser,
         "entities": entities,
-        "chest_inventories": chests_ser,
+        "chest_inventories": chest_data["chest_inventories"],
+        "player_placed_chests": chest_data["player_placed_chests"],
     }
     
     # Save to current world if one is loaded, otherwise save to legacy save.json
@@ -1177,24 +1121,12 @@ def load_game_data(data):
     # Restore entities
     entities = data.get("entities", [])
     
-    # Restore chest inventories
-    chest_inventories = {}
-    for key, slots in data.get("chest_inventories", {}).items():
-        cx, cy = map(int, key.split(","))
-        safe_slots = []
-        for it in slots:
-            if it and isinstance(it, dict) and "type" in it:
-                safe_slots.append({"type": it["type"], "count": int(it.get("count", 1))})
-            else:
-                safe_slots.append(None)
-        chest_inventories[(cx, cy)] = safe_slots
+    # Load chest data using chest system
+    chest_system.deserialize_from_save(data)
     
     # Ensure all chests in the world have proper inventories
     # This handles cases where chests were placed but inventories weren't saved
-    for (x, y), block_type in world_data.items():
-        if block_type == "chest" and (x, y) not in chest_inventories:
-            # This is a naturally spawned chest that needs loot
-            generate_chest_loot((x, y))
+    chest_system.ensure_all_chests_have_inventories(world_data)
     
     # Ensure player stands on ground
     if get_block(int(player["x"]), int(player["y"])) in [None, "air"]:
@@ -1364,7 +1296,7 @@ def generate_initial_world():
         if can_place_surface_item(x, ground_y) and random.random() < 0.05:
             set_block(x, ground_y - 1, "chest")
             # Generate loot for naturally spawned chests
-            generate_chest_loot((x, ground_y - 1))
+            chest_system.generate_natural_chest_loot((x, ground_y - 1))
     # Maybe place a starter village in the initial chunk
     maybe_generate_village_for_chunk(0, -25)
     # Ensure fresh starts also spawn player on solid ground
@@ -1465,7 +1397,7 @@ while running:
                             # Try chest slot first
                             idx = find_chest_slot_at(mx, my)
                             if idx is not None:
-                                slots = chest_inventories.get(open_chest_pos, [])
+                                slots = chest_system.get_chest_inventory(open_chest_pos)
                                 # Place or swap
                                 if slots[idx] is None:
                                     slots[idx] = drag_item
@@ -1498,7 +1430,7 @@ while running:
                             # Not dragging: try to pick up from chest/hotbar
                             idx = find_chest_slot_at(mx, my)
                             if idx is not None:
-                                slots = chest_inventories.get(open_chest_pos, [])
+                                slots = chest_system.get_chest_inventory(open_chest_pos)
                                 if idx < len(slots) and slots[idx]:
                                     drag_item = slots[idx]
                                     drag_from = ("chest", idx)
@@ -1648,7 +1580,7 @@ while running:
                 if can_place_surface_item(x, ground_y) and random.random() < 0.03:
                     set_block(x, ground_y - 1, "chest")
                     # Generate loot for naturally spawned chests
-                    generate_chest_loot((x, ground_y - 1))
+                    chest_system.generate_natural_chest_loot((x, ground_y - 1))
                 if not is_day and random.random() < 0.03:
                     entities.append({
                         "type": "monster",
