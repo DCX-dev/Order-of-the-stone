@@ -1090,6 +1090,10 @@ def update_player():
 # --- Title Screen Drawing Function ---
 def save_game():
     """Save the current game state"""
+    # Ensure world_data exists and is not None
+    if world_data is None:
+        world_data = {}
+    
     # Serialize world blocks
     world_ser = {f"{x},{y}": block for (x, y), block in world_data.items() if block}
     

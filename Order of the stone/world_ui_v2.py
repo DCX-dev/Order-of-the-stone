@@ -139,6 +139,7 @@ class WorldUI:
         
         action = None
         world_name = None
+        selected_world = None  # Track which world is selected
         
         if self.world_detector.get_world_count() > 0:
             # Worlds exist - show world selection with create option
@@ -169,15 +170,23 @@ class WorldUI:
                     except:
                         pass  # Fallback if preview system fails
                     
-                    world_rect = self.draw_world_item(world_info, 50, world_y, list_width, False, preview_surface)
+                    # Check if this world is selected
+                    is_selected = selected_world == world_info['name']
+                    world_rect = self.draw_world_item(world_info, 50, world_y, list_width, is_selected, preview_surface)
                     
                     # Check for click
                     if pygame.mouse.get_pressed()[0] and world_rect.collidepoint(pygame.mouse.get_pos()):
-                        action = 'play'
-                        world_name = world_info['name']
+                        selected_world = world_info['name']  # Select the world
+                        action = None  # Don't immediately play, just select
             
             # Update max scroll
             self.max_scroll = max(0, len(worlds) * self.WORLD_ITEM_HEIGHT - list_height)
+            
+            # Show selected world info
+            if selected_world:
+                selected_text = self.subtitle_font.render(f"Selected: {selected_world}", True, (100, 255, 100))
+                selected_rect = selected_text.get_rect(center=(self.screen_width // 2, 520))
+                screen.blit(selected_text, selected_rect)
             
             # Create new world button (only if slots available)
             if self.world_detector.can_create_world():
@@ -192,13 +201,25 @@ class WorldUI:
                 no_slots_rect = no_slots_text.get_rect(center=(self.screen_width // 2, 580))
                 screen.blit(no_slots_text, no_slots_rect)
             
-            # Delete button (if a world is selected)
-            if action == 'play':
-                delete_btn = self.draw_button("Delete World", 
-                                            self.center_x(self.BUTTON_WIDTH) + 220, 580)
-                
-                if pygame.mouse.get_pressed()[0] and delete_btn.collidepoint(pygame.mouse.get_pos()):
-                    action = 'delete'
+            # Play World button (only enabled if a world is selected)
+            play_enabled = selected_world is not None
+            play_btn = self.draw_button("Play World", 
+                                        self.center_x(self.BUTTON_WIDTH) - 220, 580,
+                                        enabled=play_enabled)
+            
+            if pygame.mouse.get_pressed()[0] and play_btn.collidepoint(pygame.mouse.get_pos()) and play_enabled:
+                action = 'play'
+                world_name = selected_world
+            
+            # Delete button (only enabled if a world is selected)
+            delete_enabled = selected_world is not None
+            delete_btn = self.draw_button("Delete World", 
+                                        self.center_x(self.BUTTON_WIDTH) + 220, 580,
+                                        enabled=delete_enabled)
+            
+            if pygame.mouse.get_pressed()[0] and delete_btn.collidepoint(pygame.mouse.get_pos()) and delete_enabled:
+                action = 'delete'
+                world_name = selected_world
         else:
             # No worlds exist - show create world interface
             subtitle = self.subtitle_font.render("Create Your First World", True, self.TEXT_COLOR)
