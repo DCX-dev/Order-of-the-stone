@@ -36,8 +36,8 @@ def update_chest_ui_geometry():
 
 # Initialize
 import pygame
-from world_manager import WorldManager
-from world_ui import WorldUI
+from world_manager_v2 import WorldManager
+from world_ui_v2 import WorldUI
 from chest_system import ChestSystem
 
 pygame.init()
@@ -1519,6 +1519,11 @@ while running:
                     game_state = STATE_TITLE
         elif event.type == pygame.MOUSEMOTION:
             mouse_pos = event.pos
+        
+        elif event.type == pygame.MOUSEWHEEL:
+            # Handle mouse wheel scrolling in world selection
+            if game_state == STATE_WORLD_SELECT:
+                world_ui.handle_scroll(event.y * 30)  # Scroll by 30 pixels per wheel unit
 
     if game_state == STATE_GAME:
         camera_x = int((player["x"] * TILE_SIZE) - SCREEN_WIDTH // 2)
@@ -1628,21 +1633,26 @@ while running:
                 show_message("Failed to load world!")
                 
         elif action == 'create':
-            # Create a new world with auto-generated name
-            if world_manager.create_world():
-                world_name = world_manager.get_current_world_name()
-                show_message(f"Created world: {world_name}")
-                # Generate initial world data
-                generate_initial_world()
-                # Save the generated world data immediately
-                save_game()
-                # Load the newly created world
-                world_data = world_manager.load_world(world_name)
-                if world_data:
-                    load_game_data(world_data)
-                    game_state = STATE_GAME
+            # Check if we can create a new world (under 12 limit)
+            if world_manager.can_create_world():
+                # Create a new world with auto-generated name
+                world = world_manager.create_world()
+                if world:
+                    world_name = world.name
+                    show_message(f"Created world: {world_name}")
+                    # Generate initial world data
+                    generate_initial_world()
+                    # Save the generated world data immediately
+                    save_game()
+                    # Load the newly created world
+                    world_data = world_manager.load_world(world_name)
+                    if world_data:
+                        load_game_data(world_data)
+                        game_state = STATE_GAME
+                else:
+                    show_message("Failed to create world!")
             else:
-                show_message("Failed to create world!")
+                show_message("Maximum worlds reached (12/12)!")
                 
         elif action == 'delete' and world_name:
             # Delete world confirmation
