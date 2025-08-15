@@ -816,7 +816,7 @@ def place_block(mx, my):
     px, py = int(player["x"]), int(player["y"])
     bx, by = (mx + camera_x) // TILE_SIZE, (my + 100) // TILE_SIZE
     if abs(bx - px) <= 2 and abs(by - py) <= 2:
-        if get_block(bx, by) is None and player["selected"] < len(player["inventory"]):
+        if player["selected"] < len(player["inventory"]):
             item = player["inventory"][player["selected"]]
             item_type = item["type"]
 
@@ -835,13 +835,38 @@ def place_block(mx, my):
                 if br_y is not None and by >= br_y:
                     return  # Prevent creating a ladder path through bedrock
 
-            # If placing a chest, make it EMPTY (no auto-generated loot)
+            # Check if we can place the block at this location
+            current_block = get_block(bx, by)
+            
+            # Handle chest placement separately (special logic)
             if item_type == "chest":
-                set_block(bx, by, "chest")
-                # Create empty player-placed chest
-                chest_system.create_player_placed_chest((bx, by))
+                if current_block in ["stone", "dirt", "grass", "bedrock", "coal", "iron", "gold", "diamond"]:
+                    # Place chest on top of the solid block
+                    set_block(bx, by - 1, "chest")
+                    chest_system.create_player_placed_chest((bx, by - 1))
+                    print(f"✅ Placed chest on top of {current_block} at ({bx}, {by - 1})")
+                elif current_block is None:
+                    # Place chest in empty space
+                    set_block(bx, by, "chest")
+                    chest_system.create_player_placed_chest((bx, by))
+                    print(f"✅ Placed chest in empty space at ({bx}, {by})")
+                else:
+                    print(f"❌ Can't place chest on {current_block}")
+                    return
             else:
-                set_block(bx, by, item_type)
+                # Handle other blocks
+                if current_block in ["stone", "dirt", "grass", "bedrock", "coal", "iron", "gold", "diamond"]:
+                    # Place the block on top of the solid block
+                    set_block(bx, by - 1, item_type)
+                    print(f"✅ Placed {item_type} on top of {current_block} at ({bx}, {by - 1})")
+                elif current_block is None:
+                    # Place in empty space
+                    set_block(bx, by, item_type)
+                    print(f"✅ Placed {item_type} in empty space at ({bx}, {by})")
+                else:
+                    # Can't place on this type of block
+                    print(f"❌ Can't place {item_type} on {current_block}")
+                    return
 
             # consume one item
             item["count"] -= 1
