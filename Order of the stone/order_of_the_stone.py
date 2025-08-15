@@ -948,6 +948,41 @@ def draw_item_icon(item, x, y):
         count_text = font.render(str(item["count"]), True, (255, 255, 0))
         screen.blit(count_text, (x + 20, y + 20))
 
+def show_item_tooltip(item, mouse_x, mouse_y):
+    """Show a tooltip with the item's name when hovering over it"""
+    if not item or not isinstance(item, dict) or "type" not in item:
+        return
+    
+    # Get the item name (capitalize first letter)
+    item_name = item["type"].replace("_", " ").title()
+    
+    # Render the tooltip text
+    tooltip_text = font.render(item_name, True, (255, 255, 255))
+    
+    # Calculate tooltip position (above mouse, but don't go off screen)
+    tooltip_x = mouse_x + 10
+    tooltip_y = mouse_y - 30
+    
+    # Adjust if tooltip would go off screen
+    if tooltip_x + tooltip_text.get_width() > SCREEN_WIDTH:
+        tooltip_x = mouse_x - tooltip_text.get_width() - 10
+    if tooltip_y < 0:
+        tooltip_y = mouse_y + 20
+    
+    # Draw tooltip background
+    padding = 4
+    bg_rect = pygame.Rect(
+        tooltip_x - padding, 
+        tooltip_y - padding, 
+        tooltip_text.get_width() + padding * 2, 
+        tooltip_text.get_height() + padding * 2
+    )
+    pygame.draw.rect(screen, (0, 0, 0, 180), bg_rect)
+    pygame.draw.rect(screen, (255, 255, 255), bg_rect, 1)
+    
+    # Draw tooltip text
+    screen.blit(tooltip_text, (tooltip_x, tooltip_y))
+
 def draw_chest_ui():
     update_chest_ui_geometry()
     # Dim background
@@ -972,6 +1007,10 @@ def draw_chest_ui():
             pygame.draw.rect(screen, (200, 200, 200), rect, 2)
             if idx < len(slots) and slots[idx]:
                 draw_item_icon(slots[idx], rect.x + 2, rect.y + 2)
+                
+                # Show tooltip when mouse hovers over item
+                if rect.collidepoint(mouse_pos):
+                    show_item_tooltip(slots[idx], mouse_pos[0], mouse_pos[1])
 
     # Draw hotbar so you can drag to it
     for i in range(9):
@@ -979,6 +1018,10 @@ def draw_chest_ui():
         pygame.draw.rect(screen, (255, 255, 255), rect, 2 if i == player["selected"] else 1)
         if i < len(player["inventory"]):
             draw_item_icon(player["inventory"][i], rect.x + 2, rect.y + 2)
+            
+            # Show tooltip when mouse hovers over hotbar item
+            if rect.collidepoint(mouse_pos):
+                show_item_tooltip(player["inventory"][i], mouse_pos[0], mouse_pos[1])
 
     # Draw the dragged item under mouse (if any)
     if drag_item:
@@ -1671,14 +1714,21 @@ def validate_and_fix_terrain():
     grass_positions = [(x, y) for (x, y), block in world_data.items() if block == "grass"]
     
     for x, y in grass_positions:
-        # Check if this grass has any blocks above it
+        # Check if this grass has any blocks above it (only remove if truly underground)
+        has_blocks_above = False
         for check_y in range(y + 1, 100):
             if get_block(x, check_y) is not None:
-                # This grass is underground - CRITICAL ERROR
-                world_data.pop((x, y), None)
-                underground_grass_found += 1
-                print(f"🚨 CRITICAL: Found and removed underground grass at ({x}, {y})")
-                break  # Exit inner loop once we find this grass is underground
+                has_blocks_above = True
+                break
+        
+        if has_blocks_above:
+            # This grass is underground - CRITICAL ERROR
+            world_data.pop((x, y), None)
+            underground_grass_found += 1
+            print(f"🚨 CRITICAL: Found and removed underground grass at ({x}, {y})")
+        else:
+            # This grass is on the surface - KEEP IT
+            print(f"✅ Surface grass verified at ({x}, {y})")
     
     if fixes_applied > 0:
         print(f"🔧 Applied {fixes_applied} terrain fixes")
@@ -1692,11 +1742,20 @@ def validate_column_integrity(x, ground_y):
     """Validate and fix a single column during generation"""
     global world_data
     
-    # Ensure grass is ONLY at the surface
+    # Ensure grass is ONLY at the surface (but don't remove surface grass)
     for y in range(ground_y + 1, 100):
         if get_block(x, y) == "grass":
-            world_data.pop((x, y), None)
-            print(f"🚨 CRITICAL: Removed underground grass during generation at ({x}, {y})")
+            # Only remove grass that's truly underground (has blocks above it)
+            has_blocks_above = False
+            for check_y in range(y + 1, 100):
+                if get_block(x, check_y) is not None:
+                    has_blocks_above = True
+                    break
+            
+            if has_blocks_above:
+                world_data.pop((x, y), None)
+                print(f"🚨 CRITICAL: Removed underground grass during generation at ({x}, {y})")
+            # If no blocks above, this grass is fine (surface grass)
     
     # Ensure dirt layer is complete (3 blocks deep)
     for y in range(ground_y + 1, ground_y + 4):
