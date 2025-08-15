@@ -1701,6 +1701,8 @@ while running:
         elif action == 'delete' and world_name:
             # Delete world confirmation
             if world_manager.delete_world(world_name):
+                # Also delete the world's preview screenshot
+                world_preview.delete_world_preview(world_name)
                 show_message(f"Deleted world: {world_name}")
             else:
                 show_message("Failed to delete world!")
