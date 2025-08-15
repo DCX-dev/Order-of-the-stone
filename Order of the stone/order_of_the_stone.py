@@ -453,11 +453,11 @@ def maybe_generate_village_for_chunk(chunk_id, base_x):
             # Fill any holes under the house foundation
             house_width = 7  # Same width as used in build_house
             for dx in range(house_width):
-                for y in range(gy + 1, gy + 13):
+                for y in range(gy + 1, 22):  # Fill down to flat bedrock at Y=22
                     if get_block(hx + dx, y) is None:
                         if y < gy + 4:
                             set_block(hx + dx, y, "dirt")
-                        elif y < gy + 12:
+                        elif y < 22:
                             set_block(hx + dx, y, "stone")
                         else:
                             set_block(hx + dx, y, "bedrock")
@@ -1348,7 +1348,7 @@ def update_villagers():
 
 # --- World Generation Function ---
 def generate_initial_world(world_seed=None):
-    """Generate a unique world with optional seed for consistency"""
+    """Generate a unique world with flat bedrock and gentle surface terrain"""
     if world_seed is None:
         world_seed = random.randint(1, 999999)
     
@@ -1361,23 +1361,27 @@ def generate_initial_world(world_seed=None):
     
     # Generate terrain around the starting area
     for x in range(start_x - world_width//2, start_x + world_width//2):
-        # Use world-specific random for consistent terrain
-        height_offset = int(4 * world_rng.uniform(-1, 1) * world_rng.uniform(0.5, 1.5))
+        # Create gentle surface terrain (not too extreme)
+        # Use a smoother sine wave with reduced amplitude for gentler hills
+        height_offset = int(2 * world_rng.uniform(-1, 1))  # Reduced from 4 to 2
         ground_y = 10 + height_offset
         
-        # Add some variation to terrain generation
+        # Add some controlled variation to terrain generation
         terrain_type = world_rng.random()
-        if terrain_type < 0.3:
-            # Flat plains
+        if terrain_type < 0.4:
+            # Flat plains (increased chance for villages)
             ground_y = 10
-        elif terrain_type < 0.6:
-            # Gentle hills
-            height_offset = int(2 * world_rng.uniform(-1, 1))
+        elif terrain_type < 0.8:
+            # Gentle hills (suitable for building)
+            height_offset = int(1 * world_rng.uniform(-1, 1))  # Very gentle
             ground_y = 10 + height_offset
         else:
-            # More varied terrain
-            height_offset = int(5 * world_rng.uniform(-1, 1))
+            # Slightly more varied terrain (but still gentle)
+            height_offset = int(2 * world_rng.uniform(-1, 1))  # Moderate variation
             ground_y = 10 + height_offset
+        
+        # Ensure ground_y doesn't go too extreme
+        ground_y = max(8, min(12, ground_y))  # Keep surface between Y=8 and Y=12
         
         set_block(x, ground_y, "grass")
         for y in range(ground_y + 1, ground_y + 4):
@@ -1394,7 +1398,10 @@ def generate_initial_world(world_seed=None):
                 set_block(x, y, "diamond")
             else:
                 set_block(x, y, "stone")
-        set_block(x, ground_y + 12, "bedrock")
+        
+        # FLAT BEDROCK - always at the same level regardless of surface height
+        bedrock_y = 22  # Fixed bedrock level
+        set_block(x, bedrock_y, "bedrock")
 
         # Random chance to spawn trees (world-specific)
         if world_rng.random() < 0.08:  # Slightly reduced tree density
@@ -1428,9 +1435,24 @@ def generate_initial_world(world_seed=None):
             # Generate loot for naturally spawned chests
             chest_system.generate_natural_chest_loot((x, ground_y - 1))
     
-    # Place starter village in a random chunk near the starting area
-    village_chunk = world_rng.randint(-2, 2)  # Random chunk offset
-    maybe_generate_village_for_chunk(village_chunk, start_x + village_chunk * 50)
+    # Find flat areas for village placement (only on flat ground)
+    flat_areas = []
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        if get_block(x, 10) == "grass":  # Check if it's flat ground (Y=10)
+            flat_areas.append(x)
+    
+    # Place starter village only if we have flat areas
+    if flat_areas:
+        # Choose a random flat area for the village
+        village_x = world_rng.choice(flat_areas)
+        village_chunk = (village_x // 50)  # Convert to chunk coordinates
+        maybe_generate_village_for_chunk(village_chunk, village_chunk * 50)
+        print(f"Placed village in flat area at X: {village_x}")
+    else:
+        # Fallback: place village near starting area
+        village_chunk = world_rng.randint(-2, 2)
+        maybe_generate_village_for_chunk(village_chunk, start_x + village_chunk * 50)
+        print(f"Placed village in fallback location at chunk: {village_chunk}")
     
     # Set player spawn position to the starting area
     player["x"] = start_x
@@ -1441,6 +1463,7 @@ def generate_initial_world(world_seed=None):
             break
     
     print(f"Generated new world with seed: {world_seed}, starting at X: {start_x}")
+    print(f"Surface height range: 8-12, Bedrock at Y: 22")
     return world_seed
 
 # --- Title Screen Drawing Function ---
