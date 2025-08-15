@@ -381,7 +381,7 @@ def ground_y_of_column(x: int):
 
 # --- Village and House helpers ---
 def build_house(origin_x, ground_y, width=7, height=5):
-    """Build an improved log house with stone floor, wooden door, and interior chest."""
+    """Build an improved log house with stone floor, open doorway, and interior chest."""
     # Floor
     for dx in range(width):
         set_block(origin_x + dx, ground_y, "stone")
@@ -406,12 +406,8 @@ def build_house(origin_x, ground_y, width=7, height=5):
                     # clear any leaves/logs, etc.
                     world_data.pop((x, y), None)
     
-    # Add doors in the doorway (2 blocks tall)
-    door_x = origin_x + width // 2
-    # Bottom door (ground level)
-    set_block(door_x, ground_y - 1, "door")
-    # Top door (above ground level)
-    set_block(door_x, ground_y - 2, "door")
+    # Leave doorway empty for players to place doors if they want
+    # The opening is already created by the wall building loop above
     
     # Add a chest inside the house (left side, away from door)
     chest_x = origin_x + 1
@@ -457,11 +453,11 @@ def maybe_generate_village_for_chunk(chunk_id, base_x):
             # Fill any holes under the house foundation
             house_width = 7  # Same width as used in build_house
             for dx in range(house_width):
-                for y in range(gy + 1, gy + 8):
+                for y in range(gy + 1, gy + 13):
                     if get_block(hx + dx, y) is None:
                         if y < gy + 4:
                             set_block(hx + dx, y, "dirt")
-                        elif y < gy + 7:
+                        elif y < gy + 12:
                             set_block(hx + dx, y, "stone")
                         else:
                             set_block(hx + dx, y, "bedrock")
@@ -1354,7 +1350,7 @@ def generate_initial_world():
         set_block(x, ground_y, "grass")
         for y in range(ground_y + 1, ground_y + 4):
             set_block(x, y, "dirt")
-        for y in range(ground_y + 4, ground_y + 7):
+        for y in range(ground_y + 4, ground_y + 12):
             ore_chance = random.random()
             if ore_chance < 0.05:
                 set_block(x, y, "coal")
@@ -1366,7 +1362,7 @@ def generate_initial_world():
                 set_block(x, y, "diamond")
             else:
                 set_block(x, y, "stone")
-        set_block(x, ground_y + 7, "bedrock")
+        set_block(x, ground_y + 12, "bedrock")
 
 
         # Random chance to spawn trees
@@ -1674,7 +1670,7 @@ while running:
                 set_block(x, ground_y, "grass")
                 for y in range(ground_y + 1, ground_y + 4):
                     set_block(x, y, "dirt")
-                for y in range(ground_y + 4, ground_y + 7):
+                for y in range(ground_y + 4, ground_y + 12):
                     ore_chance = random.random()
                     if ore_chance < 0.05:
                         set_block(x, y, "coal")
@@ -1686,7 +1682,7 @@ while running:
                         set_block(x, y, "diamond")
                     else:
                         set_block(x, y, "stone")
-                set_block(x, ground_y + 7, "bedrock")
+                set_block(x, ground_y + 12, "bedrock")
                 # Trees
                 if random.random() < 0.1:
                     set_block(x, ground_y - 1, "log")
