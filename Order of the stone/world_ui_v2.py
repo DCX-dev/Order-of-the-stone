@@ -65,8 +65,8 @@ class WorldUI:
         
         return rect
     
-    def draw_world_item(self, world_info: dict, x: int, y: int, width: int, selected: bool = False) -> pygame.Rect:
-        """Draw a single world item in the list"""
+    def draw_world_item(self, world_info: dict, x: int, y: int, width: int, selected: bool = False, preview_surface: pygame.Surface = None) -> pygame.Rect:
+        """Draw a single world item in the list with preview thumbnail"""
         screen = pygame.display.get_surface()
         
         # Background
@@ -75,17 +75,28 @@ class WorldUI:
         pygame.draw.rect(screen, color, rect)
         pygame.draw.rect(screen, self.TEXT_COLOR, rect, 2 if selected else 1)
         
-        # World name
+        # World preview thumbnail (left side)
+        if preview_surface:
+            preview_rect = pygame.Rect(x + 10, y + 5, 80, 60)
+            pygame.draw.rect(screen, (30, 30, 30), preview_rect)  # Dark background for preview
+            pygame.draw.rect(screen, self.TEXT_COLOR, preview_rect, 1)  # Border
+            
+            # Scale preview to fit
+            scaled_preview = pygame.transform.scale(preview_surface, (78, 58))
+            screen.blit(scaled_preview, (x + 11, y + 6))
+        
+        # World name (right side, above preview)
+        name_x = x + 100 if preview_surface else x + 10
         name_text = self.font.render(world_info['name'], True, self.TEXT_COLOR)
-        screen.blit(name_text, (x + 10, y + 5))
+        screen.blit(name_text, (name_x, y + 5))
         
-        # Last modified
+        # Last modified (right side, below name)
         modified_text = self.small_font.render(f"Last: {world_info['last_modified']}", True, self.TEXT_COLOR)
-        screen.blit(modified_text, (x + 10, y + 25))
+        screen.blit(modified_text, (name_x, y + 25))
         
-        # Player info
+        # Player info (right side, below modified)
         player_text = self.small_font.render(world_info['player_info'], True, self.TEXT_COLOR)
-        screen.blit(player_text, (x + 10, y + 40))
+        screen.blit(player_text, (name_x, y + 40))
         
         return rect
     
@@ -137,7 +148,16 @@ class WorldUI:
                 
                 # Only draw if visible
                 if world_y + self.WORLD_ITEM_HEIGHT > list_y and world_y < list_y + list_height:
-                    world_rect = self.draw_world_item(world_info, 50, world_y, list_width)
+                    # Load world preview
+                    preview_surface = None
+                    try:
+                        from world_preview import WorldPreview
+                        preview_system = WorldPreview()
+                        preview_surface = preview_system.get_world_preview(world_info['name'])
+                    except:
+                        pass  # Fallback if preview system fails
+                    
+                    world_rect = self.draw_world_item(world_info, 50, world_y, list_width, False, preview_surface)
                     
                     # Check for click
                     if pygame.mouse.get_pressed()[0] and world_rect.collidepoint(pygame.mouse.get_pos()):

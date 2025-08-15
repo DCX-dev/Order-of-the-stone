@@ -8,6 +8,9 @@ save.json
 # World save files (max 12 worlds)
 world*.json
 
+# World preview images
+save_data/previews/
+
 # IDE files (optional but common)
 .vscode/
 .idea/

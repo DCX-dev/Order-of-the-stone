@@ -39,6 +39,7 @@ import pygame
 from world_manager_v2 import WorldManager
 from world_ui_v2 import WorldUI
 from chest_system import ChestSystem
+from world_preview import WorldPreview
 
 pygame.init()
 
@@ -222,6 +223,9 @@ world_ui = WorldUI(SCREEN_WIDTH, SCREEN_HEIGHT, font)
 
 # Initialize chest system
 chest_system = ChestSystem()
+
+# Initialize world preview system
+world_preview = WorldPreview("save_data")
 
 # Game states
 STATE_TITLE = "title"
@@ -1612,6 +1616,11 @@ while running:
         draw_world()
         draw_inventory()
         draw_status_bars()
+        
+        # Take world preview screenshot every 5 minutes
+        current_world = world_manager.get_current_world_name()
+        if current_world and world_preview.should_take_screenshot():
+            world_preview.take_world_screenshot(current_world, screen)
         # Draw temporary message if any
         now_ms = pygame.time.get_ticks()
         if message_until > now_ms and message_text:
