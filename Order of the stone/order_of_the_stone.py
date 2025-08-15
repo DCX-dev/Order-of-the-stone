@@ -1440,70 +1440,19 @@ def generate_initial_world(world_seed=None):
     start_x = world_rng.randint(-100, 100)  # Random starting X position
     world_width = world_rng.randint(80, 150)  # Random world width
     
-    # Generate clean, organized terrain with only 2-3 mountains
-    # First, decide where to place mountains (only 2-3 total)
-    mountain_count = world_rng.randint(2, 3)  # Only 2-3 mountains
-    mountain_positions = []
+    # Generate COMPLETELY FLAT terrain (no mountains, no variation)
+    print("🌍 Generating completely flat world...")
     
-    # Place mountains at random positions, but not too close together
-    for i in range(mountain_count):
-        if i == 0:
-            # First mountain: random position
-            mountain_x = world_rng.randint(start_x - world_width//3, start_x + world_width//3)
-        else:
-            # Additional mountains: ensure they're not too close to existing ones
-            attempts = 0
-            while attempts < 20:  # Limit attempts to avoid infinite loop
-                new_mountain_x = world_rng.randint(start_x - world_width//3, start_x + world_width//3)
-                # Check distance from existing mountains
-                too_close = False
-                for existing_mountain in mountain_positions:
-                    if abs(new_mountain_x - existing_mountain) < 15:  # Minimum 15 blocks apart
-                        too_close = True
-                        break
-                if not too_close:
-                    mountain_x = new_mountain_x
-                    break
-                attempts += 1
-            else:
-                # If we can't find a good position, skip this mountain
-                continue
-        
-        mountain_positions.append(mountain_x)
-    
-    # Generate terrain with clean layering
+    # Generate terrain with clean layering - ALL FLAT
     for x in range(start_x - world_width//2, start_x + world_width//2):
-        # Check if this X position should be a mountain
-        is_mountain = False
-        mountain_height = 0
-        
-        for mountain_x in mountain_positions:
-            distance = abs(x - mountain_x)
-            if distance < 8:  # Mountain influence radius
-                is_mountain = True
-                # Calculate mountain height based on distance from center
-                mountain_height = max(0, 8 - distance)  # Height decreases with distance
-                break
-        
-        # Set ground height based on terrain type
-        if is_mountain:
-            # Mountain: grass on top, dirt below, stone underneath
-            ground_y = 10 + mountain_height  # Base 10 + mountain height
-        else:
-            # Flat area: mostly flat with very gentle variation
-            if world_rng.random() < 0.8:  # 80% chance of completely flat
-                ground_y = 10
-            else:
-                # 20% chance of very gentle slope (only 1 block variation)
-                ground_y = 10 + world_rng.choice([-1, 1])
-        
-        # Ensure clean terrain boundaries
-        ground_y = max(8, min(15, ground_y))  # Allow mountains up to Y=15
+        # EVERYTHING is completely flat at Y=10
+        ground_y = 10  # Fixed height for entire world
         
         # CLEAN LAYER GENERATION - Always follow proper hierarchy
         
-        # 1. GRASS LAYER (Surface)
+        # 1. GRASS LAYER (Surface) - CRITICAL: This MUST work!
         set_block(x, ground_y, "grass")
+        print(f"🌱 Placed grass at ({x}, {ground_y})")
         
         # 2. DIRT LAYER (Below grass, always 3 blocks deep)
         for y in range(ground_y + 1, ground_y + 4):
@@ -1528,8 +1477,8 @@ def generate_initial_world(world_seed=None):
         bedrock_y = 22  # Fixed bedrock level
         set_block(x, bedrock_y, "bedrock")
         
-        # COMMERCIAL-GRADE VALIDATION: Double-check this column
-        validate_column_integrity(x, ground_y)
+        # TEMPORARILY DISABLE VALIDATION TO SEE IF GRASS GENERATES
+        # validate_column_integrity(x, ground_y)
         
         # Ensure NO blocks generate below bedrock
         for y in range(bedrock_y + 1, 100):
@@ -1598,13 +1547,14 @@ def generate_initial_world(world_seed=None):
             player["y"] = y - 1
             break
     
-    print(f"Generated clean world with seed: {world_seed}, starting at X: {start_x}")
+    print(f"Generated COMPLETELY FLAT world with seed: {world_seed}, starting at X: {start_x}")
     print(f"Clean terrain: Grass → Dirt → Stone → Bedrock")
-    print(f"Mountains: {len(mountain_positions)} mountains at positions: {mountain_positions}")
-    print(f"Surface height range: 8-15 (mountains), Bedrock at Y: 22")
+    print(f"Surface height: Y=10 (completely flat)")
+    print(f"Bedrock at Y: 22")
     
-    # COMMERCIAL-GRADE VALIDATION: Ensure perfect terrain
-    validate_and_fix_terrain()
+    # TEMPORARILY DISABLE VALIDATION TO SEE IF GRASS GENERATES
+    # validate_and_fix_terrain()
+    print("🔍 Skipping terrain validation for now...")
     
     return world_seed
 
@@ -1613,13 +1563,20 @@ def validate_and_fix_terrain():
     global world_data
     
     print("🔍 Validating terrain integrity...")
+    print(f"🌱 Checking for grass blocks...")
     fixes_applied = 0
     
     # Get all X coordinates that have terrain
     terrain_columns = set()
+    grass_count = 0
     for (x, y), block in world_data.items():
         if block in ["grass", "dirt", "stone", "bedrock"]:
             terrain_columns.add(x)
+        if block == "grass":
+            grass_count += 1
+    
+    print(f"🌱 Found {grass_count} grass blocks in world")
+    print(f"🏗️ Found {len(terrain_columns)} terrain columns")
     
     for x in sorted(terrain_columns):
         # Find the surface grass block for this column
