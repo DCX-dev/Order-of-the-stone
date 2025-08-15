@@ -1485,8 +1485,8 @@ def generate_initial_world(world_seed=None):
         bedrock_y = 22  # Fixed bedrock level
         set_block(x, bedrock_y, "bedrock")
         
-        # Ensure grass is only on the surface (no underground grass)
-        # Note: We don't remove grass here anymore to avoid breaking terrain
+        # COMMERCIAL-GRADE VALIDATION: Double-check this column
+        validate_column_integrity(x, ground_y)
         
         # Ensure NO blocks generate below bedrock
         for y in range(bedrock_y + 1, 100):
@@ -1560,9 +1560,166 @@ def generate_initial_world(world_seed=None):
     print(f"Mountains: {len(mountain_positions)} mountains at positions: {mountain_positions}")
     print(f"Surface height range: 8-15 (mountains), Bedrock at Y: 22")
     
-    # Grass blocks are now properly placed on surface only
+    # COMMERCIAL-GRADE VALIDATION: Ensure perfect terrain
+    validate_and_fix_terrain()
     
     return world_seed
+
+def validate_and_fix_terrain():
+    """Commercial-grade terrain validation and repair system"""
+    global world_data
+    
+    print("🔍 Validating terrain integrity...")
+    fixes_applied = 0
+    
+    # Get all X coordinates that have terrain
+    terrain_columns = set()
+    for (x, y), block in world_data.items():
+        if block in ["grass", "dirt", "stone", "bedrock"]:
+            terrain_columns.add(x)
+    
+    for x in sorted(terrain_columns):
+        # Find the surface grass block for this column
+        surface_y = None
+        for y in range(100):
+            if get_block(x, y) == "grass":
+                surface_y = y
+                break
+        
+        if surface_y is None:
+            # No grass found - this is a critical error
+            print(f"❌ CRITICAL: Column {x} has no grass surface - fixing...")
+            # Find the highest terrain block and place grass above it
+            highest_y = -1
+            for y in range(100):
+                if get_block(x, y) in ["dirt", "stone", "bedrock"]:
+                    highest_y = max(highest_y, y)
+            
+            if highest_y >= 0:
+                set_block(x, highest_y + 1, "grass")
+                surface_y = highest_y + 1
+                fixes_applied += 1
+                print(f"✅ Fixed: Added grass at Y={surface_y} for column {x}")
+            else:
+                # No terrain at all - place at default height
+                set_block(x, 10, "grass")
+                surface_y = 10
+                fixes_applied += 1
+                print(f"✅ Fixed: Added grass at Y=10 for column {x}")
+        
+        # STEP 1: Remove ALL underground grass (guaranteed)
+        for y in range(surface_y + 1, 100):
+            if get_block(x, y) == "grass":
+                world_data.pop((x, y), None)
+                fixes_applied += 1
+                print(f"✅ Fixed: Removed underground grass at ({x}, {y})")
+        
+        # STEP 2: Ensure dirt layer is complete (3 blocks deep)
+        for y in range(surface_y + 1, surface_y + 4):
+            if get_block(x, y) != "dirt":
+                if get_block(x, y) is None:
+                    set_block(x, y, "dirt")
+                    fixes_applied += 1
+                    print(f"✅ Fixed: Added missing dirt at ({x}, {y})")
+                elif get_block(x, y) != "dirt":
+                    # Replace non-dirt blocks with dirt
+                    world_data.pop((x, y), None)
+                    set_block(x, y, "dirt")
+                    fixes_applied += 1
+                    print(f"✅ Fixed: Replaced {get_block(x, y)} with dirt at ({x}, {y})")
+        
+        # STEP 3: Ensure stone layer is complete (8 blocks deep, NO HOLES)
+        for y in range(surface_y + 4, surface_y + 12):
+            if get_block(x, y) is None:
+                # Fill hole with stone
+                set_block(x, y, "stone")
+                fixes_applied += 1
+                print(f"✅ Fixed: Filled stone layer hole at ({x}, {y})")
+            elif get_block(x, y) not in ["stone", "coal", "iron", "gold", "diamond"]:
+                # Replace non-stone blocks with stone
+                old_block = get_block(x, y)
+                world_data.pop((x, y), None)
+                set_block(x, y, "stone")
+                fixes_applied += 1
+                print(f"✅ Fixed: Replaced {old_block} with stone at ({x}, {y})")
+        
+        # STEP 4: Ensure bedrock at Y=22
+        bedrock_y = 22
+        if get_block(x, bedrock_y) != "bedrock":
+            if get_block(x, bedrock_y) is None:
+                set_block(x, bedrock_y, "bedrock")
+                fixes_applied += 1
+                print(f"✅ Fixed: Added missing bedrock at ({x}, {bedrock_y})")
+            else:
+                # Replace non-bedrock with bedrock
+                old_block = get_block(x, bedrock_y)
+                world_data.pop((x, bedrock_y), None)
+                set_block(x, bedrock_y, "bedrock")
+                fixes_applied += 1
+                print(f"✅ Fixed: Replaced {old_block} with bedrock at ({x}, {bedrock_y})")
+        
+        # STEP 5: Remove any blocks below bedrock
+        for y in range(bedrock_y + 1, 100):
+            if get_block(x, y) is not None:
+                world_data.pop((x, y), None)
+                fixes_applied += 1
+                print(f"✅ Fixed: Removed block below bedrock at ({x}, {y})")
+    
+    # FINAL VERIFICATION: Double-check no grass exists underground
+    underground_grass_found = 0
+    for (x, y), block in world_data.items():
+        if block == "grass":
+            # Check if this grass has any blocks above it
+            for check_y in range(y + 1, 100):
+                if get_block(x, check_y) is not None:
+                    # This grass is underground - CRITICAL ERROR
+                    world_data.pop((x, y), None)
+                    underground_grass_found += 1
+                    print(f"🚨 CRITICAL: Found and removed underground grass at ({x}, {y})")
+    
+    if fixes_applied > 0:
+        print(f"🔧 Applied {fixes_applied} terrain fixes")
+    
+    if underground_grass_found > 0:
+        print(f"🚨 Removed {underground_grass_found} underground grass blocks")
+    
+    print("✅ Terrain validation complete - commercial quality guaranteed!")
+
+def validate_column_integrity(x, ground_y):
+    """Validate and fix a single column during generation"""
+    global world_data
+    
+    # Ensure grass is ONLY at the surface
+    for y in range(ground_y + 1, 100):
+        if get_block(x, y) == "grass":
+            world_data.pop((x, y), None)
+            print(f"🚨 CRITICAL: Removed underground grass during generation at ({x}, {y})")
+    
+    # Ensure dirt layer is complete (3 blocks deep)
+    for y in range(ground_y + 1, ground_y + 4):
+        if get_block(x, y) != "dirt":
+            if get_block(x, y) is None:
+                set_block(x, y, "dirt")
+            elif get_block(x, y) != "dirt":
+                world_data.pop((x, y), None)
+                set_block(x, y, "dirt")
+    
+    # Ensure stone layer is complete (8 blocks deep, NO HOLES)
+    for y in range(ground_y + 4, ground_y + 12):
+        if get_block(x, y) is None:
+            set_block(x, y, "stone")
+        elif get_block(x, y) not in ["stone", "coal", "iron", "gold", "diamond"]:
+            world_data.pop((x, y), None)
+            set_block(x, y, "stone")
+    
+    # Ensure bedrock at Y=22
+    bedrock_y = 22
+    if get_block(x, bedrock_y) != "bedrock":
+        if get_block(x, bedrock_y) is None:
+            set_block(x, bedrock_y, "bedrock")
+        else:
+            world_data.pop((x, bedrock_y), None)
+            set_block(x, bedrock_y, "bedrock")
 
 # --- Title Screen Drawing Function ---
 def draw_title_screen():
