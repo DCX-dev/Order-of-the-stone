@@ -846,35 +846,20 @@ def place_block(mx, my):
             print(f"🔍 DEBUG: Current block at ({bx}, {by}): {current_block}")
             print(f"🔍 DEBUG: Trying to place: {item_type}")
             
-            # Handle chest placement separately (special logic)
-            if item_type == "chest":
-                if current_block in ["stone", "dirt", "grass", "bedrock", "coal", "iron", "gold", "diamond"]:
-                    # Place chest on top of the solid block
-                    set_block(bx, by - 1, "chest")
-                    chest_system.create_player_placed_chest((bx, by - 1))
-                    print(f"✅ Placed chest on top of {current_block} at ({bx}, {by - 1})")
-                elif current_block is None:
-                    # Place chest in empty space
+            # NEW LOGIC: Only place blocks in AIR, not on solid blocks
+            if current_block is None:
+                # ✅ Place in empty space (air)
+                if item_type == "chest":
                     set_block(bx, by, "chest")
                     chest_system.create_player_placed_chest((bx, by))
-                    print(f"✅ Placed chest in empty space at ({bx}, {by})")
+                    print(f"✅ Placed chest in air at ({bx}, {by})")
                 else:
-                    print(f"❌ Can't place chest on {current_block}")
-                    return
-            else:
-                # Handle other blocks
-                if current_block in ["stone", "dirt", "grass", "bedrock", "coal", "iron", "gold", "diamond"]:
-                    # Place the block on top of the solid block
-                    set_block(bx, by - 1, item_type)
-                    print(f"✅ Placed {item_type} on top of {current_block} at ({bx}, {by - 1})")
-                elif current_block is None:
-                    # Place in empty space
                     set_block(bx, by, item_type)
-                    print(f"✅ Placed {item_type} in empty space at ({bx}, {by})")
-                else:
-                    # Can't place on this type of block
-                    print(f"❌ Can't place {item_type} on {current_block}")
-                    return
+                    print(f"✅ Placed {item_type} in air at ({bx}, {by})")
+            else:
+                # ❌ Can't place on solid blocks - only in air
+                print(f"❌ Can't place {item_type} on {current_block} - only place in air")
+                return
 
             # consume one item
             item["count"] -= 1
@@ -1088,9 +1073,9 @@ def close_chest_ui():
 
 # --- Carrot consumption from inventory ---
 def consume_carrot_from_inventory():
-    """Eat one carrot from the currently selected slot if it can help.
-    - If health &amp;/or hunger are below max (10), restore +1 to each that is below.
-    - Only consume a carrot if it restores at least one stat.
+    """Eat one carrot from the currently selected slot.
+    - Always restores +1 to both health AND hunger (if below max).
+    - Carrots are always consumed when eaten.
     """
     if player["selected"] >= len(player["inventory"]):
         return
@@ -1098,22 +1083,19 @@ def consume_carrot_from_inventory():
     if not item or not isinstance(item, dict) or item.get("type") != "carrot" or item.get("count", 0) <= 0:
         return
 
-    restored = False
-    # Restore health if not full
+    # Always restore health and hunger (if below max)
     if player["health"] < 10:
         player["health"] = min(10, player["health"] + 1)
-        restored = True
-    # Restore hunger if not full
     if player["hunger"] < 10:
         player["hunger"] = min(10, player["hunger"] + 1)
-        restored = True
 
-            # Only consume a carrot if something was restored
-        if restored:
-            item["count"] -= 1
-            if item["count"] <= 0:
-                # remove empty slot
-                player["inventory"].pop(player["selected"])
+    # Always consume the carrot
+    item["count"] -= 1
+    if item["count"] <= 0:
+        # Remove empty slot
+        player["inventory"].pop(player["selected"])
+    
+    print(f"🥕 Ate carrot: Health={player['health']}, Hunger={player['hunger']}")
 
 
 # --- Missing Update Functions ---
