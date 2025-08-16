@@ -853,11 +853,14 @@ def place_block(mx, my):
                     chest_system.create_player_placed_chest((bx, by))
                 else:
                     set_block(bx, by, item_type)
-
-            # consume one item
-            item["count"] -= 1
-            if item["count"] <= 0:
-                player["inventory"].pop(player["selected"])
+                
+                # consume one item
+                item["count"] -= 1
+                if item["count"] <= 0:
+                    player["inventory"].pop(player["selected"])
+            else:
+                # ❌ Can't place on solid blocks - only in air
+                return
 
 def attack_monsters(mx, my):
     px, py = player["x"], player["y"]
