@@ -1925,6 +1925,8 @@ while running:
                     if event.button == 3:
                         close_chest_ui()
                         continue  # don't fall through to world interactions
+                        
+                # Handle mouse clicks for world interaction
                 if event.button == 1:
                     mx, my = event.pos
                     # Check if clicking on hotbar
