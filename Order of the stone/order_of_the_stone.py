@@ -1935,8 +1935,8 @@ while running:
                     if event.button == 3:
                         close_chest_ui()
                         continue  # don't fall through to world interactions
-                mx, my = event.pos
                 if event.button == 1:
+                    mx, my = event.pos
                     print(f"🔍 DEBUG: Left-click detected at ({mx}, {my})")
                     # Check if clicking on hotbar
                     if SCREEN_HEIGHT - 60 <= my <= SCREEN_HEIGHT:
@@ -1960,9 +1960,9 @@ while running:
                     break_block(mx, my)
 
                 elif event.button == 3:
-                    print(f"🔍 DEBUG: Right-click detected at ({event.pos[0]}, {event.pos[1]})")
-                    # Convert mouse to world tile
                     mx, my = event.pos
+                    print(f"🔍 DEBUG: Right-click detected at ({mx}, {my})")
+                    # Convert mouse to world tile
                     bx, by = (mx + camera_x) // TILE_SIZE, (my + 100) // TILE_SIZE
                     print(f"🔍 DEBUG: World coordinates: ({bx}, {by})")
                     print(f"🔍 DEBUG: Block at location: {get_block(bx, by)}")
