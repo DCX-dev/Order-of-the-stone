@@ -604,15 +604,21 @@ def draw_fps_display():
     if not show_fps:
         return
     
-    # Calculate actual FPS
+    # Calculate actual FPS based on frame time
     current_time = time.time()
-    if current_time - last_fps_time >= 1.0:  # Update every second
-        fps_counter = int(1.0 / (current_time - last_fps_time))
-        last_fps_time = current_time
+    frame_time = current_time - last_fps_time
+    
+    if frame_time > 0:
+        # Calculate FPS from frame time (more accurate)
+        current_fps = 1.0 / frame_time
+        # Smooth the FPS display (average with previous value)
+        fps_counter = int(fps_counter * 0.7 + current_fps * 0.3)
+    
+    last_fps_time = current_time
     
     # Draw FPS info
     fps_text = font.render(f"FPS: {fps_counter}", True, (255, 255, 0))
-    limit_text = font.render(f"Limit: {fps_limit}", True, (255, 255, 0))
+    limit_text = font.render(f"Limit: {fps_limit if fps_limit > 0 else 'Unlimited'}", True, (255, 255, 0))
     
     screen.blit(fps_text, (10, 70))
     screen.blit(limit_text, (10, 90))
