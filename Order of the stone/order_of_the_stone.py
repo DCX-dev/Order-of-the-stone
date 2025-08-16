@@ -822,12 +822,7 @@ def place_block(mx, my):
     px, py = int(player["x"]), int(player["y"])
     bx, by = (mx + camera_x) // TILE_SIZE, (my + 100) // TILE_SIZE
     
-    print(f"🔍 DEBUG: Trying to place block at mouse ({mx}, {my}) -> world ({bx}, {by})")
-    print(f"🔍 DEBUG: Player at ({px}, {py})")
-    print(f"🔍 DEBUG: Distance check: |{bx}-{px}|={abs(bx-px)}, |{by}-{py}|={abs(by-py)}")
-    
     if abs(bx - px) <= 2 and abs(by - py) <= 2:
-        print(f"✅ DEBUG: Within range, checking inventory...")
         if player["selected"] < len(player["inventory"]):
             item = player["inventory"][player["selected"]]
             item_type = item["type"]
@@ -849,8 +844,6 @@ def place_block(mx, my):
 
             # Check if we can place the block at this location
             current_block = get_block(bx, by)
-            print(f"🔍 DEBUG: Current block at ({bx}, {by}): {current_block}")
-            print(f"🔍 DEBUG: Trying to place: {item_type}")
             
             # NEW LOGIC: Only place blocks in AIR, not on solid blocks
             if current_block is None:
@@ -858,14 +851,8 @@ def place_block(mx, my):
                 if item_type == "chest":
                     set_block(bx, by, "chest")
                     chest_system.create_player_placed_chest((bx, by))
-                    print(f"✅ Placed chest in air at ({bx}, {by})")
                 else:
                     set_block(bx, by, item_type)
-                    print(f"✅ Placed {item_type} in air at ({bx}, {by})")
-            else:
-                # ❌ Can't place on solid blocks - only in air
-                print(f"❌ Can't place {item_type} on {current_block} - only place in air")
-                return
 
             # consume one item
             item["count"] -= 1
@@ -1937,15 +1924,12 @@ while running:
                         continue  # don't fall through to world interactions
                 if event.button == 1:
                     mx, my = event.pos
-                    print(f"🔍 DEBUG: Left-click detected at ({mx}, {my})")
                     # Check if clicking on hotbar
                     if SCREEN_HEIGHT - 60 <= my <= SCREEN_HEIGHT:
-                        print(f"🔍 DEBUG: Clicking on hotbar area")
                         # Determine slot index from mouse x
                         slot = (mx - 10) // 50
                         # Confirm within slot bounds
                         if 0 <= slot < 9 and (10 + slot * 50) <= mx <= (10 + slot * 50 + 40):
-                            print(f"🔍 DEBUG: Selected hotbar slot {slot}")
                             player["selected"] = slot
                             # If it's a carrot, try to consume it (safely)
                             if slot < len(player["inventory"]):
@@ -1955,37 +1939,29 @@ while running:
                             # Do not interact with world when clicking UI
                             continue
                     # Not clicking the UI: attack/break in world
-                    print(f"🔍 DEBUG: Calling attack_monsters({mx}, {my}) and break_block({mx}, {my})")
                     attack_monsters(mx, my)
                     break_block(mx, my)
 
                 elif event.button == 3:
                     mx, my = event.pos
-                    print(f"🔍 DEBUG: Right-click detected at ({mx}, {my})")
                     # Convert mouse to world tile
                     bx, by = (mx + camera_x) // TILE_SIZE, (my + 100) // TILE_SIZE
-                    print(f"🔍 DEBUG: World coordinates: ({bx}, {by})")
-                    print(f"🔍 DEBUG: Block at location: {get_block(bx, by)}")
                     
                     # Bed interaction: sleep at night, message at day
                     if get_block(bx, by) == "bed":
-                        print(f"🔍 DEBUG: Bed interaction")
                         if not is_day:
                             sleep_in_bed()
                         else:
                             show_message("You can only sleep at night")
                         continue
                     if get_block(bx, by) == "chest":
-                        print(f"🔍 DEBUG: Chest interaction")
                         open_chest_at(bx, by)
                         continue
                     
                     # If selected carrot, eat it; otherwise place block
                     if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]] and player["inventory"][player["selected"]]["type"] == "carrot":
-                        print(f"🔍 DEBUG: Carrot consumption")
                         consume_carrot_from_inventory()
                     else:
-                        print(f"🔍 DEBUG: Calling place_block({mx}, {my})")
                         place_block(mx, my)
             elif game_state == STATE_TITLE:
                 if play_btn.collidepoint(event.pos):
