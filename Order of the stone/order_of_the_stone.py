@@ -1313,12 +1313,19 @@ def load_game_data(data):
 
 def load_game():
     """Load the legacy save.json file (for backward compatibility)"""
+    global game_state
     try:
         with open(os.path.join(SAVE_DIR, "save.json"), "r") as f:
             data = json.load(f)
             load_game_data(data)
+            # If we successfully loaded a game, set the state to GAME
+            game_state = STATE_GAME
+            print("✅ Loaded legacy save and set game state to GAME")
     except FileNotFoundError:
         generate_initial_world()  # Generate with random seed for legacy saves
+        # For new games, also set the state to GAME
+        game_state = STATE_GAME
+        print("✅ Generated new world and set game state to GAME")
 
 def update_monsters():
     # Move and attack monsters
