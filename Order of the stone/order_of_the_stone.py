@@ -1313,19 +1313,14 @@ def load_game_data(data):
 
 def load_game():
     """Load the legacy save.json file (for backward compatibility)"""
-    global game_state
     try:
         with open(os.path.join(SAVE_DIR, "save.json"), "r") as f:
             data = json.load(f)
             load_game_data(data)
-            # If we successfully loaded a game, set the state to GAME
-            game_state = STATE_GAME
-            print("✅ Loaded legacy save and set game state to GAME")
+            print("✅ Loaded legacy save data")
     except FileNotFoundError:
         generate_initial_world()  # Generate with random seed for legacy saves
-        # For new games, also set the state to GAME
-        game_state = STATE_GAME
-        print("✅ Generated new world and set game state to GAME")
+        print("✅ Generated new world data")
 
 def update_monsters():
     # Move and attack monsters
@@ -1873,8 +1868,8 @@ while running:
                     world_ui.pending_action = button_action
                     world_ui.pending_world_name = button_world_name
             elif game_state == STATE_GAME:
+                mx, my = event.pos  # Define mx, my once for all mouse handling
                 if chest_open:
-                    mx, my = event.pos
                     # Left click: pick up or place item
                     if event.button == 1:
                         # If dragging, try to place into a slot
@@ -1935,7 +1930,6 @@ while running:
                         
                 # Handle mouse clicks for world interaction
                 if event.button == 1:
-                    mx, my = event.pos
                     # Check if clicking on hotbar
                     if SCREEN_HEIGHT - 60 <= my <= SCREEN_HEIGHT:
                         # Determine slot index from mouse x
@@ -1955,7 +1949,6 @@ while running:
                     break_block(mx, my)
 
                 elif event.button == 3:
-                    mx, my = event.pos
                     # Convert mouse to world tile
                     bx, by = (mx + camera_x) // TILE_SIZE, (my + 100) // TILE_SIZE
                     
