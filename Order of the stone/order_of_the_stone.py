@@ -898,14 +898,18 @@ def update_world_interactions():
     if block_at == "carrot":
         if player["health"] < 10:
             player["health"] += 1
+            player["hunger"] = min(10, player["hunger"] + 1)  # ✅ Also restore hunger!
             world_data.pop((px, py))
+            print(f"🥕 Ate world carrot: Health={player['health']}, Hunger={player['hunger']}")
         else:
             add_to_inventory("carrot")
             world_data.pop((px, py))
     elif block_below == "carrot":
         if player["health"] < 10:
             player["health"] += 1
+            player["hunger"] = min(10, player["hunger"] + 1)  # ✅ Also restore hunger!
             world_data.pop((px, py + 1))
+            print(f"🥕 Ate world carrot: Health={player['health']}, Hunger={player['hunger']}")
         else:
             add_to_inventory("carrot")
             world_data.pop((px, py + 1))
