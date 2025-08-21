@@ -177,40 +177,71 @@ class WorldUI:
         # Button background with rounded corners effect
         btn_rect = pygame.Rect(50, y_pos, self.screen.get_width() - 100, self.button_height)
         
-        # Determine button color and effects
+        # EXTREME ENGINEERING: Enhanced button color and effects with priority system
         if is_current:
+            # Current world gets highest priority - bright accent colors
             base_color = self.colors["accent"]
             glow_color = self.colors["accent_glow"]
             border_color = self.colors["accent"]
+            glow_intensity = 8  # Stronger glow for current world
         elif is_selected:
-            base_color = self.colors["button_selected"]
-            glow_color = self.colors["button_glow"]
+            # Selected world gets second priority - bright selection colors
+            base_color = self.colors["success"]  # Use success color for better visibility
+            glow_color = self.colors["success_glow"]
             border_color = self.colors["text"]
+            glow_intensity = 6  # Strong glow for selected world
         elif btn_rect.collidepoint(mouse_pos):
+            # Hover state gets third priority
             base_color = self.colors["button_hover"]
             glow_color = self.colors["button_glow"]
             border_color = self.colors["text"]
+            glow_intensity = 4  # Moderate glow for hover
         else:
+            # Default state gets lowest priority
             base_color = self.colors["button"]
             glow_color = self.colors["button"]
             border_color = self.colors["text_dim"]
+            glow_intensity = 2  # Subtle glow for default
         
-        # Draw button glow effect
-        glow_rect = pygame.Rect(btn_rect.x - 2, btn_rect.y - 2, btn_rect.width + 4, btn_rect.height + 4)
-        pygame.draw.rect(self.screen, glow_color, glow_rect, border_radius=8)
+        # EXTREME ENGINEERING: Dynamic button glow effect based on state
+        glow_rect = pygame.Rect(btn_rect.x - glow_intensity, btn_rect.y - glow_intensity, 
+                               btn_rect.width + (glow_intensity * 2), btn_rect.height + (glow_intensity * 2))
+        pygame.draw.rect(self.screen, glow_color, glow_rect, border_radius=8 + glow_intensity)
         
         # Draw main button
         pygame.draw.rect(self.screen, base_color, btn_rect, border_radius=6)
         pygame.draw.rect(self.screen, border_color, btn_rect, 3, border_radius=6)
         
-        # Add subtle inner highlight
+        # EXTREME ENGINEERING: Enhanced inner highlight with selection emphasis
         highlight_rect = pygame.Rect(btn_rect.x + 2, btn_rect.y + 2, btn_rect.width - 4, btn_rect.height // 2)
-        highlight_color = tuple(min(255, int(c * 1.2)) for c in base_color)
+        
+        if is_selected:
+            # Selected worlds get a brighter, more prominent highlight
+            highlight_color = tuple(min(255, int(c * 1.4)) for c in base_color)
+            # Add a subtle pulsing effect for selected worlds
+            pulse_factor = 1.0 + (0.1 * (time.time() % 2))  # Subtle pulse over 2 seconds
+            highlight_color = tuple(min(255, int(c * pulse_factor)) for c in highlight_color)
+        else:
+            # Normal highlight for other states
+            highlight_color = tuple(min(255, int(c * 1.2)) for c in base_color)
+        
         pygame.draw.rect(self.screen, highlight_color, highlight_rect, border_radius=4)
+        
+        # EXTREME ENGINEERING: Enhanced world name display with selection indicators
+        
+        # Add selection arrow for selected worlds
+        if is_selected:
+            # Draw a bright selection arrow on the left
+            arrow_text = self.font.render("▶", True, self.colors["success"])
+            self.screen.blit(arrow_text, (btn_rect.x + 5, btn_rect.y + 12))
+            # Adjust name position to make room for arrow
+            name_x = btn_rect.x + 25
+        else:
+            name_x = btn_rect.x + 20
         
         # World name with enhanced typography
         name_text = self.font.render(world["name"], True, self.colors["text"])
-        self.screen.blit(name_text, (btn_rect.x + 20, btn_rect.y + 12))
+        self.screen.blit(name_text, (name_x, btn_rect.y + 12))
         
         # World info with better formatting
         seed_text = f"🌱 Seed: {world['seed']}"
@@ -222,18 +253,33 @@ class WorldUI:
         self.screen.blit(seed_surface, (btn_rect.x + 20, btn_rect.y + 32))
         self.screen.blit(created_surface, (btn_rect.x + 20, btn_rect.y + 48))
         
-        # Current world indicator with badge
-        if is_current:
-            # Badge background
-            badge_rect = pygame.Rect(btn_rect.right - 120, btn_rect.y + 8, 100, 20)
-            pygame.draw.rect(self.screen, self.colors["accent"], badge_rect, border_radius=10)
-            pygame.draw.rect(self.screen, self.colors["text"], badge_rect, 2, border_radius=10)
+        # EXTREME ENGINEERING: Enhanced selection and current world indicators
+        
+        # Selection indicator badge (LEFT SIDE)
+        if is_selected:
+            # Selection badge background
+            selection_badge_rect = pygame.Rect(btn_rect.x + 10, btn_rect.y + 8, 100, 20)
+            pygame.draw.rect(self.screen, self.colors["success"], selection_badge_rect, border_radius=10)
+            pygame.draw.rect(self.screen, self.colors["text"], selection_badge_rect, 2, border_radius=10)
             
-            # Badge text
+            # Selection badge text
+            selection_text = self.font.render("✅ SELECTED", True, self.colors["text"])
+            selection_text_x = selection_badge_rect.x + (selection_badge_rect.width - selection_text.get_width()) // 2
+            selection_text_y = selection_badge_rect.y + (selection_badge_rect.height - selection_text.get_height()) // 2
+            self.screen.blit(selection_text, (selection_text_x, selection_text_y))
+        
+        # Current world indicator badge (RIGHT SIDE)
+        if is_current:
+            # Current world badge background
+            current_badge_rect = pygame.Rect(btn_rect.right - 120, btn_rect.y + 8, 100, 20)
+            pygame.draw.rect(self.screen, self.colors["accent"], current_badge_rect, border_radius=10)
+            pygame.draw.rect(self.screen, self.colors["text"], current_badge_rect, 2, border_radius=10)
+            
+            # Current world badge text
             current_text = self.font.render("⭐ CURRENT", True, self.colors["text"])
-            text_x = badge_rect.x + (badge_rect.width - current_text.get_width()) // 2
-            text_y = badge_rect.y + (badge_rect.height - current_text.get_height()) // 2
-            self.screen.blit(current_text, (text_x, text_y))
+            current_text_x = current_badge_rect.x + (current_badge_rect.width - current_text.get_width()) // 2
+            current_text_y = current_badge_rect.y + (current_badge_rect.height - current_text.get_height()) // 2
+            self.screen.blit(current_text, (current_text_x, current_text_y))
         
         return btn_rect
     
