@@ -6162,10 +6162,14 @@ while running:
                         print(f"🌍 Created new world: {world_name}")
                         # Load the newly created world
                         if world_system.load_world(world_name):
-                            game_state = GameState.GAME
-                            update_pause_state()  # Resume time when entering game
-                            print(f"🎮 Starting game with new world: {world_name}")
-                            give_starting_items()
+                            # Load the world data into the game
+                            if load_world_data():
+                                game_state = GameState.GAME
+                                update_pause_state()  # Resume time when entering game
+                                print(f"🎮 Starting game with new world: {world_name}")
+                                give_starting_items()
+                            else:
+                                print("❌ Failed to load world data into game")
                         else:
                             print("❌ Failed to load newly created world")
                     else:
@@ -6176,10 +6180,14 @@ while running:
                     if selected_world:
                         world_name = selected_world["name"]
                         if world_system.load_world(world_name):
-                            game_state = GameState.GAME
-                            update_pause_state()  # Resume time when entering game
-                            print(f"🎮 Starting game with world: {world_name}")
-                            give_starting_items()
+                            # Load the world data into the game
+                            if load_world_data():
+                                game_state = GameState.GAME
+                                update_pause_state()  # Resume time when entering game
+                                print(f"🎮 Starting game with world: {world_name}")
+                                give_starting_items()
+                            else:
+                                print(f"❌ Failed to load world data for: {world_name}")
                         else:
                             print(f"❌ Failed to load world: {world_name}")
                     else:

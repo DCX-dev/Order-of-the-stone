@@ -123,10 +123,43 @@ class WorldSystem:
             return False
     
     def _generate_world_data(self, name: str, seed: Optional[str] = None) -> Dict[str, Any]:
-        """Generate initial world data using MinecraftWorldGenerator class."""
-        from world_generator import MinecraftWorldGenerator
-        generator = MinecraftWorldGenerator(seed)
-        return generator.generate_initial_world(name)
+        """Generate initial world data using the world_gen module."""
+        try:
+            from world_gen import generate_world
+            
+            print(f"🌍 Generating new world: {name}")
+            world_data = generate_world(seed=seed, world_width=200)
+            
+            # Add world metadata
+            world_data["name"] = name
+            world_data["created"] = time.time()
+            world_data["last_played"] = time.time()
+            
+            # Ensure player data exists
+            if "player" not in world_data:
+                world_data["player"] = {
+                    "x": 0.0, "y": 48.0, "vel_y": 0, "on_ground": False,
+                    "health": 10, "max_health": 10, "hunger": 100, "max_hunger": 100,
+                    "stamina": 100, "max_stamina": 100, "inventory": [], "backpack": [],
+                    "selected": 0, "username": "", "armor": {"helmet": None, "chestplate": None, "leggings": None, "boots": None}
+                }
+            
+            # Ensure world settings exist
+            if "world_settings" not in world_data:
+                world_data["world_settings"] = {
+                    "time": time.time(),
+                    "day": True,
+                    "weather": "clear"
+                }
+            
+            print(f"✅ World '{name}' generated successfully with {len(world_data.get('blocks', {}))} blocks")
+            return world_data
+            
+        except Exception as e:
+            print(f"❌ Error generating world data: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def load_world(self, name: str) -> bool:
         """Load a world by name"""
