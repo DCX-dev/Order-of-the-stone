@@ -6185,6 +6185,8 @@ while running:
                     world_name = f"World {len(world_system.world_list) + 1}"
                     if world_system.create_world(world_name):
                         print(f"🌍 Created new world: {world_name}")
+                        # Refresh world selection state
+                        world_ui.refresh_world_selection()
                         # Load the newly created world
                         if world_system.load_world(world_name):
                             # Load the world data into the game
@@ -6224,8 +6226,9 @@ while running:
                         world_name = selected_world["name"]
                         if world_system.delete_world(world_name):
                             print(f"🗑️ Deleted world: {world_name}")
-                            # Refresh the world selection screen
+                            # Refresh the world selection screen and selection state
                             world_system._load_world_list()
+                            world_ui.refresh_world_selection()
                         else:
                             print(f"❌ Failed to delete world: {world_name}")
                     else:

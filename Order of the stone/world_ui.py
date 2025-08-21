@@ -131,33 +131,39 @@ class WorldUI:
             next_btn = self._draw_button("Next ▶️", 600, nav_y, mouse_pos, self.colors["button"])
             button_states["next_page"] = next_btn
         
-        # Action buttons
+        # Action buttons with EXTREME ENGINEERING spacing
         action_y = nav_y + 80
         
         if worlds:
             # Check if a world is selected
             is_selected = self.is_world_selected()
             
+            # Calculate button positions with proper spacing
+            screen_width = self.screen.get_width()
+            button_spacing = 50  # Space between buttons
+            total_button_width = (self.button_width * 3) + (button_spacing * 2)  # 3 buttons + 2 gaps
+            start_x = (screen_width - total_button_width) // 2  # Center the button group
+            
             # Play selected world (only enabled when world is selected)
             if is_selected:
-                play_btn = self._draw_button("▶️ Play World", 200, action_y, mouse_pos, self.colors["success"])
+                play_btn = self._draw_button("▶️ Play World", start_x, action_y, mouse_pos, self.colors["success"])
                 button_states["play_world"] = play_btn
             else:
                 # Disabled play button
-                play_btn = self._draw_button("▶️ Play World (Select a World)", 200, action_y, mouse_pos, self.colors["text_dim"])
+                play_btn = self._draw_button("▶️ Play World (Select a World)", start_x, action_y, mouse_pos, self.colors["text_dim"])
                 button_states["play_world"] = None  # Disabled
             
             # Delete selected world (only enabled when world is selected)
             if is_selected:
-                delete_btn = self._draw_button("🗑️ Delete World", 400, action_y, mouse_pos, self.colors["danger"])
+                delete_btn = self._draw_button("🗑️ Delete World", start_x + self.button_width + button_spacing, action_y, mouse_pos, self.colors["danger"])
                 button_states["delete_world"] = delete_btn
             else:
                 # Disabled delete button
-                delete_btn = self._draw_button("🗑️ Delete World (Select a World)", 400, action_y, mouse_pos, self.colors["text_dim"])
+                delete_btn = self._draw_button("🗑️ Delete World (Select a World)", start_x + self.button_width + button_spacing, action_y, mouse_pos, self.colors["text_dim"])
                 button_states["delete_world"] = None  # Disabled
             
             # Create new world (always enabled)
-            create_btn = self._draw_button("✨ Create New World", 600, action_y, mouse_pos, self.colors["success"])
+            create_btn = self._draw_button("✨ Create New World", start_x + (self.button_width + button_spacing) * 2, action_y, mouse_pos, self.colors["success"])
             button_states["create_world"] = create_btn
         
         # Back button
@@ -281,27 +287,218 @@ class WorldUI:
         except:
             return "Unknown"
     
-    def handle_world_click(self, mouse_pos: tuple) -> Optional[str]:
-        """Handle clicks on world buttons and return the clicked world name if any"""
-        for world_key, rect in self.world_rects.items():
-            if rect.collidepoint(mouse_pos):
-                # Extract world index from key (e.g., "world_0" -> 0)
-                world_index = int(world_key.split("_")[1])
-                self.selected_world_index = world_index
-                print(f"🌍 World selected: {world_index}")
-                return world_index
-        return None
+    def handle_world_click(self, mouse_pos: tuple) -> Optional[int]:
+        """EXTREME ENGINEERING: Robust world selection with comprehensive error handling and validation"""
+        try:
+            # Validate input parameters
+            if not isinstance(mouse_pos, tuple) or len(mouse_pos) != 2:
+                print(f"❌ Invalid mouse position: {mouse_pos}")
+                return None
+            
+            # EXTREME ENGINEERING: Comprehensive world selection logic
+            for world_key, rect in self.world_rects.items():
+                # Validate world key format
+                if not isinstance(world_key, str) or not world_key.startswith("world_"):
+                    print(f"⚠️ Invalid world key format: {world_key}")
+                    continue
+                
+                # Validate rectangle object
+                if not isinstance(rect, pygame.Rect):
+                    print(f"⚠️ Invalid rectangle object for key {world_key}: {type(rect)}")
+                    continue
+                
+                # Check collision with proper bounds validation
+                if rect.collidepoint(mouse_pos):
+                    try:
+                        # Extract world index with robust parsing
+                        world_index_str = world_key.split("_", 1)[1]  # Split only once, get second part
+                        world_index = int(world_index_str)
+                        
+                        # Validate index bounds
+                        worlds = self.world_system.get_world_list()
+                        if 0 <= world_index < len(worlds):
+                            # EXTREME ENGINEERING: Update selection state
+                            old_selection = self.selected_world_index
+                            self.selected_world_index = world_index
+                            
+                            # Get world info for logging
+                            selected_world = worlds[world_index]
+                            world_name = selected_world.get("name", "Unknown")
+                            
+                            print(f"🌍 EXTREME ENGINEERING: World selection successful!")
+                            print(f"   📍 Old selection: {old_selection}")
+                            print(f"   📍 New selection: {world_index}")
+                            print(f"   🌍 World name: {world_name}")
+                            print(f"   🎯 Total worlds: {len(worlds)}")
+                            
+                            return world_index
+                        else:
+                            print(f"❌ World index out of bounds: {world_index} (max: {len(worlds) - 1})")
+                            return None
+                            
+                    except (ValueError, IndexError) as e:
+                        print(f"❌ Error parsing world index from key '{world_key}': {e}")
+                        continue
+            
+            # No world clicked
+            print(f"🔍 No world clicked at position {mouse_pos}")
+            return None
+            
+        except Exception as e:
+            print(f"💥 EXTREME ENGINEERING ERROR in world selection: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def get_selected_world(self) -> Optional[Dict]:
-        """Get the currently selected world data"""
-        worlds = self.world_system.get_world_list()
-        if 0 <= self.selected_world_index < len(worlds):
-            return worlds[self.selected_world_index]
-        return None
+        """EXTREME ENGINEERING: Robust world data retrieval with comprehensive validation"""
+        try:
+            # Validate world system
+            if not hasattr(self, 'world_system') or self.world_system is None:
+                print("❌ World system not available")
+                return None
+            
+            # Get world list with error handling
+            try:
+                worlds = self.world_system.get_world_list()
+            except Exception as e:
+                print(f"❌ Error getting world list: {e}")
+                return None
+            
+            # Validate world list
+            if not isinstance(worlds, list):
+                print(f"❌ Invalid world list type: {type(worlds)}")
+                return None
+            
+            # Validate selection index
+            if not isinstance(self.selected_world_index, int):
+                print(f"❌ Invalid selection index type: {type(self.selected_world_index)}")
+                return None
+            
+            # Check bounds
+            if self.selected_world_index < 0:
+                print(f"❌ Selection index negative: {self.selected_world_index}")
+                return None
+            
+            if self.selected_world_index >= len(worlds):
+                print(f"❌ Selection index out of bounds: {self.selected_world_index} >= {len(worlds)}")
+                return None
+            
+            # Get selected world
+            selected_world = worlds[self.selected_world_index]
+            
+            # Validate world data structure
+            if not isinstance(selected_world, dict):
+                print(f"❌ Invalid world data type: {type(selected_world)}")
+                return None
+            
+            # Validate required fields
+            required_fields = ["name", "created", "seed"]
+            for field in required_fields:
+                if field not in selected_world:
+                    print(f"⚠️ Missing required field in world data: {field}")
+                    return None
+            
+            print(f"✅ EXTREME ENGINEERING: Successfully retrieved world '{selected_world['name']}'")
+            return selected_world
+            
+        except Exception as e:
+            print(f"💥 EXTREME ENGINEERING ERROR in get_selected_world: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def is_world_selected(self) -> bool:
-        """Check if any world is currently selected"""
-        return self.get_selected_world() is not None
+        """EXTREME ENGINEERING: Robust world selection state validation"""
+        try:
+            # Get selected world with full validation
+            selected_world = self.get_selected_world()
+            
+            # Check if we have valid world data
+            if selected_world is None:
+                print(f"🔍 EXTREME ENGINEERING: No world currently selected")
+                return False
+            
+            # Additional validation: ensure world still exists in system
+            try:
+                worlds = self.world_system.get_world_list()
+                world_names = [w.get("name", "") for w in worlds]
+                
+                if selected_world.get("name") not in world_names:
+                    print(f"⚠️ Selected world '{selected_world.get('name')}' no longer exists in system")
+                    self.reset_world_selection()  # Use proper reset method
+                    return False
+                
+            except Exception as e:
+                print(f"⚠️ Error validating world existence: {e}")
+                return False
+            
+            print(f"✅ EXTREME ENGINEERING: World '{selected_world.get('name')}' is validly selected")
+            return True
+            
+        except Exception as e:
+            print(f"💥 EXTREME ENGINEERING ERROR in is_world_selected: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def reset_world_selection(self):
+        """EXTREME ENGINEERING: Reset world selection to safe default state"""
+        try:
+            old_selection = self.selected_world_index
+            self.selected_world_index = 0
+            
+            print(f"🔄 EXTREME ENGINEERING: World selection reset")
+            print(f"   📍 Old selection: {old_selection}")
+            print(f"   📍 New selection: {self.selected_world_index}")
+            
+        except Exception as e:
+            print(f"💥 EXTREME ENGINEERING ERROR in reset_world_selection: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def refresh_world_selection(self):
+        """EXTREME ENGINEERING: Refresh world selection state and validate current selection"""
+        try:
+            print(f"🔄 EXTREME ENGINEERING: Refreshing world selection state")
+            
+            # Get current world list
+            try:
+                worlds = self.world_system.get_world_list()
+                world_count = len(worlds)
+            except Exception as e:
+                print(f"❌ Error getting world list during refresh: {e}")
+                self.reset_world_selection()
+                return
+            
+            print(f"   📊 Total worlds available: {world_count}")
+            print(f"   📍 Current selection index: {self.selected_world_index}")
+            
+            # Validate current selection
+            if world_count == 0:
+                print(f"   ⚠️ No worlds available, resetting selection")
+                self.reset_world_selection()
+                return
+            
+            # Check if current selection is still valid
+            if self.selected_world_index >= world_count:
+                print(f"   ⚠️ Selection index out of bounds, resetting")
+                self.reset_world_selection()
+                return
+            
+            # Validate selected world data
+            if self.is_world_selected():
+                selected_world = self.get_selected_world()
+                print(f"   ✅ Selection validated: '{selected_world.get('name', 'Unknown')}'")
+            else:
+                print(f"   ⚠️ Selection invalid, resetting")
+                self.reset_world_selection()
+            
+        except Exception as e:
+            print(f"💥 EXTREME ENGINEERING ERROR in refresh_world_selection: {e}")
+            import traceback
+            traceback.print_exc()
+            self.reset_world_selection()
     
     def draw_world_creation(self, mouse_pos: tuple, world_name: str = "", seed: str = "") -> Dict[str, any]:
         """Draw the world creation screen with enhanced design"""
