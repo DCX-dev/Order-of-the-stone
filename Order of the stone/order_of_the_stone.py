@@ -1035,7 +1035,7 @@ player = {
 }
 
 # Global username for all worlds
-GLOBAL_USERNAME = "xavier"
+GLOBAL_USERNAME = ""
 
 MAX_FALL_SPEED = 10
 GRAVITY = 1
@@ -5306,9 +5306,43 @@ def backup_corrupted_save():
                 print("⚠️ Could not remove corrupted save.json")
 
 def check_username_required():
-    """Check if username is required before playing"""
+    """EXTREME ENGINEERING: Comprehensive username validation checking both memory and file system"""
     global GLOBAL_USERNAME
-    return not GLOBAL_USERNAME or GLOBAL_USERNAME.strip() == ""
+    
+    # Check if username exists in memory
+    if not GLOBAL_USERNAME or GLOBAL_USERNAME.strip() == "":
+        print("🔍 Username check: No username in memory")
+        return True
+    
+    # Check if username.json file exists and is valid
+    try:
+        username_dir = os.path.join("save_data", "username")
+        username_file = os.path.join(username_dir, "username.json")
+        
+        if not os.path.exists(username_file):
+            print("🔍 Username check: username.json file not found")
+            return True
+        
+        # Try to read and validate the username file
+        with open(username_file, 'r') as f:
+            file_data = json.load(f)
+            file_username = file_data.get("username", "")
+            
+            if not file_username or file_username.strip() == "":
+                print("🔍 Username check: username.json is empty or invalid")
+                return True
+            
+            # Update global username if file has valid data
+            if file_username != GLOBAL_USERNAME:
+                print(f"🔄 Username check: Updating global username from file: {file_username}")
+                GLOBAL_USERNAME = file_username
+            
+            print(f"✅ Username check: Valid username found: {GLOBAL_USERNAME}")
+            return False
+            
+    except Exception as e:
+        print(f"⚠️ Username check: Error reading username file: {e}")
+        return True
 
 def require_username_check():
     """Check if username is required and redirect if needed"""
@@ -5369,14 +5403,17 @@ def draw_title_screen():
 
 # --- World Selection Screen Drawing Function ---
 def draw_world_selection_screen():
-    """Draw the world selection screen"""
+    """EXTREME ENGINEERING: Draw the world selection screen with username validation"""
     global world_play_btn, world_delete_btn, world_create_btn, world_back_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
     
-    # Draw world selection screen
-    button_states = world_ui.draw_world_selection(mouse_pos)
+    # Check if username is required
+    username_required = check_username_required()
+    
+    # Draw world selection screen with username validation
+    button_states = world_ui.draw_world_selection(mouse_pos, username_required)
     
     # Store button references for click handling
     world_play_btn = button_states.get("play_world")
@@ -6188,6 +6225,11 @@ while running:
                     update_pause_state()  # Resume time when returning to title
                     print("⬅️ Returning to title screen from world selection")
                 elif world_create_btn and world_create_btn.collidepoint(event.pos):
+                    # EXTREME ENGINEERING: Username validation before world creation
+                    if require_username_check():
+                        print("🚫 Username required before creating world - redirecting to username creation")
+                        continue  # Don't proceed to world creation
+                    
                     # Create a new world
                     world_name = f"World {len(world_system.world_list) + 1}"
                     if world_system.create_world(world_name):
@@ -6209,6 +6251,11 @@ while running:
                     else:
                         print("❌ Failed to create new world")
                 elif world_play_btn and world_play_btn.collidepoint(event.pos):
+                    # EXTREME ENGINEERING: Username validation before world play
+                    if require_username_check():
+                        print("🚫 Username required before playing - redirecting to username creation")
+                        continue  # Don't proceed to game
+                    
                     # Play selected world (if any world is selected)
                     selected_world = world_ui.get_selected_world()
                     if selected_world:

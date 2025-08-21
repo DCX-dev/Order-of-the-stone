@@ -53,8 +53,8 @@ class WorldUI:
             "info_glow": (120, 220, 255)
         }
     
-    def draw_world_selection(self, mouse_pos: tuple) -> Dict[str, any]:
-        """Draw the world selection screen and return button states"""
+    def draw_world_selection(self, mouse_pos: tuple, username_required: bool = False) -> Dict[str, any]:
+        """EXTREME ENGINEERING: Draw the world selection screen with username validation and return button states"""
         # Enhanced background with gradient
         self._draw_gradient_background()
         
@@ -92,6 +92,28 @@ class WorldUI:
             
             return {
                 "create_world": create_btn,
+                "back": back_btn
+            }
+        
+        # EXTREME ENGINEERING: Username validation check
+        if username_required:
+            # Username required message
+            username_title = self.big_font.render("🚫 Username Required", True, self.colors["danger"])
+            title_x = (self.screen.get_width() - username_title.get_width()) // 2
+            self.screen.blit(username_title, (title_x, 150))
+            
+            username_message = self.font.render("You cannot play this game without creating a username!", True, self.colors["text"])
+            message_x = (self.screen.get_width() - username_message.get_width()) // 2
+            self.screen.blit(username_message, (message_x, 200))
+            
+            username_subtitle = self.font.render("Please go back to the title screen to create your username.", True, self.colors["text_secondary"])
+            subtitle_x = (self.screen.get_width() - username_subtitle.get_width()) // 2
+            self.screen.blit(username_subtitle, (subtitle_x, 230))
+            
+            # Go back to title button
+            back_btn = self._draw_button("⬅️ Go Back to Title", 400, 300, mouse_pos, self.colors["danger"])
+            
+            return {
                 "back": back_btn
             }
         
