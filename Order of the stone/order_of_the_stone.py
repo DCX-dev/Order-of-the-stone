@@ -3934,8 +3934,9 @@ def handle_host_server_click(mouse_pos):
     
     # Check if start server button was clicked
     if host_start_btn and host_start_btn.collidepoint(mouse_pos):
-        # Start the multiplayer server
-        start_multiplayer_server()
+        # Start the multiplayer server with current world name or default
+        world_name = world_system.current_world_name if world_system.current_world_name else "Default World"
+        start_multiplayer_server(world_name)
         return
     
     # Check if back button was clicked
@@ -3960,21 +3961,8 @@ def handle_join_server_click(mouse_pos):
         update_pause_state()  # Resume time when returning to multiplayer
         return
 
-def start_multiplayer_server():
-    """Start a multiplayer server"""
-    try:
-        # For now, just show a message
-        show_message("🌐 Starting multiplayer server...")
-        print("🌐 Multiplayer server functionality coming soon!")
-        
-        # In a full implementation, this would:
-        # 1. Initialize the multiplayer server
-        # 2. Start listening for connections
-        # 3. Allow players to join
-        
-    except Exception as e:
-        print(f"❌ Error starting multiplayer server: {e}")
-        show_message("❌ Failed to start server!")
+# REMOVED DUPLICATE FUNCTION DEFINITION - This was causing the argument mismatch error!
+# The correct function is defined at line 1160: def start_multiplayer_server(world_name):
 
 def refresh_server_list():
     """Refresh the list of available servers"""
