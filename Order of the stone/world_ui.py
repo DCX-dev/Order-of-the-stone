@@ -334,14 +334,14 @@ class WorldUI:
             return "Unknown"
     
     def handle_world_click(self, mouse_pos: tuple) -> Optional[int]:
-        """EXTREME ENGINEERING: Robust world selection with comprehensive error handling and validation"""
+        """EXTREME ENGINEERING: Robust world selection with toggle functionality and comprehensive error handling"""
         try:
             # Validate input parameters
             if not isinstance(mouse_pos, tuple) or len(mouse_pos) != 2:
                 print(f"❌ Invalid mouse position: {mouse_pos}")
                 return None
             
-            # EXTREME ENGINEERING: Comprehensive world selection logic
+            # EXTREME ENGINEERING: Comprehensive world selection logic with toggle support
             for world_key, rect in self.world_rects.items():
                 # Validate world key format
                 if not isinstance(world_key, str) or not world_key.startswith("world_"):
@@ -363,21 +363,32 @@ class WorldUI:
                         # Validate index bounds
                         worlds = self.world_system.get_world_list()
                         if 0 <= world_index < len(worlds):
-                            # EXTREME ENGINEERING: Update selection state
+                            # EXTREME ENGINEERING: Toggle selection logic
                             old_selection = self.selected_world_index
-                            self.selected_world_index = world_index
                             
-                            # Get world info for logging
-                            selected_world = worlds[world_index]
-                            world_name = selected_world.get("name", "Unknown")
-                            
-                            print(f"🌍 EXTREME ENGINEERING: World selection successful!")
-                            print(f"   📍 Old selection: {old_selection}")
-                            print(f"   📍 New selection: {world_index}")
-                            print(f"   🌍 World name: {world_name}")
-                            print(f"   🎯 Total worlds: {len(worlds)}")
-                            
-                            return world_index
+                            if self.selected_world_index == world_index:
+                                # Toggle: Clicking selected world again deselects it
+                                self.selected_world_index = -1  # -1 means no selection
+                                print(f"🔄 EXTREME ENGINEERING: World deselection successful!")
+                                print(f"   📍 Previous selection: {old_selection}")
+                                print(f"   📍 New selection: {self.selected_world_index} (none)")
+                                print(f"   🌍 World deselected: {worlds[world_index].get('name', 'Unknown')}")
+                                return -1  # Return -1 to indicate deselection
+                            else:
+                                # Select new world
+                                self.selected_world_index = world_index
+                                
+                                # Get world info for logging
+                                selected_world = worlds[world_index]
+                                world_name = selected_world.get("name", "Unknown")
+                                
+                                print(f"🌍 EXTREME ENGINEERING: World selection successful!")
+                                print(f"   📍 Old selection: {old_selection}")
+                                print(f"   📍 New selection: {world_index}")
+                                print(f"   🌍 World name: {world_name}")
+                                print(f"   🎯 Total worlds: {len(worlds)}")
+                                
+                                return world_index
                         else:
                             print(f"❌ World index out of bounds: {world_index} (max: {len(worlds) - 1})")
                             return None
@@ -397,8 +408,13 @@ class WorldUI:
             return None
     
     def get_selected_world(self) -> Optional[Dict]:
-        """EXTREME ENGINEERING: Robust world data retrieval with comprehensive validation"""
+        """EXTREME ENGINEERING: Robust world data retrieval with comprehensive validation and toggle support"""
         try:
+            # Check for explicit deselection
+            if self.selected_world_index == -1:
+                print("🔍 EXTREME ENGINEERING: No world selected (explicit deselection)")
+                return None
+            
             # Validate world system
             if not hasattr(self, 'world_system') or self.world_system is None:
                 print("❌ World system not available")
@@ -455,8 +471,13 @@ class WorldUI:
             return None
     
     def is_world_selected(self) -> bool:
-        """EXTREME ENGINEERING: Robust world selection state validation"""
+        """EXTREME ENGINEERING: Robust world selection state validation with toggle support"""
         try:
+            # Check if selection index indicates no selection
+            if self.selected_world_index == -1:
+                print(f"🔍 EXTREME ENGINEERING: No world currently selected (explicit deselection)")
+                return False
+            
             # Get selected world with full validation
             selected_world = self.get_selected_world()
             
@@ -492,11 +513,11 @@ class WorldUI:
         """EXTREME ENGINEERING: Reset world selection to safe default state"""
         try:
             old_selection = self.selected_world_index
-            self.selected_world_index = 0
+            self.selected_world_index = -1  # -1 means no selection
             
             print(f"🔄 EXTREME ENGINEERING: World selection reset")
             print(f"   📍 Old selection: {old_selection}")
-            print(f"   📍 New selection: {self.selected_world_index}")
+            print(f"   📍 New selection: {self.selected_world_index} (none)")
             
         except Exception as e:
             print(f"💥 EXTREME ENGINEERING ERROR in reset_world_selection: {e}")
@@ -530,6 +551,11 @@ class WorldUI:
             if self.selected_world_index >= world_count:
                 print(f"   ⚠️ Selection index out of bounds, resetting")
                 self.reset_world_selection()
+                return
+            
+            # Check for explicit deselection
+            if self.selected_world_index == -1:
+                print(f"   🔍 No world selected (explicit deselection)")
                 return
             
             # Validate selected world data

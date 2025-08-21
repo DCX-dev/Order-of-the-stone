@@ -1039,7 +1039,7 @@ GLOBAL_USERNAME = "xavier"
 
 MAX_FALL_SPEED = 10
 GRAVITY = 1
-JUMP_STRENGTH = -8  # Reduced from -15 to -8 for slower, more controlled jumping
+JUMP_STRENGTH = -12  # Increased from -8 to -12 for higher jumping to clear blocks
 MOVE_SPEED = 0.08  # Increased from 0.06 to 0.08 for faster walking
 SLOW_SPEED = 0.02  # Even slower when holding shift
 
