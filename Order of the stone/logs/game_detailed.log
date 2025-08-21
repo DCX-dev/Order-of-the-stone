@@ -1,0 +1,190 @@
+2025-08-18 21:30:41,326 - root - WARNING - _validate_directories:196 - Resource directory fonts does not exist: assets/fonts
+2025-08-18 21:30:41,327 - root - INFO - _validate_directories:199 - Created resource directory: assets/fonts
+2025-08-18 21:30:41,327 - root - INFO - <module>:647 - Core systems initialized successfully
+2025-08-18 21:33:06,795 - root - INFO - <module>:647 - Core systems initialized successfully
+2025-08-18 21:34:30,497 - root - INFO - <module>:647 - Core systems initialized successfully
+2025-08-18 21:35:59,160 - root - INFO - <module>:647 - Core systems initialized successfully
+2025-08-18 21:43:20,075 - root - INFO - <module>:647 - Core systems initialized successfully
+2025-08-18 21:43:35,013 - root - INFO - <module>:647 - Core systems initialized successfully
+2025-08-18 21:44:19,323 - root - INFO - <module>:746 - Core systems initialized successfully
+2025-08-18 21:44:20,533 - root - INFO - <module>:746 - Core systems initialized successfully
+2025-08-18 21:44:39,486 - root - INFO - <module>:747 - Core systems initialized successfully
+2025-08-18 21:44:48,313 - root - INFO - <module>:747 - Core systems initialized successfully
+2025-08-18 21:48:11,935 - root - INFO - <module>:649 - Core systems initialized successfully
+2025-08-18 22:39:39,949 - root - INFO - __init__:614 - Enterprise Button Manager initialized
+2025-08-18 22:39:39,949 - root - INFO - <module>:1410 - Core systems initialized successfully
+2025-08-18 22:39:39,949 - root - INFO - <module>:1411 - Enterprise-grade systems initialized successfully
+2025-08-19 06:58:21,107 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 06:58:21,108 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 06:59:34,261 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 06:59:34,261 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:00:59,019 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:00:59,019 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:01:42,955 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:01:42,955 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:04:03,209 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:04:03,209 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:06:45,822 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:06:45,823 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:24:56,386 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:24:56,386 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:33:10,027 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:33:10,027 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:34:31,434 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:34:31,434 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:39:40,806 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:39:40,806 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:42:02,557 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:42:02,557 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 07:50:31,174 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 07:50:31,174 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 16:01:50,386 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 16:01:50,387 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 16:02:15,454 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 16:02:15,454 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 16:29:39,672 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 16:29:39,673 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 16:35:14,804 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 16:35:14,804 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 16:44:10,956 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 16:44:10,957 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 17:03:43,122 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 17:03:43,122 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 17:05:24,419 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 17:05:24,420 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 17:08:54,866 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 17:08:54,867 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:00:38,541 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:00:38,542 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:01:31,020 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:01:31,020 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:02:41,225 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:02:41,225 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:10:07,523 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:10:07,523 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:17:42,682 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:17:42,682 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:19:36,836 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:19:36,836 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:20:43,579 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:20:43,579 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 18:55:28,471 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 18:55:28,471 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 19:12:12,660 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 19:12:12,660 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 19:14:31,078 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 19:14:31,078 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 19:19:27,881 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 19:19:27,881 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 19:20:15,332 - root - INFO - __init__:545 - Performance monitor initialized
+2025-08-19 19:20:15,333 - root - INFO - <module>:616 - Core systems initialized successfully
+2025-08-19 19:26:15,854 - root - INFO - __init__:545 - Performance monitor initialized
+2025-08-19 19:26:15,854 - root - INFO - <module>:616 - Core systems initialized successfully
+2025-08-19 21:01:22,556 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:01:22,556 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:01:46,937 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:01:46,937 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:02:28,086 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:02:28,086 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:03:46,437 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:03:46,438 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:04:02,753 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:04:02,753 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:04:14,670 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:04:14,670 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:04:26,877 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:04:26,877 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:04:44,951 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:04:44,952 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:05:39,098 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:05:39,099 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:05:57,736 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:05:57,737 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:13:52,439 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:13:52,439 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:14:36,737 - root - INFO - __init__:542 - Performance monitor initialized
+2025-08-19 21:14:36,737 - root - INFO - <module>:613 - Core systems initialized successfully
+2025-08-19 21:40:01,572 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-19 21:40:01,572 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-19 21:41:40,782 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-19 21:41:40,782 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:10:23,642 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:10:23,642 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:20:37,556 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:20:37,556 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:26:14,680 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:26:14,680 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:26:46,243 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:26:46,243 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:39:14,076 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:39:14,076 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:44:02,521 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:44:02,521 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:55:23,128 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:55:23,128 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 07:58:48,519 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 07:58:48,519 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:14:42,810 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:14:42,810 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:23:54,697 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:23:54,697 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:24:30,944 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:24:30,944 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:33:48,507 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:33:48,507 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:34:18,964 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:34:18,964 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:47:33,946 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:47:33,946 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:52:55,131 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:52:55,131 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 16:59:25,343 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 16:59:25,343 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 17:00:50,369 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 17:00:50,369 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 17:01:53,100 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 17:01:53,100 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 17:08:21,688 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 17:08:21,688 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 17:40:57,223 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 17:40:57,223 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 17:48:57,879 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 17:48:57,879 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 17:53:46,452 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 17:53:46,453 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:02:09,335 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:02:09,335 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:02:13,895 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:02:13,895 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:03:47,093 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:03:47,093 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:07:50,038 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:07:50,038 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:21:19,809 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:21:19,809 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:30:27,869 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:30:27,869 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:45:18,464 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:45:18,464 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:52:22,532 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:52:22,533 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:56:15,934 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:56:15,934 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 18:59:54,048 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 18:59:54,048 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 19:01:13,714 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 19:01:13,714 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 19:04:53,888 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 19:04:53,888 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 19:08:49,868 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 19:08:49,868 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 19:17:05,777 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 19:17:05,777 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 19:21:56,592 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 19:21:56,593 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 20:01:52,442 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 20:01:52,442 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 20:03:48,767 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 20:03:48,767 - root - INFO - <module>:609 - Core systems initialized successfully
+2025-08-20 20:42:47,818 - root - INFO - __init__:538 - Performance monitor initialized
+2025-08-20 20:42:47,818 - root - INFO - <module>:609 - Core systems initialized successfully

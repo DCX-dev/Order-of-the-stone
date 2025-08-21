@@ -1,160 +1,250 @@
+#!/usr/bin/env python3
+"""
+📦 Enhanced Chest System for Order of the Stone
+Guarantees sword and pickaxe in every chest with improved loot tables
+"""
+
 import random
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional
 
 class ChestSystem:
-    """Manages chest behavior with Minecraft-style logic"""
+    """Enhanced chest management system with guaranteed essential items"""
     
     def __init__(self):
-        # Track which chests are player-placed vs naturally spawned
-        self.player_placed_chests: set = set()
-        # Chest inventories
-        self.chest_inventories: Dict[Tuple[int, int], List[Optional[Dict]]] = {}
-        # Chest slots configuration
-        self.CHEST_SLOTS = 27
-        self.CHEST_ROWS = 3
-        self.CHEST_COLS = 9
-    
-    def make_empty_slots(self, count: int) -> List[Optional[Dict]]:
-        """Create empty chest slots"""
-        return [None] * count
-    
-    def mark_chest_as_player_placed(self, pos: Tuple[int, int]):
-        """Mark a chest as player-placed (will not get auto-loot)"""
-        self.player_placed_chests.add(pos)
-    
-    def is_player_placed_chest(self, pos: Tuple[int, int]) -> bool:
-        """Check if a chest was placed by a player"""
-        return pos in self.player_placed_chests
-    
-    def is_natural_chest(self, pos: Tuple[int, int]) -> bool:
-        """Check if a chest is naturally spawned"""
-        return not self.is_player_placed_chest(pos)
-    
-    def ensure_chest_slots(self, pos: Tuple[int, int]):
-        """Ensure a chest has inventory slots"""
-        if pos not in self.chest_inventories:
-            self.chest_inventories[pos] = self.make_empty_slots(self.CHEST_SLOTS)
-    
-    def generate_natural_chest_loot(self, pos: Tuple[int, int]):
-        """Generate loot for naturally spawned chests"""
-        self.ensure_chest_slots(pos)
-        slots = self.chest_inventories[pos]
+        # Add missing attributes needed by the main game
+        self.chest_inventories = {}
+        self.player_placed_chests = set()
+        self.CHEST_ROWS = 4
+        self.CHEST_COLS = 6
         
-        # Always include sword and pickaxe in first two slots
-        slots[0] = {"type": "sword", "count": 1}
-        slots[1] = {"type": "pickaxe", "count": 1}
-        
-        # 99% chance to include ladders in a random empty slot
-        if random.random() < 0.99:
-            empty_idxs = [i for i, it in enumerate(slots) if it is None]
-            if empty_idxs:
-                slots[random.choice(empty_idxs)] = {"type": "ladder", "count": random.randint(3, 8)}
-        
-        # Fill a few random slots with blocks
-        choices = ["dirt", "stone", "coal", "iron", "gold"]
-        for i in range(2, self.CHEST_SLOTS):
-            if random.random() < 0.5:
-                slots[i] = {"type": random.choice(choices), "count": random.randint(1, 5)}
-        
-        # ~40% chance to include a bed in a random empty slot
-        if random.random() < 0.40:
-            empty_idxs = [i for i, it in enumerate(slots) if it is None]
-            if empty_idxs:
-                slots[random.choice(empty_idxs)] = {"type": "bed", "count": 1}
-        
-        # 1% chance diamond appears in a random empty slot
-        if random.randint(1, 100) == 1:
-            empty_idxs = [i for i, it in enumerate(slots) if it is None]
-            if empty_idxs:
-                idx = random.choice(empty_idxs)
-                slots[idx] = {"type": "diamond", "count": 1}
-    
-    def create_player_placed_chest(self, pos: Tuple[int, int]):
-        """Create an empty chest for player placement"""
-        self.ensure_chest_slots(pos)
-        self.mark_chest_as_player_placed(pos)
-        # Player-placed chests start completely empty
-        self.chest_inventories[pos] = self.make_empty_slots(self.CHEST_SLOTS)
-    
-    def open_chest(self, pos: Tuple[int, int]):
-        """Open a chest - generate loot for natural chests if needed"""
-        if pos not in self.chest_inventories:
-            # This is a new chest that needs initialization
-            if self.is_natural_chest(pos):
-                # Natural chest - generate loot
-                self.generate_natural_chest_loot(pos)
-            else:
-                # Player-placed chest - start empty
-                self.create_player_placed_chest(pos)
-    
-    def get_chest_inventory(self, pos: Tuple[int, int]) -> List[Optional[Dict]]:
-        """Get chest inventory, ensuring it exists"""
-        if pos not in self.chest_inventories:
-            self.open_chest(pos)
-        return self.chest_inventories[pos]
-    
-    def set_chest_inventory(self, pos: Tuple[int, int], inventory: List[Optional[Dict]]):
-        """Set chest inventory (for loading from save)"""
-        self.chest_inventories[pos] = inventory
-    
-    def ensure_all_chests_have_inventories(self, world_data: Dict[Tuple[int, int], str]):
-        """Ensure all chests in the world have proper inventories"""
-        for (x, y), block_type in world_data.items():
-            if block_type == "chest":
-                pos = (x, y)
-                if pos not in self.chest_inventories:
-                    # New chest found - determine if natural or player-placed
-                    if self.is_natural_chest(pos):
-                        # Natural chest - generate loot
-                        self.generate_natural_chest_loot(pos)
-                    else:
-                        # Player-placed chest - start empty
-                        self.create_player_placed_chest(pos)
-    
-    def serialize_for_save(self) -> Dict[str, Any]:
-        """Serialize chest data for saving"""
-        chests_ser = {}
-        for (cx, cy), slots in self.chest_inventories.items():
-            key = f"{cx},{cy}"
-            # Each slot is either None or a dict {"type": str, "count": int}
-            safe_slots = []
-            for it in slots:
-                if it and isinstance(it, dict) and "type" in it:
-                    safe_slots.append({"type": it["type"], "count": int(it.get("count", 1))})
-                else:
-                    safe_slots.append(None)
-            chests_ser[key] = safe_slots
-        
-        # Also save which chests are player-placed
-        player_placed_ser = [f"{x},{y}" for (x, y) in self.player_placed_chests]
-        
-        return {
-            "chest_inventories": chests_ser,
-            "player_placed_chests": player_placed_ser
+        # Enhanced loot tables with guaranteed essential items
+        self.chest_loot_tables = {
+            "village": [
+                # GUARANTEED ITEMS (always included)
+                {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                
+                # COMMON ITEMS (high chance)
+                {"item": "bread", "count": (1, 3), "chance": 0.9},
+                {"item": "carrot", "count": (2, 5), "chance": 0.8},
+                {"item": "coal", "count": (3, 6), "chance": 0.7},
+                {"item": "stone", "count": (2, 4), "chance": 0.6},
+                
+                # UNCOMMON ITEMS (medium chance)
+                {"item": "iron", "count": (1, 2), "chance": 0.5},
+                {"item": "oak_planks", "count": (2, 4), "chance": 0.4},
+                {"item": "dirt", "count": (3, 6), "chance": 0.4},
+                
+                # RARE ITEMS (low chance)
+                {"item": "gold", "count": (1, 1), "chance": 0.3},
+                {"item": "red_brick", "count": (1, 2), "chance": 0.2},
+                {"item": "ladder", "count": (1, 1), "chance": 0.2},
+                
+                # VERY RARE ITEMS (very low chance)
+                {"item": "diamond", "count": (1, 1), "chance": 0.1},
+                {"item": "bed", "count": (1, 1), "chance": 0.05}
+            ],
+            "fortress": [
+                # GUARANTEED ITEMS (always included)
+                {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                
+                # COMMON ITEMS (high chance)
+                {"item": "iron", "count": (2, 4), "chance": 0.9},
+                {"item": "coal", "count": (3, 8), "chance": 0.8},
+                {"item": "stone", "count": (3, 6), "chance": 0.7},
+                
+                # UNCOMMON ITEMS (medium chance)
+                {"item": "gold", "count": (1, 3), "chance": 0.6},
+                {"item": "red_brick", "count": (2, 4), "chance": 0.5},
+                {"item": "oak_planks", "count": (3, 6), "chance": 0.4},
+                
+                # RARE ITEMS (low chance)
+                {"item": "diamond", "count": (1, 2), "chance": 0.4},
+                {"item": "ladder", "count": (1, 2), "chance": 0.3},
+                {"item": "bed", "count": (1, 1), "chance": 0.2}
+            ],
+            "dungeon": [
+                # GUARANTEED ITEMS (always included)
+                {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                
+                # COMMON ITEMS (high chance)
+                {"item": "diamond", "count": (2, 5), "chance": 0.9},
+                {"item": "gold", "count": (3, 8), "chance": 0.8},
+                {"item": "iron", "count": (5, 10), "chance": 0.7},
+                
+                # UNCOMMON ITEMS (medium chance)
+                {"item": "coal", "count": (4, 8), "chance": 0.6},
+                {"item": "stone", "count": (3, 6), "chance": 0.5},
+                {"item": "red_brick", "count": (2, 4), "chance": 0.4},
+                
+                # RARE ITEMS (low chance)
+                {"item": "bed", "count": (1, 1), "chance": 0.3},
+                {"item": "ladder", "count": (1, 2), "chance": 0.2}
+            ]
         }
     
-    def deserialize_from_save(self, data: Dict[str, Any]):
-        """Load chest data from save"""
-        # Load chest inventories
-        self.chest_inventories = {}
-        for key, slots in data.get("chest_inventories", {}).items():
-            cx, cy = map(int, key.split(","))
-            safe_slots = []
-            for it in slots:
-                if it and isinstance(it, dict) and "type" in it:
-                    safe_slots.append({"type": it["type"], "count": int(it.get("count", 1))})
-                else:
-                    safe_slots.append(None)
-            self.chest_inventories[(cx, cy)] = safe_slots
+    def generate_chest_loot(self, chest_type: str = "village") -> List[Dict]:
+        """Generate enhanced loot for a chest based on its type with guaranteed items"""
+        if chest_type not in self.chest_loot_tables:
+            chest_type = "village"  # Default to village
         
-        # Load player-placed chest markers
-        self.player_placed_chests = set()
-        for key in data.get("player_placed_chests", []):
-            cx, cy = map(int, key.split(","))
-            self.player_placed_chests.add((cx, cy))
+        loot = []
+        loot_table = self.chest_loot_tables[chest_type]
+        
+        # First, add all guaranteed items
+        for item_data in loot_table:
+            if item_data.get("guaranteed", False):
+                count_range = item_data["count"]
+                if isinstance(count_range, tuple):
+                    count = random.randint(count_range[0], count_range[1])
+                else:
+                    count = count_range
+                
+                loot.append({
+                    "type": item_data["item"],
+                    "count": count
+                })
+        
+        # Then, add random items based on chance
+        for item_data in loot_table:
+            if not item_data.get("guaranteed", False):  # Skip guaranteed items
+                if random.random() < item_data["chance"]:
+                    count_range = item_data["count"]
+                    if isinstance(count_range, tuple):
+                        count = random.randint(count_range[0], count_range[1])
+                    else:
+                        count = count_range
+                    
+                    loot.append({
+                        "type": item_data["item"],
+                        "count": count
+                    })
+        
+        return loot
     
-    def get_chest_slot_rect(self, col: int, row: int, ui_x: int, ui_y: int, slot_size: int, slot_margin: int) -> Tuple[int, int]:
-        """Get chest slot position for UI drawing"""
-        x = ui_x + 20 + col * (slot_size + slot_margin)
-        y = ui_y + 50 + row * (slot_size + slot_margin)
-        return x, y
+    def place_chest(self, world_system, x: int, y: int, chest_type: str = "village"):
+        """Place a chest in the world with generated loot"""
+        # Place chest block
+        world_system.set_block(x, y, "chest")
+        
+        # Generate and store loot
+        loot = self.generate_chest_loot(chest_type)
+        
+        # Store chest data in world
+        chest_data = {
+            "type": "chest",
+            "x": x,
+            "y": y,
+            "chest_type": chest_type,
+            "loot": loot,
+            "opened": False
+        }
+        
+        world_system.add_entity(chest_data)
+    
+    def is_chest_at(self, world_system, x: int, y: int) -> bool:
+        """Check if there's a chest at the given coordinates"""
+        entities = world_system.get_entities()
+        
+        for entity in entities:
+            if (entity.get("type") == "chest" and 
+                entity.get("x") == x and 
+                entity.get("y") == y):
+                return True
+        
+        return False
+    
+    # Add methods needed by the main game
+    def get_chest_inventory(self, pos):
+        """Get chest inventory at given position with guaranteed items"""
+        if pos not in self.chest_inventories:
+            # Check if this is a player-placed chest
+            if pos in self.player_placed_chests:
+                # Player-placed chests start empty
+                self.chest_inventories[pos] = [None] * (self.CHEST_ROWS * self.CHEST_COLS)
+                print(f"📦 Created EMPTY inventory for player-placed chest at {pos}")
+            else:
+                # Natural chests get generated loot
+                self.chest_inventories[pos] = self._generate_chest_inventory(pos)
+                print(f"📦 Generated loot for natural chest at {pos}")
+        return self.chest_inventories[pos]
+    
+    def _generate_chest_inventory(self, pos):
+        """Generate enhanced inventory for a chest at given position with guaranteed items"""
+        # Determine chest type based on position (fortress vs village)
+        x, y = pos
+        chest_type = "fortress" if abs(x) > 20 else "village"  # Fortresses are far from spawn
+        
+        # Generate enhanced loot with guaranteed items
+        loot = self.generate_chest_loot(chest_type)
+        
+        # Convert to inventory format (list of 24 slots)
+        inventory = [None] * 24
+        
+        # Place guaranteed items first (sword and pickaxe)
+        guaranteed_items = [item for item in loot if item["type"] in ["sword", "pickaxe"]]
+        other_items = [item for item in loot if item["type"] not in ["sword", "pickaxe"]]
+        
+        # Place guaranteed items in first slots
+        for i, item in enumerate(guaranteed_items):
+            if i < len(inventory):
+                inventory[i] = item
+        
+        # Place other items in random slots
+        for item_data in other_items:
+            if len(inventory) > 0:
+                # Find empty slot
+                empty_slots = [i for i, slot in enumerate(inventory) if slot is None]
+                if empty_slots:
+                    slot = random.choice(empty_slots)
+                    inventory[slot] = item_data
+        
+        return inventory
+    
+    def create_player_placed_chest(self, pos):
+        """Create a player-placed chest (empty)"""
+        if pos not in self.player_placed_chests:
+            self.player_placed_chests.add(pos)
+            # Player-placed chests start completely empty
+            self.chest_inventories[pos] = [None] * (self.CHEST_ROWS * self.CHEST_COLS)
+            print(f"📦 Created EMPTY player-placed chest at {pos}")
+        else:
+            print(f"📦 Player-placed chest already exists at {pos}")
+    
+    def is_player_placed_chest(self, pos):
+        """Check if a chest at the given position is player-placed"""
+        return pos in self.player_placed_chests
+    
+    def open_chest(self, pos):
+        """Open a chest at given position"""
+        # This method is called when opening a chest
+        # The actual inventory is handled by get_chest_inventory
+        if pos not in self.chest_inventories:
+            # Check if this is a player-placed chest
+            if pos in self.player_placed_chests:
+                # Player-placed chests start empty
+                self.chest_inventories[pos] = [None] * (self.CHEST_ROWS * self.CHEST_COLS)
+                print(f"📦 Opening EMPTY player-placed chest at {pos}")
+            else:
+                # Natural chests get generated loot
+                self.chest_inventories[pos] = self._generate_chest_inventory(pos)
+                print(f"📦 Opening natural chest with loot at {pos}")
+        return self.chest_inventories[pos]
+    
+    def get_chest_info(self, pos):
+        """Get information about a chest including its type and contents"""
+        if pos in self.chest_inventories:
+            inventory = self.chest_inventories[pos]
+            item_count = sum(1 for item in inventory if item is not None)
+            total_items = sum(item.get("count", 1) for item in inventory if item is not None)
+            
+            return {
+                "type": "player_placed" if pos in self.player_placed_chests else "natural",
+                "item_count": item_count,
+                "total_items": total_items,
+                "has_sword": any(item and item.get("type") == "sword" for item in inventory),
+                "has_pickaxe": any(item and item.get("type") == "pickaxe" for item in inventory)
+            }
+        return None
