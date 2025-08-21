@@ -1039,8 +1039,8 @@ GLOBAL_USERNAME = "xavier"
 
 MAX_FALL_SPEED = 10
 GRAVITY = 1
-JUMP_STRENGTH = -15
-MOVE_SPEED = 0.06  # Increased for better movement speed while keeping control
+JUMP_STRENGTH = -8  # Reduced from -15 to -8 for slower, more controlled jumping
+MOVE_SPEED = 0.08  # Increased from 0.06 to 0.08 for faster walking
 SLOW_SPEED = 0.02  # Even slower when holding shift
 
 # Stamina system
@@ -4300,18 +4300,28 @@ def update_player():
         # Normal horizontal movement with collision
         if move_left:
             new_x = px - speed
-            # Check both head and feet positions for collision
-            left_head = get_block(int(new_x), int(player["y"]))
+            # Check multiple points along the left edge for collision
+            left_head_top = get_block(int(new_x), int(player["y"]))
+            left_head_mid = get_block(int(new_x), int(player["y"] + 0.3))
+            left_head_bottom = get_block(int(new_x), int(player["y"] + 0.6))
             left_feet = get_block(int(new_x), int(player["y"] + 0.9))
-            if is_non_solid_block(left_head) and is_non_solid_block(left_feet):
+            
+            # Only move if ALL collision points are clear
+            if (is_non_solid_block(left_head_top) and is_non_solid_block(left_head_mid) and 
+                is_non_solid_block(left_head_bottom) and is_non_solid_block(left_feet)):
                 player["x"] = new_x
 
         if move_right:
             new_x = px + speed
-            # Check both head and feet positions for collision
-            right_head = get_block(int(new_x + 0.9), int(player["y"]))
+            # Check multiple points along the right edge for collision
+            right_head_top = get_block(int(new_x + 0.9), int(player["y"]))
+            right_head_mid = get_block(int(new_x + 0.9), int(player["y"] + 0.3))
+            right_head_bottom = get_block(int(new_x + 0.9), int(player["y"] + 0.6))
             right_feet = get_block(int(new_x + 0.9), int(player["y"] + 0.9))
-            if is_non_solid_block(right_head) and is_non_solid_block(right_feet):
+            
+            # Only move if ALL collision points are clear
+            if (is_non_solid_block(right_head_top) and is_non_solid_block(right_head_mid) and 
+                is_non_solid_block(right_head_bottom) and is_non_solid_block(right_feet)):
                 player["x"] = new_x
 
         # Check for climbing without ladder (free climbing)
@@ -4340,11 +4350,19 @@ def update_player():
         
         # Check collision at the target position (both head and feet)
         target_y = int(next_y + 1)
-        head_block = get_block(int(player["x"]), target_y)
-        feet_block = get_block(int(player["x"] + 0.9), target_y)
         
-        # Check if we're trying to move into a solid block
-        if not is_non_solid_block(head_block) or not is_non_solid_block(feet_block):
+        # Check the entire player hitbox for collision (left, center, and right positions)
+        left_head = get_block(int(player["x"]), target_y)
+        center_head = get_block(int(player["x"] + 0.5), target_y)
+        right_head = get_block(int(player["x"] + 0.9), target_y)
+        
+        left_feet = get_block(int(player["x"]), target_y)
+        center_feet = get_block(int(player["x"] + 0.5), target_y)
+        right_feet = get_block(int(player["x"] + 0.9), target_y)
+        
+        # Check if we're trying to move into a solid block anywhere in the hitbox
+        if (not is_non_solid_block(left_head) or not is_non_solid_block(center_head) or not is_non_solid_block(right_head) or
+            not is_non_solid_block(left_feet) or not is_non_solid_block(center_feet) or not is_non_solid_block(right_feet)):
             # Collision detected - stop falling and place player on top of the block
             player["vel_y"] = 0
             player["on_ground"] = True
