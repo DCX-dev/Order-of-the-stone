@@ -5645,7 +5645,7 @@ modern_ui = ModernUI(screen, font, small_font, title_font, BIG_FONT)
 from world_system import WorldSystem
 from world_ui import WorldUI
 world_system = WorldSystem()
-world_ui = WorldUI(screen, world_system, font, big_font)
+world_ui = WorldUI(screen, world_system, font, title_font)
 
 # Game state variables
 game_state = GameState.TITLE
