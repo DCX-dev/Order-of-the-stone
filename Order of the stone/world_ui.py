@@ -135,15 +135,28 @@ class WorldUI:
         action_y = nav_y + 80
         
         if worlds:
-            # Play selected world
-            play_btn = self._draw_button("▶️ Play World", 200, action_y, mouse_pos, self.colors["success"])
-            button_states["play_world"] = play_btn
+            # Check if a world is selected
+            is_selected = self.is_world_selected()
             
-            # Delete selected world
-            delete_btn = self._draw_button("🗑️ Delete World", 400, action_y, mouse_pos, self.colors["danger"])
-            button_states["delete_world"] = delete_btn
+            # Play selected world (only enabled when world is selected)
+            if is_selected:
+                play_btn = self._draw_button("▶️ Play World", 200, action_y, mouse_pos, self.colors["success"])
+                button_states["play_world"] = play_btn
+            else:
+                # Disabled play button
+                play_btn = self._draw_button("▶️ Play World (Select a World)", 200, action_y, mouse_pos, self.colors["text_dim"])
+                button_states["play_world"] = None  # Disabled
             
-            # Create new world
+            # Delete selected world (only enabled when world is selected)
+            if is_selected:
+                delete_btn = self._draw_button("🗑️ Delete World", 400, action_y, mouse_pos, self.colors["danger"])
+                button_states["delete_world"] = delete_btn
+            else:
+                # Disabled delete button
+                delete_btn = self._draw_button("🗑️ Delete World (Select a World)", 400, action_y, mouse_pos, self.colors["text_dim"])
+                button_states["delete_world"] = None  # Disabled
+            
+            # Create new world (always enabled)
             create_btn = self._draw_button("✨ Create New World", 600, action_y, mouse_pos, self.colors["success"])
             button_states["create_world"] = create_btn
         
@@ -267,6 +280,28 @@ class WorldUI:
             return time.strftime("%m/%d/%Y", dt)
         except:
             return "Unknown"
+    
+    def handle_world_click(self, mouse_pos: tuple) -> Optional[str]:
+        """Handle clicks on world buttons and return the clicked world name if any"""
+        for world_key, rect in self.world_rects.items():
+            if rect.collidepoint(mouse_pos):
+                # Extract world index from key (e.g., "world_0" -> 0)
+                world_index = int(world_key.split("_")[1])
+                self.selected_world_index = world_index
+                print(f"🌍 World selected: {world_index}")
+                return world_index
+        return None
+    
+    def get_selected_world(self) -> Optional[Dict]:
+        """Get the currently selected world data"""
+        worlds = self.world_system.get_world_list()
+        if 0 <= self.selected_world_index < len(worlds):
+            return worlds[self.selected_world_index]
+        return None
+    
+    def is_world_selected(self) -> bool:
+        """Check if any world is currently selected"""
+        return self.get_selected_world() is not None
     
     def draw_world_creation(self, mouse_pos: tuple, world_name: str = "", seed: str = "") -> Dict[str, any]:
         """Draw the world creation screen with enhanced design"""

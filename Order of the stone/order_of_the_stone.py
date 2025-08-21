@@ -5391,8 +5391,8 @@ def draw_world_selection_screen():
     button_states = world_ui.draw_world_selection(mouse_pos)
     
     # Store button references for click handling
-    world_play_btn = button_states.get("play")
-    world_delete_btn = button_states.get("delete")
+    world_play_btn = button_states.get("play_world")
+    world_delete_btn = button_states.get("delete_world")
     world_create_btn = button_states.get("create_world")
     world_back_btn = button_states.get("back")
 
@@ -6169,6 +6169,13 @@ while running:
                     running = False
             elif game_state == GameState.WORLD_SELECTION:
                 # Handle world selection screen clicks
+                
+                # First, check if user clicked on a world to select it
+                world_click_result = world_ui.handle_world_click(event.pos)
+                if world_click_result is not None:
+                    print(f"🌍 World {world_click_result} selected!")
+                    continue  # Skip other button checks for this click
+                
                 if world_back_btn and world_back_btn.collidepoint(event.pos):
                     game_state = GameState.TITLE
                     update_pause_state()  # Resume time when returning to title
