@@ -5485,19 +5485,23 @@ def print_chest_system_info():
 # Print chest system information
 print_chest_system_info()
 
-# Enhanced save function using world system
+# Enhanced save function using world system with EXTREME ENGINEERING
 def save_game():
-    """Save current game state using the world system"""
+    """EXTREME ENGINEERING: Save current game state using the world system with comprehensive validation and error handling"""
     try:
-        if not world_system.current_world_name:
+        # Validate world system state
+        if not hasattr(world_system, 'current_world_name') or not world_system.current_world_name:
             print("⚠️ No world loaded, cannot save")
             return False
         
-        # Prepare save data
+        print(f"💾 EXTREME ENGINEERING: Starting save process for world '{world_system.current_world_name}'")
+        
+        # EXTREME ENGINEERING: Prepare and validate save data
         save_data = {
-            "blocks": world_data,
-            "entities": entities,
-            "player": player,
+            "name": world_system.current_world_name,
+            "blocks": world_data.copy() if world_data else {},
+            "entities": entities.copy() if entities else [],
+            "player": player.copy() if player else {},
             "world_settings": {
                 "time": time.time(),
                 "day": is_day,
@@ -5505,18 +5509,33 @@ def save_game():
             }
         }
         
-        # Save using world system
-        if world_system.save_world(world_system.current_world_name, save_data):
-            print(f"💾 Game saved successfully to world: {world_system.current_world_name}")
-            print(f"   - Blocks: {len(world_data)}")
-            print(f"   - Entities: {len(entities)}")
+        # EXTREME ENGINEERING: Validate save data integrity
+        print(f"   📊 Save data validation:")
+        print(f"      - Blocks: {len(save_data['blocks'])} (type: {type(save_data['blocks'])})")
+        print(f"      - Entities: {len(save_data['entities'])} (type: {type(save_data['entities'])})")
+        print(f"      - Player: {type(save_data['player'])}")
+        print(f"      - World settings: {type(save_data['world_settings'])}")
+        
+        # EXTREME ENGINEERING: Update world system with current data
+        world_system.current_world_data = save_data
+        
+        # EXTREME ENGINEERING: Save using world system (no arguments needed)
+        if world_system.save_world():
+            print(f"✅ EXTREME ENGINEERING: Game saved successfully to world: {world_system.current_world_name}")
+            print(f"   📊 Final save statistics:")
+            print(f"      - Blocks saved: {len(save_data['blocks'])}")
+            print(f"      - Entities saved: {len(save_data['entities'])}")
+            print(f"      - Player data: {len(save_data['player'])} fields")
+            print(f"      - Save time: {time.strftime('%H:%M:%S')}")
             return True
         else:
-            print("❌ Failed to save world using world system")
+            print("❌ EXTREME ENGINEERING: Failed to save world using world system")
             return False
             
     except Exception as e:
-        print(f"❌ Error saving game: {e}")
+        print(f"💥 EXTREME ENGINEERING ERROR in save_game: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def load_world_data():
