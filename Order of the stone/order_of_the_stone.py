@@ -295,6 +295,7 @@ class GameState(Enum):
     """Enumeration of all possible game states"""
     TITLE = "title"
     WORLD_SELECTION = "world_selection"  # New state for world selection
+    USERNAME_REQUIRED = "username_required"  # New state for username required
     GAME = "game"
     PAUSED = "paused"
     INVENTORY = "inventory"
@@ -380,7 +381,8 @@ class StateManager:
                 # Define valid transitions
         valid_transitions = {
             GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.SHOP, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION],
-            GameState.WORLD_SELECTION: [GameState.TITLE, GameState.GAME],
+            GameState.WORLD_SELECTION: [GameState.TITLE, GameState.GAME, GameState.USERNAME_REQUIRED],
+            GameState.USERNAME_REQUIRED: [GameState.TITLE],
             GameState.GAME: [GameState.PAUSED, GameState.INVENTORY, GameState.SHOP, GameState.TITLE],
             GameState.PAUSED: [GameState.GAME, GameState.TITLE, GameState.OPTIONS],
             GameState.INVENTORY: [GameState.GAME],
@@ -4995,12 +4997,30 @@ def draw_username_creation_screen():
     
     screen.fill((0, 0, 128))  # Blue background
     
-    # Title
-    title_text = BIG_FONT.render("Create Your Username", True, (255, 255, 255))
+    # EXTREME ENGINEERING: Dynamic title and instructions based on username existence
+    username_exists = False
+    try:
+        username_dir = os.path.join("save_data", "username")
+        username_file = os.path.join(username_dir, "username.json")
+        if os.path.exists(username_file):
+            with open(username_file, 'r') as f:
+                file_data = json.load(f)
+                username_exists = bool(file_data.get("username", "").strip())
+    except Exception:
+        username_exists = False
+    
+    # Dynamic title based on whether username exists
+    if username_exists:
+        title_text = BIG_FONT.render("Change Your Username", True, (255, 255, 255))
+    else:
+        title_text = BIG_FONT.render("Create Your Username", True, (255, 255, 255))
     screen.blit(title_text, (center_x(title_text.get_width()), 80))
     
-    # Instructions
-    instruction_text = font.render("Click the keys to type your username (3-16 characters)", True, (255, 255, 255))
+    # Dynamic instructions based on whether username exists
+    if username_exists:
+        instruction_text = font.render("Click the keys to change your username (3-16 characters)", True, (255, 255, 255))
+    else:
+        instruction_text = font.render("Click the keys to create your username (3-16 characters)", True, (255, 255, 255))
     screen.blit(instruction_text, (center_x(instruction_text.get_width()), 130))
     
     # Show error message if any
@@ -5345,10 +5365,10 @@ def check_username_required():
         return True
 
 def require_username_check():
-    """Check if username is required and redirect if needed"""
+    """EXTREME ENGINEERING: Check if username is required and redirect if needed"""
     global game_state
     if check_username_required():
-        game_state = GameState.USERNAME_CREATE
+        game_state = GameState.USERNAME_REQUIRED
         return True
     return False
 
@@ -6605,17 +6625,8 @@ while running:
         draw_world_selection_screen()
     elif game_state == GameState.USERNAME_CREATE:
         draw_username_creation_screen()
-    # World creation drawing removed - game goes directly to play
-    elif game_state == GameState.USERNAME_CREATE:
+    elif game_state == GameState.USERNAME_REQUIRED:
         draw_username_required_screen()
-
-        
-
-        
-
-            
-
-        
     elif game_state == GameState.PAUSED:
         draw_game_menu()
     elif game_state == GameState.CONTROLS:
