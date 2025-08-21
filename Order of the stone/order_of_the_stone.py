@@ -294,7 +294,7 @@ class ResourceManager:
 class GameState(Enum):
     """Enumeration of all possible game states"""
     TITLE = "title"
-    # World selection states removed - game goes directly to play
+    WORLD_SELECTION = "world_selection"  # New state for world selection
     GAME = "game"
     PAUSED = "paused"
     INVENTORY = "inventory"
@@ -377,10 +377,10 @@ class StateManager:
     
     def _is_valid_transition(self, new_state: GameState) -> bool:
         """Check if state transition is valid"""
-        # Define valid transitions
+                # Define valid transitions
         valid_transitions = {
-                    GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.SHOP, GameState.MULTIPLAYER, GameState.USERNAME_CREATE],
-        # World selection states removed - game goes directly to play
+            GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.SHOP, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION],
+            GameState.WORLD_SELECTION: [GameState.TITLE, GameState.GAME],
             GameState.GAME: [GameState.PAUSED, GameState.INVENTORY, GameState.SHOP, GameState.TITLE],
             GameState.PAUSED: [GameState.GAME, GameState.TITLE, GameState.OPTIONS],
             GameState.INVENTORY: [GameState.GAME],
@@ -1309,6 +1309,12 @@ inventory_close_button = None
 left_arrow_btn = None
 right_arrow_btn = None
 select_btn = None
+
+# --- World Selection Button References ---
+world_play_btn = None
+world_delete_btn = None
+world_create_btn = None
+world_back_btn = None
 
 # --- Character Shop system state ---
 shop_open = False
@@ -5355,6 +5361,23 @@ def draw_title_screen():
     options_btn = button_states.get("options")
     quit_btn = button_states.get("quit")
 
+# --- World Selection Screen Drawing Function ---
+def draw_world_selection_screen():
+    """Draw the world selection screen"""
+    global world_play_btn, world_delete_btn, world_create_btn, world_back_btn
+    
+    # Get mouse position for hover detection
+    mouse_pos = pygame.mouse.get_pos()
+    
+    # Draw world selection screen
+    button_states = world_ui.draw_world_selection(mouse_pos)
+    
+    # Store button references for click handling
+    world_play_btn = button_states.get("play")
+    world_delete_btn = button_states.get("delete")
+    world_create_btn = button_states.get("create_world")
+    world_back_btn = button_states.get("back")
+
 # --- Game Menu Drawing Function ---
 def draw_game_menu():
     global resume_btn, quit_btn, save_btn
@@ -5444,10 +5467,15 @@ def print_chest_system_info():
 # Print chest system information
 print_chest_system_info()
 
-# Simple save function for the old-school approach
+# Enhanced save function using world system
 def save_game():
-    """Simple save function - saves current world data to JSON"""
+    """Save current game state using the world system"""
     try:
+        if not world_system.current_world_name:
+            print("⚠️ No world loaded, cannot save")
+            return False
+        
+        # Prepare save data
         save_data = {
             "blocks": world_data,
             "entities": entities,
@@ -5459,13 +5487,75 @@ def save_game():
             }
         }
         
-        with open("save_data.json", "w") as f:
-            json.dump(save_data, f, indent=2)
-        
-        print(f"💾 Game saved successfully with {len(world_data)} blocks")
-        return True
+        # Save using world system
+        if world_system.save_world(world_system.current_world_name, save_data):
+            print(f"💾 Game saved successfully to world: {world_system.current_world_name}")
+            print(f"   - Blocks: {len(world_data)}")
+            print(f"   - Entities: {len(entities)}")
+            return True
+        else:
+            print("❌ Failed to save world using world system")
+            return False
+            
     except Exception as e:
         print(f"❌ Error saving game: {e}")
+        return False
+
+def load_world_data():
+    """Load world data from the world system into the game"""
+    global world_data, entities, player
+    
+    if not world_system.current_world_data:
+        print("⚠️ No world data available to load")
+        return False
+    
+    try:
+        # Load world data
+        world_data = world_system.current_world_data.get("blocks", {})
+        entities = world_system.current_world_data.get("entities", [])
+        
+        # Load player data with validation
+        player_data = world_system.current_world_data.get("player", {})
+        if not isinstance(player_data, dict):
+            print("⚠️ Invalid player data, using defaults")
+            player_data = {}
+        
+        # Update player with loaded data, preserving any missing fields
+        for key, value in player_data.items():
+            if key in player:
+                player[key] = value
+        
+        # Ensure critical player fields exist
+        if "health" not in player or player["health"] <= 0:
+            player["health"] = 10
+        if "hunger" not in player or player["hunger"] <= 0:
+            player["hunger"] = 100
+        if "stamina" not in player:
+            player["stamina"] = 100
+        if "max_stamina" not in player:
+            player["max_stamina"] = 100
+        if "inventory" not in player:
+            player["inventory"] = []
+        if "backpack" not in player:
+            player["backpack"] = []
+        if "selected" not in player:
+            player["selected"] = 0
+        if "armor" not in player:
+            player["armor"] = {"helmet": None, "chestplate": None, "leggings": None, "boots": None}
+        
+        # Load world settings
+        world_settings = world_system.current_world_data.get("world_settings", {})
+        global is_day, day_start_time
+        is_day = world_settings.get("day", True)
+        day_start_time = time.time() if is_day else time.time() - 43200  # 12 hours if night
+        
+        print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
+        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}, stamina={player['stamina']}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error loading world data: {e}")
         return False
 
 def load_game():
@@ -5550,6 +5640,12 @@ multiplayer_ui.set_fonts(font, small_font, title_font)
 # Initialize modern UI system
 from modern_ui import ModernUI
 modern_ui = ModernUI(screen, font, small_font, title_font, BIG_FONT)
+
+# Initialize world system and UI
+from world_system import WorldSystem
+from world_ui import WorldUI
+world_system = WorldSystem()
+world_ui = WorldUI(screen, world_system, font, big_font)
 
 # Game state variables
 game_state = GameState.TITLE
@@ -6023,20 +6119,10 @@ while running:
                     if require_username_check():
                         continue  # Don't proceed to game
                     
-                    # Load or create default world and go straight to game
-                    if load_game():
-                        game_state = GameState.GAME
-                        update_pause_state()  # Resume time when entering game
-                        print("🎮 Starting game with default world!")
-                        
-                        # Give player starting items including villager spawners
-                        give_starting_items()
-                        
-                        # Test block breaking functionality
-                        test_block_breaking()
-                    else:
-                        print("❌ Failed to load game, staying on title screen")
-                        continue
+                    # Go to world selection screen instead of directly loading game
+                    game_state = GameState.WORLD_SELECTION
+                    update_pause_state()  # Pause time when leaving title
+                    print("🌍 Opening world selection screen!")
                 elif username_btn.collidepoint(event.pos):
                     # If changing username, save the current one first
                     if GLOBAL_USERNAME:
@@ -6063,6 +6149,54 @@ while running:
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
                     running = False
+            elif game_state == GameState.WORLD_SELECTION:
+                # Handle world selection screen clicks
+                if world_back_btn and world_back_btn.collidepoint(event.pos):
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Resume time when returning to title
+                    print("⬅️ Returning to title screen from world selection")
+                elif world_create_btn and world_create_btn.collidepoint(event.pos):
+                    # Create a new world
+                    world_name = f"World {len(world_system.world_list) + 1}"
+                    if world_system.create_world(world_name):
+                        print(f"🌍 Created new world: {world_name}")
+                        # Load the newly created world
+                        if world_system.load_world(world_name):
+                            game_state = GameState.GAME
+                            update_pause_state()  # Resume time when entering game
+                            print(f"🎮 Starting game with new world: {world_name}")
+                            give_starting_items()
+                        else:
+                            print("❌ Failed to load newly created world")
+                    else:
+                        print("❌ Failed to create new world")
+                elif world_play_btn and world_play_btn.collidepoint(event.pos):
+                    # Play selected world (if any world is selected)
+                    selected_world = world_ui.get_selected_world()
+                    if selected_world:
+                        world_name = selected_world["name"]
+                        if world_system.load_world(world_name):
+                            game_state = GameState.GAME
+                            update_pause_state()  # Resume time when entering game
+                            print(f"🎮 Starting game with world: {world_name}")
+                            give_starting_items()
+                        else:
+                            print(f"❌ Failed to load world: {world_name}")
+                    else:
+                        print("❌ No world selected")
+                elif world_delete_btn and world_delete_btn.collidepoint(event.pos):
+                    # Delete selected world (if any world is selected)
+                    selected_world = world_ui.get_selected_world()
+                    if selected_world:
+                        world_name = selected_world["name"]
+                        if world_system.delete_world(world_name):
+                            print(f"🗑️ Deleted world: {world_name}")
+                            # Refresh the world selection screen
+                            world_system._load_world_list()
+                        else:
+                            print(f"❌ Failed to delete world: {world_name}")
+                    else:
+                        print("❌ No world selected")
             elif game_state == GameState.PAUSED:
                 if resume_btn.collidepoint(event.pos):
                     game_state = GameState.GAME
@@ -6377,6 +6511,8 @@ while running:
             show_death_screen()
     elif game_state == GameState.TITLE:
         draw_title_screen()
+    elif game_state == GameState.WORLD_SELECTION:
+        draw_world_selection_screen()
     elif game_state == GameState.USERNAME_CREATE:
         draw_username_creation_screen()
     # World creation drawing removed - game goes directly to play
@@ -6409,6 +6545,14 @@ while running:
 
     pygame.display.flip()
     clock.tick(fps_limit)
+    
+    # Auto-save every 5 minutes (300 seconds) when in game
+    if game_state == GameState.GAME and time.time() - last_auto_save > 300:
+        if save_game():
+            print("💾 Auto-save completed")
+            last_auto_save = time.time()
+        else:
+            print("⚠️ Auto-save failed")
     
     # Check if we should exit
     if not running:
