@@ -2519,8 +2519,8 @@ def break_block(mx, my):
         print(f"❌ Nothing to break or already air")
         return False  # Nothing to break or air, silent fail
     
-    # Bedrock, fluids are unbreakable
-    if block in ("bedrock", "water", "lava"):
+    # Bedrock, fluids, and villagers are unbreakable
+    if block in ("bedrock", "water", "lava", "villager"):
         return False  # Can't break, silent fail
     
     # Stone & ores require pickaxe - STRICT REQUIREMENT
@@ -6167,7 +6167,7 @@ while running:
                                 game_state = GameState.GAME
                                 update_pause_state()  # Resume time when entering game
                                 print(f"🎮 Starting game with new world: {world_name}")
-                                give_starting_items()
+                                # give_starting_items()  # Removed starting items
                             else:
                                 print("❌ Failed to load world data into game")
                         else:
@@ -6185,7 +6185,7 @@ while running:
                                 game_state = GameState.GAME
                                 update_pause_state()  # Resume time when entering game
                                 print(f"🎮 Starting game with world: {world_name}")
-                                give_starting_items()
+                                # give_starting_items()  # Removed starting items
                             else:
                                 print(f"❌ Failed to load world data for: {world_name}")
                         else:

@@ -34,6 +34,17 @@ class ImprovedWorldGenerator:
         world_data = {
             "blocks": {},
             "entities": [],
+            "player": {
+                "x": 0.0, "y": 48.0, "vel_y": 0, "on_ground": True,
+                "health": 10, "max_health": 10, "hunger": 100, "max_hunger": 100,
+                "stamina": 100, "max_stamina": 100, "inventory": [], "backpack": [],
+                "selected": 0, "username": "", "armor": {"helmet": None, "chestplate": None, "leggings": None, "boots": None}
+            },
+            "world_settings": {
+                "time": time.time(),
+                "day": True,
+                "weather": "clear"
+            },
             "spawn_x": 0,
             "spawn_y": 0
         }
@@ -57,6 +68,10 @@ class ImprovedWorldGenerator:
         spawn_x, spawn_y = self._find_spawn_location(world_data["blocks"])
         world_data["spawn_x"] = spawn_x
         world_data["spawn_y"] = spawn_y
+        
+        # Update player position to spawn location
+        world_data["player"]["x"] = float(spawn_x)
+        world_data["player"]["y"] = float(spawn_y - 1)  # Spawn above ground
         
         generation_time = time.time() - start_time
         print(f"✅ World generated in {generation_time:.2f}s")
@@ -418,8 +433,9 @@ class ImprovedWorldGenerator:
         spawn_y = self._find_surface(blocks, spawn_x)
         
         if spawn_y is not None:
-            return spawn_x, spawn_y - 1  # Spawn above grass
+            return spawn_x, spawn_y - 1  # Spawn above grass (on solid ground)
         else:
+            # Fallback spawn - ensure it's on solid ground
             return 0, 63  # Fallback spawn
 
 

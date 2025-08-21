@@ -236,7 +236,7 @@ class WorldSystem:
         
         # Ensure player has all required fields
         player_defaults = {
-            "x": 0.0, "y": 48.0, "vel_y": 0, "on_ground": False,
+            "x": 0.0, "y": 48.0, "vel_y": 0, "on_ground": True,  # Start on ground to prevent falling
             "health": 10, "max_health": 10, "hunger": 100, "max_hunger": 100,
             "stamina": 100, "max_stamina": 100, "inventory": [], "backpack": [],
             "selected": 0, "username": "", "armor": {"helmet": None, "chestplate": None, "leggings": None, "boots": None}
