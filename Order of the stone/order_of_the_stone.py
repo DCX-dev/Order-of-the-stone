@@ -6357,6 +6357,11 @@ while running:
                     game_state = GameState.TITLE
                     update_pause_state()  # Resume time when returning to title
                     
+            elif game_state == GameState.USERNAME_REQUIRED:
+                if back_to_title_btn and back_to_title_btn.collidepoint(event.pos):
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Resume time when returning to title
+                    
             elif game_state == GameState.OPTIONS:
                 if fullscreen_btn.collidepoint(event.pos):
                     FULLSCREEN = not FULLSCREEN
