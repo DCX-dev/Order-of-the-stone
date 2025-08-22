@@ -1231,6 +1231,35 @@ door_states = {}  # Track which doors are open/closed
 # --- Stamina System ---
 stamina_regen_timer = 0  # Timer for stamina regeneration delay
 
+# EXTREME ENGINEERING: Legendary Boss Fight System
+BOSS_SPAWN_DISTANCE = 8445000  # 8.445 million blocks away
+BOSS_ARENA_SIZE = 100  # 100x100 block arena
+BOSS_PHASE_1_HP = 1000  # First form: 1000 HP
+BOSS_PHASE_2_HP = 1500  # Second form: 1500 HP (orange form)
+BOSS_SWORD_DAMAGE = 50  # Player sword damage to boss
+BOSS_ATTACK_DAMAGE = {
+    "fire": 2,      # Fire attack: 2 hearts (4 HP)
+    "phase1": 6,    # First form attack: 6 hearts (12 HP)  
+    "phase2": 16    # Second form attack: 16 hearts (32 HP)
+}
+
+# Boss fight state
+boss_fight_active = False
+boss_health = BOSS_PHASE_1_HP
+boss_max_health = BOSS_PHASE_1_HP
+boss_phase = 1
+boss_attack_cooldown = 0
+boss_attack_timer = 0
+boss_position = {"x": 0, "y": 0}
+boss_direction = 1
+boss_attack_type = "phase1"
+boss_arena_center = {"x": 0, "y": 0}
+
+# Legend NPC state
+legend_npc_spawned = False
+legend_npc_position = {"x": 0, "y": 0}
+legend_npc_dialogue_cooldown = 0
+
 def show_message(text, ms=1500):
     global message_text, message_until
     message_text = text
@@ -2071,6 +2100,236 @@ def generate_village_farm(farm_x, farm_y):
     
     print(f"🌾 Generated village farm at ({farm_x}, {farm_y}) with 4 carrots and fencing!")
 
+def spawn_legend_npc():
+    """EXTREME ENGINEERING: Spawn the Legend NPC at the boss location"""
+    global legend_npc_spawned, legend_npc_position
+    
+    if legend_npc_spawned:
+        return
+    
+    # Position the Legend NPC at the boss arena
+    legend_npc_position = {
+        "x": BOSS_SPAWN_DISTANCE,
+        "y": 0  # Will be adjusted to ground level
+    }
+    
+    # Add Legend NPC to entities
+    entities.append({
+        "type": "legend_npc",
+        "x": float(legend_npc_position["x"]),
+        "y": float(legend_npc_position["y"]),
+        "dir": 1,
+        "step": 0,
+        "dialogue_cooldown": 0,
+        "name": "The Legend",
+        "personality": "legendary",
+        "mood": "mysterious",
+        "home_x": legend_npc_position["x"],
+        "home_y": legend_npc_position["y"],
+        "wander_radius": 0,  # Legend NPC doesn't wander
+        "dialogue_history": [],
+        "last_interaction": 0
+    })
+    
+    legend_npc_spawned = True
+    print(f"🌟 LEGENDARY! Spawned The Legend NPC at ({legend_npc_position['x']}, {legend_npc_position['y']})")
+
+def check_legend_npc_spawn():
+    """EXTREME ENGINEERING: Check if player is close enough to spawn the Legend NPC"""
+    global legend_npc_spawned
+    
+    if legend_npc_spawned:
+        return
+    
+    # Check if player is within 1000 blocks of the Legend NPC spawn point
+    distance_to_legend = abs(player["x"] - BOSS_SPAWN_DISTANCE)
+    if distance_to_legend < 1000:
+        spawn_legend_npc()
+
+def generate_boss_arena():
+    """EXTREME ENGINEERING: Generate the legendary boss battle arena with red bricks"""
+    global boss_arena_center, boss_position
+    
+    # Arena center at the Legend NPC location
+    arena_center_x = BOSS_SPAWN_DISTANCE
+    arena_center_y = 0  # Will be adjusted to ground level
+    
+    boss_arena_center = {"x": arena_center_x, "y": arena_center_y}
+    
+    # Generate massive red brick arena (100x100 blocks)
+    arena_size = BOSS_ARENA_SIZE
+    half_size = arena_size // 2
+    
+    print(f"🏟️ GENERATING LEGENDARY BOSS ARENA at ({arena_center_x}, {arena_center_y})")
+    
+    # Create arena floor and walls
+    for dx in range(-half_size, half_size + 1):
+        for dy in range(-half_size, half_size + 1):
+            x = arena_center_x + dx
+            y = arena_center_y + dy
+            
+            # Arena floor (red bricks)
+            set_block(x, y, "red_brick")
+            
+            # Arena walls (red bricks) - 10 blocks tall
+            for wall_y in range(y + 1, y + 11):
+                if dx == -half_size or dx == half_size or dy == -half_size or dy == half_size:
+                    set_block(x, wall_y, "red_brick")
+    
+    # Create arena entrance (opening in the wall)
+    entrance_x = arena_center_x
+    entrance_y = arena_center_y + half_size
+    for y in range(entrance_y, entrance_y + 4):  # 4-block tall entrance
+        set_block(entrance_x, y, "air")
+    
+    # Position boss in center of arena
+    boss_position = {
+        "x": arena_center_x,
+        "y": arena_center_y + 5  # 5 blocks above arena floor
+    }
+    
+    print(f"🏟️ LEGENDARY BOSS ARENA COMPLETE! Boss positioned at ({boss_position['x']}, {boss_position['y']})")
+
+def start_boss_fight():
+    """EXTREME ENGINEERING: Start the legendary boss battle"""
+    global boss_fight_active, boss_health, boss_max_health, boss_phase
+    
+    if boss_fight_active:
+        return
+    
+    boss_fight_active = True
+    boss_health = BOSS_PHASE_1_HP
+    boss_max_health = BOSS_PHASE_1_HP
+    boss_phase = 1
+    
+    # Teleport player to boss arena
+    player["x"] = boss_arena_center["x"]
+    player["y"] = boss_arena_center["y"] + 5
+    
+    # Generate boss arena if not already generated
+    if boss_arena_center["x"] == 0:
+        generate_boss_arena()
+    
+    show_message("🐉 LEGENDARY BOSS FIGHT STARTED! Prepare for battle!", 3000)
+    print(f"🐉 LEGENDARY BOSS FIGHT STARTED! Boss HP: {boss_health}/{boss_max_health}")
+
+def update_boss():
+    """EXTREME ENGINEERING: Update boss AI, attacks, and phase transitions"""
+    global boss_health, boss_phase, boss_max_health, boss_attack_cooldown, boss_attack_timer, boss_attack_type
+    
+    if not boss_fight_active:
+        return
+    
+    # Boss attack cooldown
+    if boss_attack_cooldown > 0:
+        boss_attack_cooldown -= 1
+    
+    # Boss attack timer
+    if boss_attack_timer > 0:
+        boss_attack_timer -= 1
+        if boss_attack_timer == 0:
+            # Execute attack
+            execute_boss_attack()
+    
+    # Check for phase transition
+    if boss_phase == 1 and boss_health <= 0:
+        # Transition to phase 2 (orange form)
+        boss_phase = 2
+        boss_health = BOSS_PHASE_2_HP
+        boss_max_health = BOSS_PHASE_2_HP
+        boss_attack_type = "phase2"
+        show_message("🐉 BOSS PHASE 2 ACTIVATED! Orange form unleashed!", 3000)
+        print(f"🐉 BOSS PHASE 2! HP: {boss_health}/{boss_max_health}")
+        
+        # Reset attack cooldown for phase 2
+        boss_attack_cooldown = 120  # 2 seconds
+    
+    elif boss_phase == 2 and boss_health <= 0:
+        # Boss defeated!
+        boss_fight_active = False
+        show_message("🏆 LEGENDARY BOSS DEFEATED! You are victorious!", 5000)
+        print("🏆 LEGENDARY BOSS DEFEATED!")
+        
+        # Give player rewards
+        give_boss_rewards()
+        return
+    
+    # Boss attack patterns
+    if boss_attack_cooldown <= 0:
+        # Choose attack type based on phase
+        if boss_phase == 1:
+            attack_types = ["fire", "phase1"]
+        else:  # Phase 2
+            attack_types = ["fire", "phase2"]
+        
+        boss_attack_type = random.choice(attack_types)
+        boss_attack_cooldown = 180  # 3 seconds between attacks
+        boss_attack_timer = 60  # 1 second attack windup
+
+def execute_boss_attack():
+    """EXTREME ENGINEERING: Execute boss attacks with different damage types"""
+    global boss_attack_type
+    
+    if not boss_fight_active:
+        return
+    
+    # Calculate damage based on attack type
+    damage_hearts = BOSS_ATTACK_DAMAGE.get(boss_attack_type, 2)
+    damage_hp = damage_hearts * 2  # Convert hearts to HP
+    
+    # Apply damage to player
+    player["health"] = max(0, player["health"] - damage_hp)
+    
+    # Show attack message
+    attack_messages = {
+        "fire": f"🔥 BOSS FIRE ATTACK! You took {damage_hearts} hearts of damage!",
+        "phase1": f"⚔️ BOSS PHASE 1 ATTACK! You took {damage_hearts} hearts of damage!",
+        "phase2": f"💥 BOSS PHASE 2 ATTACK! You took {damage_hearts} hearts of damage!"
+    }
+    
+    show_message(attack_messages.get(boss_attack_type, "Boss attack!"), 2000)
+    print(f"🐉 Boss {boss_attack_type} attack dealt {damage_hearts} hearts ({damage_hp} HP) damage!")
+    
+    # Check if player died
+    if player["health"] <= 0:
+        show_message("💀 You were defeated by the boss! Game over!", 3000)
+        print("💀 Player defeated by boss!")
+
+def give_boss_rewards():
+    """EXTREME ENGINEERING: Give player rewards for defeating the boss"""
+    # Add legendary items to inventory
+    legendary_rewards = [
+        {"type": "legendary_sword", "count": 1},
+        {"type": "boss_trophy", "count": 1},
+        {"type": "diamond", "count": 10},
+        {"type": "gold", "count": 20}
+    ]
+    
+    for reward in legendary_rewards:
+        player["inventory"].append(reward)
+    
+    show_message("🏆 LEGENDARY REWARDS: Legendary Sword, Boss Trophy, Diamonds, Gold!", 4000)
+    print("🏆 Boss rewards given to player!")
+
+def damage_boss(damage):
+    """EXTREME ENGINEERING: Damage the boss and check for phase transitions"""
+    global boss_health
+    
+    if not boss_fight_active:
+        return
+    
+    boss_health = max(0, boss_health - damage)
+    print(f"🐉 Boss took {damage} damage! HP: {boss_health}/{boss_max_health}")
+    
+    # Show damage message
+    if boss_health > 0:
+        show_message(f"⚔️ Boss HP: {boss_health}/{boss_max_health}", 1000)
+    else:
+        if boss_phase == 1:
+            show_message("🐉 BOSS PHASE 1 DEFEATED! Phase 2 incoming!", 2000)
+        else:
+            show_message("🏆 FINAL BOSS PHASE DEFEATED! Victory!", 2000)
+
 def maybe_generate_village_for_chunk(chunk_id, base_x):
     """15% chance to create a small village (1-2 houses) in this 50-wide chunk.
     Allow spawning even when a world is loaded (we now route through set_block).
@@ -2605,6 +2864,48 @@ def draw_held_item(px, py):
                 # Draw the item on the hand
                 screen.blit(scaled_texture, (hand_x, hand_y))
 
+def draw_boss_health_bar():
+    """EXTREME ENGINEERING: Draw the legendary boss health bar at the top of the screen"""
+    if not boss_fight_active:
+        return
+    
+    # Boss health bar dimensions
+    bar_width = 600
+    bar_height = 40
+    bar_x = (SCREEN_WIDTH - bar_width) // 2
+    bar_y = 20
+    
+    # Draw boss health bar background
+    pygame.draw.rect(screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height), 3)
+    
+    # Calculate health percentage
+    health_percentage = boss_health / boss_max_health
+    
+    # Draw health bar (changes color based on phase)
+    if boss_phase == 1:
+        health_color = (255, 0, 0)  # Red for phase 1
+    else:
+        health_color = (255, 165, 0)  # Orange for phase 2
+    
+    health_width = int(bar_width * health_percentage)
+    pygame.draw.rect(screen, health_color, (bar_x + 2, bar_y + 2, health_width, bar_height - 4))
+    
+    # Draw boss health text
+    health_text = f"🐉 LEGENDARY BOSS - Phase {boss_phase} - HP: {boss_health}/{boss_max_health}"
+    health_surface = font.render(health_text, True, (255, 255, 255))
+    text_x = bar_x + (bar_width - health_surface.get_width()) // 2
+    text_y = bar_y + (bar_height - health_surface.get_height()) // 2
+    screen.blit(health_surface, (text_x, text_y))
+    
+    # Draw phase indicator
+    phase_text = f"Phase {boss_phase}" if boss_phase == 1 else "ORANGE FORM"
+    phase_color = (255, 0, 0) if boss_phase == 1 else (255, 165, 0)
+    phase_surface = font.render(phase_text, True, phase_color)
+    phase_x = bar_x + 10
+    phase_y = bar_y + 10
+    screen.blit(phase_surface, (phase_x, phase_y))
+
 def draw_player_armor(px, py):
     """EXTREME ENGINEERING: Draw layered armor pieces with proper positioning and visual effects"""
     # EXTREME ENGINEERING: Layer armor pieces in proper order (boots -> leggings -> chestplate -> helmet)
@@ -3083,6 +3384,25 @@ def break_block(mx, my):
     # Bedrock, fluids, and villagers are unbreakable
     if block in ("bedrock", "water", "lava", "villager"):
         return False  # Can't break, silent fail
+    
+    # EXTREME ENGINEERING: Boss damage system - check if player is attacking the boss
+    if boss_fight_active:
+        # Calculate distance to boss
+        boss_distance = abs(bx - boss_position["x"]) + abs(by - boss_position["y"])
+        if boss_distance <= 3:  # Within 3 blocks of boss
+            # Check if player has sword selected
+            if (player["selected"] < len(player["inventory"]) and 
+                player["inventory"][player["selected"]] and 
+                player["inventory"][player["selected"]]["type"] == "sword"):
+                
+                # EXTREME ENGINEERING: Deal damage to boss with sword
+                damage_boss(BOSS_SWORD_DAMAGE)
+                show_message(f"⚔️ You hit the boss with your sword for {BOSS_SWORD_DAMAGE} damage!", 1500)
+                print(f"⚔️ Player dealt {BOSS_SWORD_DAMAGE} damage to boss!")
+                return True  # Attack successful, don't break blocks
+            else:
+                show_message("⚔️ You need a sword to attack the boss!", 2000)
+                return False  # Need sword to attack boss
     
     # Stone & ores require pickaxe - STRICT REQUIREMENT
     if block in ["stone", "coal", "iron", "gold", "diamond"]:
@@ -6732,6 +7052,37 @@ while running:
                             print("🚪 Door closed at", door_pos)
                         continue
                     
+                    # EXTREME ENGINEERING: Legend NPC interaction - initiate boss fight
+                    for entity in entities:
+                        if entity["type"] == "legend_npc":
+                            entity_x = int(entity["x"] * TILE_SIZE)
+                            entity_y = int(entity["y"] * TILE_SIZE) - 100
+                            # Check if click is within Legend NPC bounds
+                            if (bx * TILE_SIZE - camera_x <= entity_x + TILE_SIZE and 
+                                bx * TILE_SIZE - camera_x + TILE_SIZE >= entity_x and
+                                by * TILE_SIZE <= entity_y + TILE_SIZE and 
+                                by * TILE_SIZE + TILE_SIZE >= entity_y):
+                                
+                                # EXTREME ENGINEERING: Legend NPC dialogue and boss fight initiation
+                                if entity.get("dialogue_cooldown", 0) <= 0:
+                                    show_message("🌟 THE LEGEND: 'You have traveled far, warrior. Are you ready for the ultimate challenge?'", 4000)
+                                    show_message("🌟 THE LEGEND: 'Click me again to enter the BATTLE ARENA and face the LEGENDARY BOSS!'", 4000)
+                                    
+                                    # Set dialogue cooldown
+                                    entity["dialogue_cooldown"] = 300  # 5 seconds
+                                    entity["last_interaction"] = time.time()
+                                    
+                                    print("🌟 Legend NPC interaction - boss fight initiation available!")
+                                    
+                                    # Check for first Legend NPC interaction achievement
+                                    check_achievement("first_legend_interaction", 100, "Met The Legend NPC!")
+                                else:
+                                    # Start boss fight on second click
+                                    show_message("🌟 THE LEGEND: 'Entering BATTLE ARENA! Prepare for the LEGENDARY BOSS!'", 3000)
+                                    start_boss_fight()
+                                
+                                continue
+                    
                     # EXTREME ENGINEERING: Enhanced villager interaction with personality-based dialogue
                     for entity in entities:
                         if entity["type"] == "villager":
@@ -7128,8 +7479,11 @@ while running:
                         })
                         print(f"👹 Spawned monster at ({x}, {ground_y - 1}) - {nearby_monsters + 1} monsters in area")
                 
-                # EXTREME ENGINEERING: Controlled villager spawning - much less frequent
-                if random.random() < 0.01:  # Reduced from 0.05 to 0.01 (5x less)
+                        # EXTREME ENGINEERING: Check for Legend NPC spawn
+        check_legend_npc_spawn()
+        
+        # EXTREME ENGINEERING: Controlled villager spawning - much less frequent
+        if random.random() < 0.01:  # Reduced from 0.05 to 0.01 (5x less)
                     # Check for nearby villagers to prevent overcrowding
                     nearby_villagers = 0
                     for entity in entities:
@@ -7153,6 +7507,7 @@ while running:
         update_world_interactions()
         update_monsters()
         update_villagers()  # EXTREME ENGINEERING: Enhanced villager AI
+        update_boss()  # EXTREME ENGINEERING: Legendary boss AI and attacks
         update_hunger()  # Update hunger system
         
         # Update chat system
@@ -7170,6 +7525,7 @@ while running:
         draw_inventory()
         draw_status_bars()
         draw_fps_display()
+        draw_boss_health_bar()  # EXTREME ENGINEERING: Legendary boss health bar
         
         # Draw chat system
         if chat_system:
