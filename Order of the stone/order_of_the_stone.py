@@ -5145,60 +5145,6 @@ def draw_username_creation_screen():
     # Store keys for click detection
     global virtual_keys
     virtual_keys = keys
-    
-    # Confirmation dialog
-    dialog_width = 500
-    dialog_height = 300
-    dialog_x = (screen.get_width() - dialog_width) // 2
-    dialog_y = (screen.get_height() - dialog_height) // 2
-    
-    # Dialog glow
-    glow_rect = pygame.Rect(dialog_x - 4, dialog_y - 4, dialog_width + 8, dialog_height + 8)
-    pygame.draw.rect(screen, modern_ui.colors["danger_glow"], glow_rect, border_radius=20)
-    
-    # Dialog background
-    pygame.draw.rect(screen, modern_ui.colors["panel"], (dialog_x, dialog_y, dialog_width, dialog_height), border_radius=18)
-    pygame.draw.rect(screen, modern_ui.colors["danger"], (dialog_x, dialog_y, dialog_width, dialog_height), 3, border_radius=18)
-    
-    # Warning text
-    warning_text = BIG_FONT.render("⚠️ Delete World?", True, modern_ui.colors["danger"])
-    warning_x = dialog_x + (dialog_width - warning_text.get_width()) // 2
-    screen.blit(warning_text, (warning_x, dialog_y + 30))
-    
-    # World name
-    name_text = font.render(f"World: {world_deletion_state}", True, modern_ui.colors["text"])
-    name_x = dialog_x + (dialog_width - name_text.get_width()) // 2
-    screen.blit(name_text, (name_x, dialog_y + 80))
-    
-    # Warning message
-    msg_text = font.render("This action cannot be undone!", True, modern_ui.colors["text_secondary"])
-    msg_x = dialog_x + (dialog_width - msg_text.get_width()) // 2
-    screen.blit(msg_text, (msg_x, dialog_y + 120))
-    
-    # Buttons
-    button_y = dialog_y + 180
-    button_width = 200
-    button_height = 50
-    
-    # Delete button
-    world_delete_btn = pygame.Rect(dialog_x + 50, button_y, button_width, button_height)
-    pygame.draw.rect(screen, modern_ui.colors["danger"], world_delete_btn, border_radius=10)
-    pygame.draw.rect(screen, modern_ui.colors["text"], world_delete_btn, 3, border_radius=10)
-    
-    delete_text = font.render("🗑️ Delete", True, modern_ui.colors["text"])
-    text_x = world_delete_btn.x + (world_delete_btn.width - delete_text.get_width()) // 2
-    text_y = world_delete_btn.y + (world_delete_btn.height - delete_text.get_height()) // 2
-    screen.blit(delete_text, (text_x, text_y))
-    
-    # Cancel button
-    world_cancel_btn = pygame.Rect(dialog_x + 250, button_y, button_width, button_height)
-    pygame.draw.rect(screen, modern_ui.colors["button"], world_cancel_btn, border_radius=10)
-    pygame.draw.rect(screen, modern_ui.colors["text"], world_cancel_btn, 3, border_radius=10)
-    
-    cancel_text = font.render("❌ Cancel", True, modern_ui.colors["text"])
-    text_x = world_cancel_btn.x + (world_cancel_btn.width - cancel_text.get_width()) // 2
-    text_y = world_cancel_btn.y + (world_cancel_btn.height - cancel_text.get_height()) // 2
-    screen.blit(cancel_text, (text_x, text_y))
 
 def draw_username_required_screen():
     """Draw the screen when username is required but not set"""
