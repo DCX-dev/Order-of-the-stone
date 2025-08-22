@@ -2013,14 +2013,59 @@ def delete_save_data():
     os.makedirs(SAVE_DIR)
 
 def show_death_screen():
+    """EXTREME ENGINEERING: Enhanced death screen with escape options to prevent infinite death loops"""
     global game_state
-    game_state = GameState.GAME
-    screen.fill((0, 0, 0))
-    death_text = BIG_FONT.render("You Died", True, (255, 0, 0))
+    
+    # Set game state to paused to prevent further game logic
+    game_state = GameState.PAUSED
+    
+    # Enhanced death screen with professional styling
+    screen.fill((20, 0, 0))  # Dark red background
+    
+    # Death title with dramatic styling
+    death_text = BIG_FONT.render("💀 YOU DIED", True, (255, 0, 0))
+    death_glow = BIG_FONT.render("💀 YOU DIED", True, (100, 0, 0))  # Glow effect
+    screen.blit(death_glow, (SCREEN_WIDTH // 2 - death_text.get_width() // 2 + 2, 202))
     screen.blit(death_text, (SCREEN_WIDTH // 2 - death_text.get_width() // 2, 200))
-    respawn_btn = draw_button("Respawn", 320, 300, 160, 50)
+    
+    # Subtitle with helpful information
+    subtitle_text = font.render("Choose your next action:", True, (200, 200, 200))
+    screen.blit(subtitle_text, (SCREEN_WIDTH // 2 - subtitle_text.get_width() // 2, 250))
+    
+    # Button positioning with proper spacing
+    button_width = 200
+    button_height = 60
+    center_x = SCREEN_WIDTH // 2
+    button_y = 320
+    button_spacing = 80
+    
+    # Respawn button (left side)
+    respawn_btn = pygame.Rect(center_x - button_width - button_spacing//2, button_y, button_width, button_height)
+    pygame.draw.rect(screen, (0, 150, 0), respawn_btn, border_radius=10)  # Green
+    pygame.draw.rect(screen, (255, 255, 255), respawn_btn, 3, border_radius=10)
+    
+    respawn_text = font.render("🔄 Respawn", True, (255, 255, 255))
+    respawn_text_x = respawn_btn.x + (button_width - respawn_text.get_width()) // 2
+    respawn_text_y = respawn_btn.y + (button_height - respawn_text.get_height()) // 2
+    screen.blit(respawn_text, (respawn_text_x, respawn_text_y))
+    
+    # Back to Title button (right side) - CRITICAL ESCAPE OPTION
+    title_btn = pygame.Rect(center_x + button_spacing//2, button_y, button_width, button_height)
+    pygame.draw.rect(screen, (150, 0, 0), title_btn, border_radius=10)  # Red
+    pygame.draw.rect(screen, (255, 255, 255), title_btn, 3, border_radius=10)
+    
+    title_text = font.render("🏠 Back to Title", True, (255, 255, 255))
+    title_text_x = title_btn.x + (button_width - title_text.get_width()) // 2
+    title_text_y = title_btn.y + (button_height - title_text.get_height()) // 2
+    screen.blit(title_text, (title_text_x, title_text_y))
+    
+    # Additional helpful text
+    help_text = font.render("💡 Tip: Use 'Back to Title' if you're stuck in a death loop!", True, (150, 150, 150))
+    screen.blit(help_text, (SCREEN_WIDTH // 2 - help_text.get_width() // 2, 420))
+    
     pygame.display.flip()
 
+    # Event loop for death screen
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -2038,9 +2083,14 @@ def show_death_screen():
                     player["on_ground"] = False
                     game_state = GameState.GAME
                     update_pause_state()  # Resume time when respawning
+                    print("🔄 Player respawned successfully")
                     return  # Exit the death screen function completely
-
-
+                elif title_btn.collidepoint(pygame.mouse.get_pos()):
+                    # CRITICAL: Escape option to return to title screen
+                    print("🏠 Player chose to return to title screen from death")
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Pause time when returning to title
+                    return  # Exit the death screen function completely
 
         clock.tick(30)
 
