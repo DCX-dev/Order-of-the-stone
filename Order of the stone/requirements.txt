@@ -1,0 +1,12 @@
+# EXTREME ENGINEERING: Order of the Stone Dependencies
+# These are the Python packages required to run the game
+
+pygame>=2.0.0
+# Note: pygame is the main dependency
+# All other imports are part of Python's standard library
+
+# Standard library modules used:
+# - os, sys, time, json, random, math
+# - threading, socket, pickle, struct
+# - hashlib, uuid, select
+# - traceback, glob, shutil
