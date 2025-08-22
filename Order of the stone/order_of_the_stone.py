@@ -1196,7 +1196,8 @@ player = {
         "boots": None
     },
     "stamina": 100,  # Current stamina
-    "max_stamina": 100  # Maximum stamina capacity
+    "max_stamina": 100,  # Maximum stamina capacity
+    "facing_direction": 1  # 1 = right, -1 = left
 }
 
 # Global username for all worlds
@@ -3303,7 +3304,7 @@ def draw_status_bars():
 
 # --- Part Four ---
 def draw_held_item(px, py):
-    """Draw the currently held item on the player's right hand"""
+    """EXTREME ENGINEERING: Draw the currently held item on the player's hand based on facing direction"""
     # Check if player has a selected item
     if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
         item = player["inventory"][player["selected"]]
@@ -3311,17 +3312,24 @@ def draw_held_item(px, py):
             item_type = item["type"]
             # Check if we have a texture for this item
             if item_type in textures:
-                # Position the item on the player's right hand
-                # Adjust these offsets to change which hand and position:
-                # hand_x = px + 20  # Right side of player (change to px - 20 for left hand)
-                # hand_y = py + 8   # Slightly above center (adjust for different heights)
-                hand_x = px + 20  # Right side of player
+                # EXTREME ENGINEERING: Position item based on facing direction
+                facing_direction = player.get("facing_direction", 1)
+                
+                if facing_direction == 1:  # Facing right
+                    hand_x = px + 20  # Right side of player
+                else:  # Facing left
+                    hand_x = px - 20  # Left side of player
+                
                 hand_y = py + 8   # Slightly above center
                 
                 # Get the item texture and scale it down slightly for the hand
                 item_texture = textures[item_type]
                 # Scale down to 24x24 pixels (smaller than the 32x32 tile size)
                 scaled_texture = pygame.transform.scale(item_texture, (24, 24))
+                
+                # EXTREME ENGINEERING: Flip item texture if player is facing left
+                if facing_direction == -1:
+                    scaled_texture = pygame.transform.flip(scaled_texture, True, False)
                 
                 # Draw the item on the hand
                 screen.blit(scaled_texture, (hand_x, hand_y))
@@ -3555,7 +3563,10 @@ def draw_player_armor(px, py):
     # EXTREME ENGINEERING: Layer armor pieces in proper order (boots -> leggings -> chestplate -> helmet)
     armor_render_order = ["boots", "leggings", "chestplate", "helmet"]
     
-    # Define armor positioning offsets for realistic layering
+    # Get player facing direction for proper armor positioning
+    facing_direction = player.get("facing_direction", 1)
+    
+    # Define armor positioning offsets for realistic layering (adjusted for facing direction)
     armor_offsets = {
         "helmet": (0, -2),      # Slightly above player head
         "chestplate": (0, 0),   # Center on player torso
@@ -3589,7 +3600,7 @@ def draw_player_armor(px, py):
             if armor_type in textures:
                 armor_texture = textures[armor_type]
                 
-                # Scale armor texture appropriately for each piece
+                # EXTREME ENGINEERING: Scale and flip armor texture based on facing direction
                 if slot_name == "helmet":
                     scaled_armor = pygame.transform.scale(armor_texture, (32, 16))  # Helmet size
                 elif slot_name == "chestplate":
@@ -3598,6 +3609,10 @@ def draw_player_armor(px, py):
                     scaled_armor = pygame.transform.scale(armor_texture, (32, 16))  # Legs size
                 else:  # boots
                     scaled_armor = pygame.transform.scale(armor_texture, (32, 8))   # Feet size
+                
+                # EXTREME ENGINEERING: Flip armor if player is facing left
+                if facing_direction == -1:
+                    scaled_armor = pygame.transform.flip(scaled_armor, True, False)
                 
                 # Apply material color tinting
                 if material in armor_colors:
@@ -3613,6 +3628,7 @@ def draw_player_armor(px, py):
                 # EXTREME ENGINEERING: Fallback procedural armor rendering
                 armor_color = armor_colors.get(material, (128, 128, 128))
                 
+                # EXTREME ENGINEERING: Draw procedural armor with facing direction awareness
                 if slot_name == "helmet":
                     # Draw helmet shape
                     pygame.draw.ellipse(screen, armor_color, (armor_x + 4, armor_y, 24, 16))
@@ -3624,13 +3640,21 @@ def draw_player_armor(px, py):
                     pygame.draw.line(screen, tuple(max(0, c-30) for c in armor_color), 
                                    (armor_x + 6, armor_y + 5), (armor_x + 26, armor_y + 5), 2)
                 elif slot_name == "leggings":
-                    # Draw leggings shape
-                    pygame.draw.rect(screen, armor_color, (armor_x + 4, armor_y, 12, 16))  # Left leg
-                    pygame.draw.rect(screen, armor_color, (armor_x + 16, armor_y, 12, 16)) # Right leg
+                    # Draw leggings shape (adjusted for facing direction)
+                    if facing_direction == 1:  # Facing right
+                        pygame.draw.rect(screen, armor_color, (armor_x + 4, armor_y, 12, 16))  # Left leg
+                        pygame.draw.rect(screen, armor_color, (armor_x + 16, armor_y, 12, 16)) # Right leg
+                    else:  # Facing left
+                        pygame.draw.rect(screen, armor_color, (armor_x + 4, armor_y, 12, 16))  # Left leg
+                        pygame.draw.rect(screen, armor_color, (armor_x + 16, armor_y, 12, 16)) # Right leg
                 else:  # boots
-                    # Draw boots shape
-                    pygame.draw.rect(screen, armor_color, (armor_x + 2, armor_y, 12, 8))   # Left boot
-                    pygame.draw.rect(screen, armor_color, (armor_x + 18, armor_y, 12, 8))  # Right boot
+                    # Draw boots shape (adjusted for facing direction)
+                    if facing_direction == 1:  # Facing right
+                        pygame.draw.rect(screen, armor_color, (armor_x + 2, armor_y, 12, 8))   # Left boot
+                        pygame.draw.rect(screen, armor_color, (armor_x + 18, armor_y, 12, 8))  # Right boot
+                    else:  # Facing left
+                        pygame.draw.rect(screen, armor_color, (armor_x + 2, armor_y, 12, 8))   # Left boot
+                        pygame.draw.rect(screen, armor_color, (armor_x + 18, armor_y, 12, 8))  # Right boot
                 
                 # Add shine effect for metallic armor
                 if material in ["iron", "gold", "diamond"]:
@@ -3712,27 +3736,49 @@ def draw_world():
     px = int(player["x"] * TILE_SIZE) - camera_x
     py = int(player["y"] * TILE_SIZE) - camera_y
     
+    # EXTREME ENGINEERING: Draw player with proper facing direction and flipping
+    facing_direction = player.get("facing_direction", 1)
+    
     # Use character manager to get the current character texture
     if character_manager:
         player_texture = character_manager.get_character_texture()
         current_char_name = character_manager.get_current_character_name()
         if player_texture:
-            screen.blit(player_texture, (px, py))
-            # Debug: Show current character name (remove this later)
+            # EXTREME ENGINEERING: Flip player texture based on facing direction
+            if facing_direction == -1:  # Facing left
+                flipped_texture = pygame.transform.flip(player_texture, True, False)
+                screen.blit(flipped_texture, (px, py))
+            else:  # Facing right (default)
+                screen.blit(player_texture, (px, py))
+            
+            # Debug: Show current character name and facing direction
             if show_fps:  # Only show when F3 is pressed
-                debug_text = font.render(f"Char: {current_char_name}", True, (255, 255, 0))
+                direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
+                debug_text = font.render(f"Char: {current_char_name} | Facing: {direction_text}", True, (255, 255, 0))
                 screen.blit(debug_text, (px, py - 30))
         else:
-            # Fallback to original player image
-            screen.blit(player_image, (px, py))
+            # Fallback to original player image with flipping
+            if facing_direction == -1:  # Facing left
+                flipped_image = pygame.transform.flip(player_image, True, False)
+                screen.blit(flipped_image, (px, py))
+            else:  # Facing right (default)
+                screen.blit(player_image, (px, py))
+            
             if show_fps:
-                debug_text = font.render("No texture!", True, (255, 0, 0))
+                direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
+                debug_text = font.render(f"No texture! | Facing: {direction_text}", True, (255, 0, 0))
                 screen.blit(debug_text, (px, py - 30))
     else:
         # Fallback to original player image if character manager not initialized
-        screen.blit(player_image, (px, py))
+        if facing_direction == -1:  # Facing left
+            flipped_image = pygame.transform.flip(player_image, True, False)
+            screen.blit(flipped_image, (px, py))
+        else:  # Facing right (default)
+            screen.blit(player_image, (px, py))
+        
         if show_fps:
-            debug_text = font.render("No char manager!", True, (255, 0, 0))
+            direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
+            debug_text = font.render(f"No char manager! | Facing: {direction_text}", True, (255, 0, 0))
             screen.blit(debug_text, (px, py - 30))
     
     # Draw armor on player if equipped
@@ -5762,6 +5808,12 @@ def update_player():
     # Horizontal movement intent
     move_left = keys[pygame.K_a] or keys[pygame.K_LEFT]
     move_right = keys[pygame.K_d] or keys[pygame.K_RIGHT]
+    
+    # EXTREME ENGINEERING: Update facing direction based on movement keys
+    if move_left:
+        player["facing_direction"] = -1  # Face left
+    elif move_right:
+        player["facing_direction"] = 1   # Face right
 
     # Check for ladder at player position (current or feet)
     px, py = player["x"], player["y"]
