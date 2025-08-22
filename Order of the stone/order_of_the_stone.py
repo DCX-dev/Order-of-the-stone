@@ -2215,7 +2215,7 @@ def start_boss_fight():
 
 def update_boss():
     """EXTREME ENGINEERING: Update boss AI, attacks, and phase transitions"""
-    global boss_health, boss_phase, boss_max_health, boss_attack_cooldown, boss_attack_timer, boss_attack_type
+    global boss_fight_active, boss_health, boss_phase, boss_max_health, boss_attack_cooldown, boss_attack_timer, boss_attack_type
     
     if not boss_fight_active:
         return
@@ -2268,7 +2268,7 @@ def update_boss():
 
 def execute_boss_attack():
     """EXTREME ENGINEERING: Execute boss attacks with different damage types"""
-    global boss_attack_type
+    global boss_fight_active, boss_attack_type
     
     if not boss_fight_active:
         return
@@ -2313,7 +2313,7 @@ def give_boss_rewards():
 
 def damage_boss(damage):
     """EXTREME ENGINEERING: Damage the boss and check for phase transitions"""
-    global boss_health
+    global boss_fight_active, boss_health, boss_max_health
     
     if not boss_fight_active:
         return
