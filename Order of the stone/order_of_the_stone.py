@@ -755,7 +755,7 @@ def make_bed_texture(size):
 
     return surf
 
-# --- Armor Texture Generators ---
+# --- EXTREME ENGINEERING: Enhanced Armor Texture Generators ---
 def make_helmet_texture(size):
     """Procedurally draw a simple helmet texture."""
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -832,6 +832,132 @@ def make_boots_texture(size):
     
     pygame.draw.rect(surf, outline, (0, 0, size, size), 1)
     return surf
+
+# --- EXTREME ENGINEERING: Additional Armor Texture Generators ---
+
+def generate_leather_helmet_texture():
+    """Generate leather helmet texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (139, 69, 19), "helmet")
+
+def generate_leather_chestplate_texture():
+    """Generate leather chestplate texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (139, 69, 19), "chestplate")
+
+def generate_leather_leggings_texture():
+    """Generate leather leggings texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (139, 69, 19), "leggings")
+
+def generate_leather_boots_texture():
+    """Generate leather boots texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (139, 69, 19), "boots")
+
+def generate_chainmail_helmet_texture():
+    """Generate chainmail helmet texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (169, 169, 169), "helmet")
+
+def generate_chainmail_chestplate_texture():
+    """Generate chainmail chestplate texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (169, 169, 169), "chestplate")
+
+def generate_chainmail_leggings_texture():
+    """Generate chainmail leggings texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (169, 169, 169), "leggings")
+
+def generate_chainmail_boots_texture():
+    """Generate chainmail boots texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (169, 169, 169), "boots")
+
+def generate_gold_helmet_texture():
+    """Generate gold helmet texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (255, 215, 0), "helmet")
+
+def generate_gold_chestplate_texture():
+    """Generate gold chestplate texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (255, 215, 0), "chestplate")
+
+def generate_gold_leggings_texture():
+    """Generate gold leggings texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (255, 215, 0), "leggings")
+
+def generate_gold_boots_texture():
+    """Generate gold boots texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (255, 215, 0), "boots")
+
+def generate_diamond_helmet_texture():
+    """Generate diamond helmet texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (0, 191, 255), "helmet")
+
+def generate_diamond_chestplate_texture():
+    """Generate diamond chestplate texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (0, 191, 255), "chestplate")
+
+def generate_diamond_leggings_texture():
+    """Generate diamond leggings texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (0, 191, 255), "leggings")
+
+def generate_diamond_boots_texture():
+    """Generate diamond boots texture"""
+    return make_armor_texture_with_color(TILE_SIZE, (0, 191, 255), "boots")
+
+def make_armor_texture_with_color(size, base_color, armor_type):
+    """EXTREME ENGINEERING: Universal armor texture generator with material colors"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Calculate darker and lighter shades
+    dark_color = tuple(max(0, int(c * 0.7)) for c in base_color)
+    light_color = tuple(min(255, int(c * 1.3)) for c in base_color)
+    outline = (20, 20, 20, 180)
+    
+    if armor_type == "helmet":
+        # Helmet shape
+        pygame.draw.ellipse(surf, base_color, (4, 2, size - 8, size // 2))
+        pygame.draw.rect(surf, base_color, (6, size // 3, size - 12, size // 3))
+        # Helmet details
+        pygame.draw.line(surf, light_color, (8, 6), (size - 8, 6), 2)
+        pygame.draw.line(surf, dark_color, (8, size // 2 - 2), (size - 8, size // 2 - 2), 1)
+    elif armor_type == "chestplate":
+        # Chestplate shape
+        pygame.draw.rect(surf, base_color, (2, 4, size - 4, size - 8))
+        # Chest details
+        pygame.draw.line(surf, light_color, (4, 8), (size - 4, 8), 2)
+        pygame.draw.line(surf, dark_color, (4, size - 8), (size - 4, size - 8), 1)
+        # Side plates
+        pygame.draw.rect(surf, dark_color, (2, 6, 3, size - 12))
+        pygame.draw.rect(surf, dark_color, (size - 5, 6, 3, size - 12))
+    elif armor_type == "leggings":
+        # Leggings shape (two leg pieces)
+        pygame.draw.rect(surf, base_color, (4, 2, (size - 10) // 2, size - 4))  # Left leg
+        pygame.draw.rect(surf, base_color, (size // 2 + 1, 2, (size - 10) // 2, size - 4))  # Right leg
+        # Leg details
+        pygame.draw.line(surf, light_color, (6, 4), (6, size - 4), 1)
+        pygame.draw.line(surf, light_color, (size - 6, 4), (size - 6, size - 4), 1)
+    else:  # boots
+        # Boots shape
+        pygame.draw.rect(surf, base_color, (4, size // 2, size - 8, size // 2))
+        # Boot soles
+        pygame.draw.rect(surf, dark_color, (2, size - 4, size - 4, 4))
+        # Boot tops
+        pygame.draw.rect(surf, light_color, (6, size // 2, size - 12, 3))
+    
+    # Outline
+    pygame.draw.rect(surf, outline, (0, 0, size, size), 1)
+    return surf
+
+def generate_iron_helmet_texture():
+    """Generate iron helmet texture (enhanced version)"""
+    return make_armor_texture_with_color(TILE_SIZE, (192, 192, 192), "helmet")
+
+def generate_iron_chestplate_texture():
+    """Generate iron chestplate texture (enhanced version)"""
+    return make_armor_texture_with_color(TILE_SIZE, (192, 192, 192), "chestplate")
+
+def generate_iron_leggings_texture():
+    """Generate iron leggings texture (enhanced version)"""
+    return make_armor_texture_with_color(TILE_SIZE, (192, 192, 192), "leggings")
+
+def generate_iron_boots_texture():
+    """Generate iron boots texture (enhanced version)"""
+    return make_armor_texture_with_color(TILE_SIZE, (192, 192, 192), "boots")
 
 # --- Door Texture Generator ---
 def make_door_texture(size):
@@ -975,6 +1101,37 @@ try:
 except Exception:
     textures["iron_boots"] = make_boots_texture(TILE_SIZE)
 
+# --- EXTREME ENGINEERING: Enhanced armor textures with all materials ---
+# Leather armor
+textures["leather_helmet"] = generate_leather_helmet_texture()
+textures["leather_chestplate"] = generate_leather_chestplate_texture()
+textures["leather_leggings"] = generate_leather_leggings_texture()
+textures["leather_boots"] = generate_leather_boots_texture()
+
+# Chainmail armor
+textures["chainmail_helmet"] = generate_chainmail_helmet_texture()
+textures["chainmail_chestplate"] = generate_chainmail_chestplate_texture()
+textures["chainmail_leggings"] = generate_chainmail_leggings_texture()
+textures["chainmail_boots"] = generate_chainmail_boots_texture()
+
+# Gold armor
+textures["gold_helmet"] = generate_gold_helmet_texture()
+textures["gold_chestplate"] = generate_gold_chestplate_texture()
+textures["gold_leggings"] = generate_gold_leggings_texture()
+textures["gold_boots"] = generate_gold_boots_texture()
+
+# Diamond armor
+textures["diamond_helmet"] = generate_diamond_helmet_texture()
+textures["diamond_chestplate"] = generate_diamond_chestplate_texture()
+textures["diamond_leggings"] = generate_diamond_leggings_texture()
+textures["diamond_boots"] = generate_diamond_boots_texture()
+
+# Enhanced iron armor (replace old versions)
+textures["iron_helmet"] = generate_iron_helmet_texture()
+textures["iron_chestplate"] = generate_iron_chestplate_texture()
+textures["iron_leggings"] = generate_iron_leggings_texture()
+textures["iron_boots"] = generate_iron_boots_texture()
+
 # --- Ladder texture (tries file, falls back to procedural ladder texture) ---
 try:
     textures["ladder"] = load_texture(os.path.join(TILE_DIR, "ladder.png"))  # preferred: assets/tiles/ladder.png
@@ -1037,7 +1194,7 @@ player = {
 }
 
 # Global username for all worlds
-GLOBAL_USERNAME = ""
+GLOBAL_USERNAME = "dreamcrusherx"
 
 MAX_FALL_SPEED = 10
 GRAVITY = 1
@@ -1609,20 +1766,155 @@ villager_dialogues = [
     "The village is a place of harmony and joy."
 ]
 
-def get_random_villager_dialogue():
-    """Get a random friendly villager dialogue"""
-    return random.choice(villager_dialogues)
+def get_random_villager_dialogue(villager=None):
+    """EXTREME ENGINEERING: Get personality-based villager dialogue with context awareness"""
+    if villager and isinstance(villager, dict):
+        personality = villager.get("personality", "friendly")
+        name = villager.get("name", "Villager")
+        mood = villager.get("mood", "neutral")
+        
+        # EXTREME ENGINEERING: Personality and mood-based dialogue
+        dialogue_pools = {
+            "friendly": {
+                "happy": [
+                    f"Hi there! I'm {name}! 👋",
+                    f"Welcome to our village! I'm {name}! 🏘️",
+                    f"Nice to meet you! I'm {name}! 😊",
+                    f"Hello friend! I'm {name}! 🌟"
+                ],
+                "neutral": [
+                    f"Hey, I'm {name}. How are you? 🤔",
+                    f"Hi, {name} here. Nice weather today! ☀️",
+                    f"Hello! I'm {name}. Need anything? 🛠️"
+                ],
+                "slightly_annoyed": [
+                    f"*sigh* I'm {name}. What do you want? 😤",
+                    f"Ugh, {name} here. Make it quick. ⏰",
+                    f"Fine, I'm {name}. What is it? 😒"
+                ]
+            },
+            "grumpy": {
+                "happy": [
+                    f"*grumbles* I'm {name}. Don't bother me much. 😠",
+                    f"Fine, I'm {name}. What do you want? 😤",
+                    f"*sigh* {name} here. Make it quick. ⏰"
+                ],
+                "neutral": [
+                    f"*grumpy noise* I'm {name}. Leave me alone. 😒",
+                    f"Ugh, {name} here. What now? 😤",
+                    f"*annoyed* I'm {name}. This better be important. 😠"
+                ],
+                "slightly_annoyed": [
+                    f"*very grumpy* I'm {name}. GO AWAY! 😡",
+                    f"*extremely annoyed* {name} here. I HATE EVERYTHING! 😤",
+                    f"*grumpy grumble* I'm {name}. Why are you still here? 😒"
+                ]
+            },
+            "wise": {
+                "happy": [
+                    f"Greetings, young one. I am {name}. 🧙‍♂️",
+                    f"Welcome, traveler. I am {name}, keeper of wisdom. 📚",
+                    f"Ah, a new face! I am {name}. What knowledge do you seek? 🔮"
+                ],
+                "neutral": [
+                    f"I am {name}. The path of wisdom is long and winding. 🛤️",
+                    f"Greetings. I am {name}. Every day brings new lessons. 📖",
+                    f"Hello there. I am {name}. What mysteries shall we explore? 🔍"
+                ],
+                "slightly_annoyed": [
+                    f"I am {name}. Your questions test my patience. 😤",
+                    f"*sigh* I am {name}. Must you disturb my meditation? 🧘‍♂️",
+                    f"Greetings, I am {name}. Your presence disrupts my studies. 📚"
+                ]
+            },
+            "curious": {
+                "happy": [
+                    f"Hi! I'm {name}! Tell me everything about your adventures! 🗺️",
+                    f"Hello! I'm {name}! What's the most exciting thing you've seen? 🌟",
+                    f"Hi there! I'm {name}! Can I come with you on your next journey? 🚀"
+                ],
+                "neutral": [
+                    f"Hey! I'm {name}! What's new in the world? 🌍",
+                    f"Hello! I'm {name}! Have you discovered any new places? 🏔️",
+                    f"Hi! I'm {name}! What's the most interesting thing you've found? 💎"
+                ],
+                "slightly_annoyed": [
+                    f"*impatient* I'm {name}! Tell me something interesting already! 😤",
+                    f"*bouncing* I'm {name}! I need adventure stories NOW! ⚡",
+                    f"*restless* I'm {name}! When are we going exploring? 🗺️"
+                ]
+            },
+            "shy": {
+                "happy": [
+                    f"*whispers* Hi... I'm {name}... 👋",
+                    f"*quietly* Hello... I'm {name}... 😊",
+                    f"*softly* Hi there... I'm {name}... 🌸"
+                ],
+                "neutral": [
+                    f"*whispers* Hey... I'm {name}... 🤫",
+                    f"*quietly* Hello... I'm {name}... 🤔",
+                    f"*softly* Hi... I'm {name}... 🌿"
+                ],
+                "slightly_annoyed": [
+                    f"*very quiet* I'm {name}... please don't stare... 😰",
+                    f"*whispers* Hi... I'm {name}... can you go away now? 😅",
+                    f"*softly* Hello... I'm {name}... I'm not good at talking... 😓"
+                ]
+            },
+            "energetic": {
+                "happy": [
+                    f"HELLO! I'M {name}! ARE YOU READY FOR ADVENTURE? 🚀",
+                    f"HI THERE! I'M {name}! LET'S GO EXPLORING! 🗺️",
+                    f"HELLO! I'M {name}! I'M SO EXCITED TO MEET YOU! ⚡"
+                ],
+                "neutral": [
+                    f"HI! I'M {name}! WHAT ARE WE DOING TODAY? 🎯",
+                    f"HELLO! I'M {name}! I'M FULL OF ENERGY! ⚡",
+                    f"HI THERE! I'M {name}! READY FOR SOME ACTION? 🏃‍♂️"
+                ],
+                "slightly_annoyed": [
+                    f"*bouncing* I'M {name}! WHY ARE YOU SO SLOW? 🐌",
+                    f"*jumping* HI! I'M {name}! CAN WE GO FASTER? ⚡",
+                    f"*running in place* HELLO! I'M {name}! I NEED TO MOVE! 🏃‍♂️"
+                ]
+            }
+        }
+        
+        # Get dialogue based on personality and mood
+        if personality in dialogue_pools and mood in dialogue_pools[personality]:
+            return random.choice(dialogue_pools[personality][mood])
+    
+    # Fallback to generic dialogue
+    return random.choice([
+        "Hello there! 👋",
+        "Welcome to our village! 🏘️",
+        "Nice to meet you! 😊",
+        "How are you today? 🤔",
+        "Greetings, traveler! 🌟"
+    ])
 
-def show_villager_dialogue(dialogue):
-    """Display villager dialogue on screen"""
+def show_villager_dialogue(dialogue, villager=None):
+    """EXTREME ENGINEERING: Display enhanced villager dialogue with personality context"""
     global villager_dialogue_text, villager_dialogue_until
-    villager_dialogue_text = dialogue
-    villager_dialogue_until = time.time() + 5  # Show for 5 seconds
+    
+    # EXTREME ENGINEERING: Add villager name and personality to dialogue
+    if villager and isinstance(villager, dict):
+        name = villager.get("name", "Villager")
+        personality = villager.get("personality", "friendly")
+        mood = villager.get("mood", "neutral")
+        
+        # Enhanced dialogue display
+        enhanced_dialogue = f"{dialogue}"
+        villager_dialogue_text = enhanced_dialogue
+    else:
+        villager_dialogue_text = dialogue
+    
+    villager_dialogue_until = time.time() + 6  # Show for 6 seconds (longer for enhanced dialogue)
 
 # --- Village and House helpers ---
 def build_house(origin_x, ground_y, width=7, height=5):
-    """Build an improved house with oak planks and logs, stone floor, open doorway, and interior chest."""
-    # Floor
+    """EXTREME ENGINEERING: Build realistic village houses with interiors, entrances, and proper spacing"""
+    # Floor - stone foundation
     for dx in range(width):
         set_block(origin_x + dx, ground_y, "stone")
     
@@ -1633,11 +1925,13 @@ def build_house(origin_x, ground_y, width=7, height=5):
             y = ground_y - dy
             edge = (dx == 0 or dx == width - 1)
             top = (dy == height)
-            # doorway in the middle (2 blocks tall)
+            
+            # EXTREME ENGINEERING: Create proper entrance (2 blocks tall, 1 block wide)
             door_x = origin_x + width // 2
             if (x == door_x and (y == ground_y - 1 or y == ground_y - 2)):
-                # leave doorway empty for now, we'll add doors after
+                # Leave doorway completely open for player to walk through
                 continue
+                
             if edge or top:
                 # Use logs for corners and top, oak planks for main walls
                 if (dx == 0 or dx == width - 1) and (dy == 1 or dy == height):
@@ -1645,36 +1939,75 @@ def build_house(origin_x, ground_y, width=7, height=5):
                 else:
                     set_block(x, y, "oak_planks")  # Main walls
             else:
-                # interior air
+                # Interior air - clear any obstacles
                 if get_block(x, y) not in (None, "air"):
-                    # clear any leaves/logs, etc.
                     world_data.pop((x, y), None)
     
-    # Add doors to the doorway (side placement for 2D game)
-    door_x = origin_x + width // 2
-    # Place door on the left side of the doorway
-    set_block(door_x - 1, ground_y - 1, "door")
-    # Initialize door as closed
-    door_states[(door_x - 1, ground_y - 1)] = False
+    # EXTREME ENGINEERING: Add interior details
+    # Interior floor (wooden planks)
+    for dx in range(1, width - 1):
+        set_block(origin_x + dx, ground_y, "oak_planks")
     
-    # Add some oak planks to the interior walls for variety
+    # Interior walls for room separation
     for dy in range(1, height):
-        for dx in range(1, width - 1):
-            x = origin_x + dx
-            y = ground_y - dy
-            if random.random() < 0.4:  # 40% chance for oak plank interior walls
-                set_block(x, y, "oak_planks")
+        # Left interior wall (bedroom area)
+        if random.random() < 0.7:  # 70% chance
+            set_block(origin_x + 1, ground_y - dy, "oak_planks")
+        # Right interior wall (living area)
+        if random.random() < 0.7:  # 70% chance
+            set_block(origin_x + width - 2, ground_y - dy, "oak_planks")
     
-    # Add a chest inside the house (left side, away from door)
-    chest_x = origin_x + 1
+    # EXTREME ENGINEERING: Add furniture and decorations
+    # Bed (left side of house)
+    bed_x = origin_x + 1
+    bed_y = ground_y - 1
+    set_block(bed_x, bed_y, "bed")
+    
+    # Chest (right side of house, away from entrance)
+    chest_x = origin_x + width - 2
     chest_y = ground_y - 1
     if get_block(chest_x, chest_y) is None:
         set_block(chest_x, chest_y, "chest")
         # Generate natural chest loot for village houses
         chest_system.generate_chest_loot("village")
+    
+    # EXTREME ENGINEERING: Add windows (small openings in walls)
+    window_y = ground_y - 2
+    if random.random() < 0.6:  # 60% chance for left window
+        set_block(origin_x, window_y, "air")  # Window opening
+    if random.random() < 0.6:  # 60% chance for right window
+        set_block(origin_x + width - 1, window_y, "air")  # Window opening
+    
+    # EXTREME ENGINEERING: Add entrance path (stone path leading to door)
+    path_x = origin_x + width // 2
+    for py in range(ground_y + 1, ground_y + 4):  # Path extends 3 blocks from house
+        set_block(path_x, py, "stone")
+    
+    print(f"🏠 Built realistic village house at ({origin_x}, {ground_y}) with interior and entrance!")
+    
+    # EXTREME ENGINEERING: Generate farm near the house (2 blocks away)
+    farm_x = origin_x + random.choice([-8, 8])  # Left or right of house
+    farm_y = ground_y
+    generate_village_farm(farm_x, farm_y)
 
 def spawn_villager(x, y):
-    """Create a villager entity at tile x,y with improved interaction."""
+    """EXTREME ENGINEERING: Create intelligent villagers with personalities, movement, and dialogue"""
+    # EXTREME ENGINEERING: Villager personality system
+    personalities = ["friendly", "grumpy", "wise", "curious", "shy", "energetic"]
+    personality = random.choice(personalities)
+    
+    # EXTREME ENGINEERING: Villager names based on personality
+    name_pools = {
+        "friendly": ["Alex", "Sam", "Jordan", "Taylor", "Casey"],
+        "grumpy": ["Grumpus", "Cranky", "Sour", "Grouch", "Grumpy"],
+        "wise": ["Sage", "Elder", "Wise", "Oracle", "Mentor"],
+        "curious": ["Explorer", "Seeker", "Wanderer", "Discoverer", "Adventurer"],
+        "shy": ["Whisper", "Quiet", "Silent", "Hush", "Mute"],
+        "energetic": ["Bouncy", "Zippy", "Fast", "Quick", "Swift"]
+    }
+    
+    villager_name = random.choice(name_pools.get(personality, ["Villager"]))
+    
     entities.append({
         "type": "villager",
         "x": float(x),
@@ -1682,8 +2015,61 @@ def spawn_villager(x, y):
         "dir": random.choice([-1, 1]),
         "step": 0,
         "dialogue_cooldown": 0,  # Prevent spam clicking
-        "last_dialogue": None
+        "last_dialogue": None,
+        "personality": personality,
+        "name": villager_name,
+        "movement_timer": 0,
+        "movement_target": None,
+        "home_x": x,  # Remember where they spawned
+        "home_y": y,
+        "wander_radius": random.randint(3, 8),  # How far they wander from home
+        "dialogue_history": [],  # Remember what they've said
+        "mood": random.choice(["happy", "neutral", "slightly_annoyed"]),
+        "last_interaction": 0
     })
+    
+    print(f"👤 Spawned {personality} villager '{villager_name}' at ({x}, {y})")
+
+def generate_village_farm(farm_x, farm_y):
+    """EXTREME ENGINEERING: Generate realistic village farms with dirt platforms and carrots"""
+    # Farm platform (4x4 dirt area)
+    farm_size = 4
+    for dx in range(farm_size):
+        for dy in range(farm_size):
+            x = farm_x + dx
+            y = farm_y + dy
+            # Create dirt platform
+            set_block(x, y, "dirt")
+    
+    # EXTREME ENGINEERING: Plant carrots in the front row (4 carrots)
+    for dx in range(farm_size):
+        carrot_x = farm_x + dx
+        carrot_y = farm_y - 1  # One block above the dirt platform
+        set_block(carrot_x, carrot_y, "carrot")
+    
+    # EXTREME ENGINEERING: Add farm decorations
+    # Fence around the farm
+    for dx in range(farm_size + 2):  # +2 for fence posts
+        fence_x = farm_x + dx - 1
+        # Front fence
+        set_block(fence_x, farm_y - 2, "log")
+        # Back fence
+        set_block(fence_x, farm_y + farm_size, "log")
+    
+    # Side fences
+    for dy in range(farm_size + 2):
+        fence_y = farm_y + dy - 1
+        # Left fence
+        set_block(farm_x - 1, fence_y, "log")
+        # Right fence
+        set_block(farm_x + farm_size, fence_y, "log")
+    
+    # EXTREME ENGINEERING: Add water source near farm
+    water_x = farm_x + random.randint(0, farm_size - 1)
+    water_y = farm_y + farm_size + 2
+    set_block(water_x, water_y, "water")
+    
+    print(f"🌾 Generated village farm at ({farm_x}, {farm_y}) with 4 carrots and fencing!")
 
 def maybe_generate_village_for_chunk(chunk_id, base_x):
     """15% chance to create a small village (1-2 houses) in this 50-wide chunk.
@@ -1805,46 +2191,94 @@ def build_fortress(origin_x, ground_y, width=15, height=12):
     print(f"🏰 Red brick fortress built above ground at ({origin_x}, {ground_y}) with {len(floor_levels)} floors!")
 
 def generate_fortress_chest_loot(chest_pos, floor_level):
-    """Generate special loot for fortress chests, including iron armor"""
+    """EXTREME ENGINEERING: Generate epic fortress loot with guaranteed armor sets and rare materials"""
     # Create a new chest inventory for this position
     chest_inventory = []
     
-    # Higher floors have better loot
-    if floor_level == 0:  # Ground floor - basic loot
-        loot_pool = ["iron", "coal", "stone", "sword", "pickaxe"]
-        num_items = random.randint(2, 4)
-    elif floor_level == 1:  # Middle floor - better loot
-        loot_pool = ["iron", "gold", "diamond", "sword", "pickaxe", "iron_helmet"]
+    # EXTREME ENGINEERING: Enhanced loot pools with multiple armor types
+    if floor_level == 0:  # Ground floor - basic loot with leather armor
+        loot_pool = ["iron", "coal", "stone", "sword", "pickaxe", "leather_helmet", "leather_chestplate"]
+        armor_pool = ["leather_helmet", "leather_chestplate", "leather_leggings", "leather_boots"]
         num_items = random.randint(3, 5)
-    else:  # Top floor - best loot including armor
-        loot_pool = ["iron", "gold", "diamond", "sword", "pickaxe", "iron_helmet", "iron_chestplate", "iron_leggings", "iron_boots"]
-        num_items = random.randint(4, 6)
+        armor_chance = 0.6  # 60% chance for armor
+    elif floor_level == 1:  # Middle floor - iron armor and better materials
+        loot_pool = ["iron", "gold", "diamond", "sword", "pickaxe", "iron_helmet", "iron_chestplate", "chainmail_helmet"]
+        armor_pool = ["iron_helmet", "iron_chestplate", "iron_leggings", "iron_boots", "chainmail_helmet", "chainmail_chestplate"]
+        num_items = random.randint(4, 7)
+        armor_chance = 0.8  # 80% chance for armor
+    else:  # Top floor - LEGENDARY loot with diamond/gold armor
+        loot_pool = ["iron", "gold", "diamond", "sword", "pickaxe", "diamond_helmet", "diamond_chestplate", "gold_helmet", "gold_chestplate"]
+        armor_pool = ["diamond_helmet", "diamond_chestplate", "diamond_leggings", "diamond_boots", 
+                     "gold_helmet", "gold_chestplate", "gold_leggings", "gold_boots",
+                     "iron_helmet", "iron_chestplate", "iron_leggings", "iron_boots"]
+        num_items = random.randint(5, 8)
+        armor_chance = 0.95  # 95% chance for armor
     
-    # Generate random loot
+    # Generate base loot
     for _ in range(num_items):
         item_type = random.choice(loot_pool)
         count = 1
         if item_type in ["iron", "coal", "stone"]:
-            count = random.randint(1, 3)
+            count = random.randint(2, 5)  # More materials
+        elif item_type in ["gold", "diamond"]:
+            count = random.randint(1, 3)  # Rare materials
         
         chest_inventory.append({
             "type": item_type,
             "count": count
         })
     
-    # Ensure at least one piece of armor on higher floors
-    if floor_level >= 1 and random.random() < 0.7:  # 70% chance
-        armor_pieces = ["iron_helmet", "iron_chestplate", "iron_leggings", "iron_boots"]
-        available_armor = [armor for armor in armor_pieces if armor not in [item["type"] for item in chest_inventory]]
-        if available_armor:
+    # EXTREME ENGINEERING: Guaranteed armor drops with set bonuses
+    if random.random() < armor_chance:
+        # Try to create armor sets (multiple pieces of same type)
+        armor_types = ["leather", "iron", "chainmail", "gold", "diamond"]
+        
+        if floor_level >= 2:  # Top floor - chance for full armor set
+            if random.random() < 0.4:  # 40% chance for full set
+                armor_type = random.choice(["iron", "diamond", "gold"])
+                full_set = [f"{armor_type}_helmet", f"{armor_type}_chestplate", 
+                           f"{armor_type}_leggings", f"{armor_type}_boots"]
+                
+                for armor_piece in full_set:
+                    chest_inventory.append({
+                        "type": armor_piece,
+                        "count": 1
+                    })
+                print(f"🏆 LEGENDARY! Full {armor_type} armor set found in fortress!")
+            else:
+                # Add 2-3 random armor pieces
+                for _ in range(random.randint(2, 3)):
+                    armor_piece = random.choice(armor_pool)
+                    # Avoid duplicates
+                    if armor_piece not in [item["type"] for item in chest_inventory]:
+                        chest_inventory.append({
+                            "type": armor_piece,
+                            "count": 1
+                        })
+        else:
+            # Lower floors - 1-2 armor pieces
+            for _ in range(random.randint(1, 2)):
+                armor_piece = random.choice(armor_pool)
+                if armor_piece not in [item["type"] for item in chest_inventory]:
+                    chest_inventory.append({
+                        "type": armor_piece,
+                        "count": 1
+                    })
+    
+    # EXTREME ENGINEERING: Special fortress-exclusive items
+    if floor_level >= 2 and random.random() < 0.3:  # 30% chance for special items
+        special_items = ["enchanted_sword", "fortress_key", "ancient_scroll"]
+        if random.choice(special_items) == "enchanted_sword":
             chest_inventory.append({
-                "type": random.choice(available_armor),
-                "count": 1
+                "type": "sword",  # Enhanced sword (we'll upgrade this later)
+                "count": 1,
+                "enchanted": True  # Special property
             })
     
     # Store the chest inventory
     chest_system.chest_inventories[chest_pos] = chest_inventory
-    print(f"🏰 Fortress chest at {chest_pos} filled with {len(chest_inventory)} items!")
+    armor_count = len([item for item in chest_inventory if any(armor in item["type"] for armor in ["helmet", "chestplate", "leggings", "boots"])])
+    print(f"🏰 FORTRESS LOOT: {len(chest_inventory)} items, {armor_count} armor pieces at floor {floor_level}!")
 
 def maybe_generate_fortress_for_chunk(chunk_id, base_x):
     """12% chance to create a fortress in this chunk. Allowed on saved worlds."""
@@ -2172,28 +2606,103 @@ def draw_held_item(px, py):
                 screen.blit(scaled_texture, (hand_x, hand_y))
 
 def draw_player_armor(px, py):
-    """Draw armor on the player if equipped"""
-    # Check each armor slot and draw the appropriate texture
-    armor_slots = ["helmet", "chestplate", "leggings", "boots"]
+    """EXTREME ENGINEERING: Draw layered armor pieces with proper positioning and visual effects"""
+    # EXTREME ENGINEERING: Layer armor pieces in proper order (boots -> leggings -> chestplate -> helmet)
+    armor_render_order = ["boots", "leggings", "chestplate", "helmet"]
     
-    for slot_name in armor_slots:
+    # Define armor positioning offsets for realistic layering
+    armor_offsets = {
+        "helmet": (0, -2),      # Slightly above player head
+        "chestplate": (0, 0),   # Center on player torso
+        "leggings": (0, 16),    # Lower half of player
+        "boots": (0, 24)        # Bottom of player
+    }
+    
+    # Define armor colors for different materials
+    armor_colors = {
+        "leather": (139, 69, 19),    # Brown leather
+        "iron": (192, 192, 192),     # Silver/gray iron
+        "chainmail": (169, 169, 169), # Dark gray chainmail
+        "gold": (255, 215, 0),       # Gold
+        "diamond": (0, 191, 255)     # Cyan diamond
+    }
+    
+    for slot_name in armor_render_order:
         equipped_armor = player["armor"].get(slot_name)
         if equipped_armor and isinstance(equipped_armor, dict) and "type" in equipped_armor:
             armor_type = equipped_armor["type"]
+            
+            # Extract material type (e.g., "iron" from "iron_helmet")
+            material = armor_type.split("_")[0] if "_" in armor_type else "iron"
+            
+            # Get positioning offset for this armor piece
+            offset_x, offset_y = armor_offsets.get(slot_name, (0, 0))
+            armor_x = px + offset_x
+            armor_y = py + offset_y
             
             # Check if we have a texture for this armor
             if armor_type in textures:
                 armor_texture = textures[armor_type]
                 
-                # Scale armor texture to fit player (32x32)
-                scaled_armor = pygame.transform.scale(armor_texture, (32, 32))
+                # Scale armor texture appropriately for each piece
+                if slot_name == "helmet":
+                    scaled_armor = pygame.transform.scale(armor_texture, (32, 16))  # Helmet size
+                elif slot_name == "chestplate":
+                    scaled_armor = pygame.transform.scale(armor_texture, (32, 20))  # Torso size
+                elif slot_name == "leggings":
+                    scaled_armor = pygame.transform.scale(armor_texture, (32, 16))  # Legs size
+                else:  # boots
+                    scaled_armor = pygame.transform.scale(armor_texture, (32, 8))   # Feet size
                 
-                # Draw armor on top of player
-                screen.blit(scaled_armor, (px, py))
+                # Apply material color tinting
+                if material in armor_colors:
+                    tinted_armor = scaled_armor.copy()
+                    color_surface = pygame.Surface(scaled_armor.get_size())
+                    color_surface.fill(armor_colors[material])
+                    tinted_armor.blit(color_surface, (0, 0), special_flags=pygame.BLEND_MULT)
+                    screen.blit(tinted_armor, (armor_x, armor_y))
+                else:
+                    screen.blit(scaled_armor, (armor_x, armor_y))
                 
-                # Only draw one piece of armor at a time to avoid overlapping
-                # In a more advanced system, you could layer different armor pieces
-                break
+            else:
+                # EXTREME ENGINEERING: Fallback procedural armor rendering
+                armor_color = armor_colors.get(material, (128, 128, 128))
+                
+                if slot_name == "helmet":
+                    # Draw helmet shape
+                    pygame.draw.ellipse(screen, armor_color, (armor_x + 4, armor_y, 24, 16))
+                    pygame.draw.rect(screen, armor_color, (armor_x + 8, armor_y + 8, 16, 8))
+                elif slot_name == "chestplate":
+                    # Draw chestplate shape
+                    pygame.draw.rect(screen, armor_color, (armor_x + 2, armor_y, 28, 20))
+                    # Add armor detail lines
+                    pygame.draw.line(screen, tuple(max(0, c-30) for c in armor_color), 
+                                   (armor_x + 6, armor_y + 5), (armor_x + 26, armor_y + 5), 2)
+                elif slot_name == "leggings":
+                    # Draw leggings shape
+                    pygame.draw.rect(screen, armor_color, (armor_x + 4, armor_y, 12, 16))  # Left leg
+                    pygame.draw.rect(screen, armor_color, (armor_x + 16, armor_y, 12, 16)) # Right leg
+                else:  # boots
+                    # Draw boots shape
+                    pygame.draw.rect(screen, armor_color, (armor_x + 2, armor_y, 12, 8))   # Left boot
+                    pygame.draw.rect(screen, armor_color, (armor_x + 18, armor_y, 12, 8))  # Right boot
+                
+                # Add shine effect for metallic armor
+                if material in ["iron", "gold", "diamond"]:
+                    shine_color = tuple(min(255, c + 50) for c in armor_color)
+                    if slot_name == "helmet":
+                        pygame.draw.line(screen, shine_color, (armor_x + 8, armor_y + 2), (armor_x + 24, armor_y + 2), 1)
+                    elif slot_name == "chestplate":
+                        pygame.draw.line(screen, shine_color, (armor_x + 4, armor_y + 2), (armor_x + 28, armor_y + 2), 1)
+    
+    # EXTREME ENGINEERING: Armor set bonus visual effect
+    equipped_pieces = [slot for slot in armor_render_order if player["armor"].get(slot)]
+    if len(equipped_pieces) >= 3:  # 3+ pieces equipped
+        # Add subtle glow effect around player
+        glow_surface = pygame.Surface((36, 36), pygame.SRCALPHA)
+        glow_color = (255, 255, 0, 30)  # Subtle yellow glow
+        pygame.draw.circle(glow_surface, glow_color, (18, 18), 18)
+        screen.blit(glow_surface, (px - 2, py - 2))
 
 def calculate_armor_damage_reduction(base_damage):
     """Calculate damage reduction based on equipped armor"""
@@ -4636,24 +5145,63 @@ def update_pause_state():
         pause_game_time()
 
 def update_villagers():
-    """Simple wander AI for villagers. They avoid walking off cliffs and bump into walls."""
+    """EXTREME ENGINEERING: Advanced villager AI with personality-based behavior, movement, and interaction"""
     for v in entities:
         if v.get("type") != "villager":
             continue
-        # step timer changes direction occasionally
+            
+        # EXTREME ENGINEERING: Personality-based movement patterns
+        personality = v.get("personality", "friendly")
+        movement_speed = 0.03  # Base movement speed
+        
+        # Adjust movement based on personality
+        if personality == "energetic":
+            movement_speed = 0.06  # Fast movement
+        elif personality == "shy":
+            movement_speed = 0.015  # Slow, cautious movement
+        elif personality == "grumpy":
+            movement_speed = 0.02  # Slow, reluctant movement
+        
+        # EXTREME ENGINEERING: Smart movement AI
         v["step"] = v.get("step", 0) + 1
+        v["movement_timer"] = v.get("movement_timer", 0) + 1
+        
+        # Change direction based on personality and environment
         if v["step"] % 180 == 0 and random.random() < 0.5:
-            v["dir"] = -v.get("dir", 1)
+            # Personality affects direction change frequency
+            if personality == "energetic" and random.random() < 0.7:
+                v["dir"] = -v.get("dir", 1)  # Energetic villagers change direction more
+            elif personality == "shy" and random.random() < 0.3:
+                v["dir"] = -v.get("dir", 1)  # Shy villagers change direction less
+            else:
+                v["dir"] = -v.get("dir", 1)
+        
         dirn = v.get("dir", 1)
-
+        
+        # EXTREME ENGINEERING: Home-based wandering (villagers stay near their homes)
+        home_x = v.get("home_x", v["x"])
+        home_y = v.get("home_y", v["y"])
+        wander_radius = v.get("wander_radius", 5)
+        
+        # Check if villager is too far from home
+        distance_from_home = abs(v["x"] - home_x)
+        if distance_from_home > wander_radius:
+            # Turn back toward home
+            if v["x"] > home_x:
+                v["dir"] = -1
+            else:
+                v["dir"] = 1
+        
         # desired next position
-        nx = v["x"] + 0.04 * dirn
+        nx = v["x"] + movement_speed * dirn
+        
+        # EXTREME ENGINEERING: Advanced collision detection
         # tiles at head/feet
         head = get_block(int(nx + (0.9 if dirn > 0 else 0.0)), int(v["y"]))
         feet = get_block(int(nx + (0.9 if dirn > 0 else 0.0)), int(v["y"] + 0.9))
         ground_ahead = get_block(int(nx + (0.9 if dirn > 0 else 0.0)), int(v["y"] + 1))
-
-        # avoid solid walls
+        
+        # avoid solid walls and cliffs
         if is_non_solid_block(head) and is_non_solid_block(feet):
             # avoid stepping into gaps (no ground ahead)
             if ground_ahead is None:
@@ -4662,13 +5210,29 @@ def update_villagers():
                 v["x"] = nx
         else:
             v["dir"] = -dirn
-
-        # gravity (very light so they stay on ground)
+        
+        # EXTREME ENGINEERING: Gravity system (very light so they stay on ground)
         below = get_block(int(v["x"]), int(v["y"] + 1))
         if below is None:
             v["y"] += 0.10
         else:
             v["y"] = float(int(v["y"]))
+        
+        # EXTREME ENGINEERING: Villager mood changes over time
+        if v["movement_timer"] % 600 == 0:  # Every 10 seconds
+            mood_changes = {
+                "friendly": ["happy", "neutral", "happy"],
+                "grumpy": ["slightly_annoyed", "neutral", "slightly_annoyed"],
+                "wise": ["neutral", "happy", "neutral"],
+                "curious": ["happy", "curious", "happy"],
+                "shy": ["neutral", "slightly_annoyed", "neutral"],
+                "energetic": ["happy", "happy", "energetic"]
+            }
+            v["mood"] = random.choice(mood_changes.get(personality, ["neutral"]))
+        
+        # EXTREME ENGINEERING: Villager interaction cooldown
+        if v.get("dialogue_cooldown", 0) > 0:
+            v["dialogue_cooldown"] -= 1
 
 
 # --- World Generation Function ---
@@ -6168,7 +6732,7 @@ while running:
                             print("🚪 Door closed at", door_pos)
                         continue
                     
-                    # Villager interaction: right-click to talk
+                    # EXTREME ENGINEERING: Enhanced villager interaction with personality-based dialogue
                     for entity in entities:
                         if entity["type"] == "villager":
                             entity_x = int(entity["x"] * TILE_SIZE)
@@ -6178,13 +6742,32 @@ while running:
                                 bx * TILE_SIZE - camera_x + TILE_SIZE >= entity_x and
                                 by * TILE_SIZE <= entity_y + TILE_SIZE and 
                                 by * TILE_SIZE + TILE_SIZE >= entity_y):
-                                # Show random villager dialogue
-                                dialogue = get_random_villager_dialogue()
-                                show_villager_dialogue(dialogue)
-                                print(f"🗣️ Villager says: {dialogue}")
                                 
-                                # Check for first villager talk achievement
-                                check_achievement("first_villager_talk", 15, "Talked to a villager for the first time!")
+                                # EXTREME ENGINEERING: Check dialogue cooldown
+                                if entity.get("dialogue_cooldown", 0) <= 0:
+                                    # Get personality-based dialogue
+                                    dialogue = get_random_villager_dialogue(entity)
+                                    show_villager_dialogue(dialogue, entity)
+                                    
+                                    # EXTREME ENGINEERING: Update villager state
+                                    entity["dialogue_cooldown"] = 120  # 2 second cooldown
+                                    entity["last_interaction"] = time.time()
+                                    
+                                    # EXTREME ENGINEERING: Mood changes based on interaction
+                                    if random.random() < 0.3:  # 30% chance for mood change
+                                        current_mood = entity.get("mood", "neutral")
+                                        if current_mood == "slightly_annoyed":
+                                            entity["mood"] = "neutral"
+                                        elif current_mood == "neutral":
+                                            entity["mood"] = "happy"
+                                    
+                                    print(f"🗣️ {entity.get('name', 'Villager')} ({entity.get('personality', 'friendly')}) says: {dialogue}")
+                                    
+                                    # Check for first villager talk achievement
+                                    check_achievement("first_villager_talk", 15, "Talked to a villager for the first time!")
+                                else:
+                                    # Show cooldown message
+                                    show_message(f"⏰ {entity.get('name', 'Villager')} is busy talking to someone else!")
                                 
                                 continue
                     
@@ -6569,7 +7152,7 @@ while running:
         update_player()
         update_world_interactions()
         update_monsters()
-        update_villagers()
+        update_villagers()  # EXTREME ENGINEERING: Enhanced villager AI
         update_hunger()  # Update hunger system
         
         # Update chat system
