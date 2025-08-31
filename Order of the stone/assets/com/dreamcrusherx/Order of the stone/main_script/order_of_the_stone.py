@@ -9339,15 +9339,18 @@ while running:
                     
                     # Balanced spawning: max 8 total monsters, max 1 per 40-block radius
                     if total_monsters < 8 and nearby_monsters == 0:
-                        entities.append({
-                            "type": "monster",
-                            "x": x,
-                            "y": ground_y - 1,
-                            "image": monster_image,
-                            "hp": 6,  # Balanced HP for fair combat
-                            "cooldown": 0
-                        })
-                        print(f"👹 Night monster spawned at ({x}, {ground_y - 1}) - Total monsters: {total_monsters + 1}/8")
+                        # Find ground level for this column
+                        spawn_ground_y = ground_y_of_column(x)
+                        if spawn_ground_y is not None:
+                            entities.append({
+                                "type": "monster",
+                                "x": x,
+                                "y": spawn_ground_y - 1,
+                                "image": monster_image,
+                                "hp": 6,  # Balanced HP for fair combat
+                                "cooldown": 0
+                            })
+                            print(f"👹 Night monster spawned at ({x}, {spawn_ground_y - 1}) - Total monsters: {total_monsters + 1}/8")
                 
                         # EXTREME ENGINEERING: Check for Legend NPC spawn
         check_legend_npc_spawn()
@@ -9364,13 +9367,16 @@ while running:
                     
                     # Only spawn if there are less than 1 villager in a 30-block radius
                     if nearby_villagers < 1:
-                        entities.append({
-                            "type": "villager",
-                            "x": x,
-                            "y": ground_y - 1,
-                            "dialogue_cooldown": 0
-                        })
-                        print(f"👤 Spawned random villager at ({x}, {ground_y - 1})")
+                        # Find ground level for this column
+                        spawn_ground_y = ground_y_of_column(x)
+                        if spawn_ground_y is not None:
+                            entities.append({
+                                "type": "villager",
+                                "x": x,
+                                "y": spawn_ground_y - 1,
+                                "dialogue_cooldown": 0
+                            })
+                            print(f"👤 Spawned random villager at ({x}, {spawn_ground_y - 1})")
 
         update_daylight()
         update_player()
