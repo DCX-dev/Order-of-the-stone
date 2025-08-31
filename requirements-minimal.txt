@@ -1,4 +1,23 @@
 # Order of the Stone - Minimal Dependencies
 # Essential dependencies only
 pygame>=2.5.0
+
+# Image processing and manipulation
 Pillow>=10.0.0
+
+# Development and testing (optional but recommended)
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Code formatting and linting (optional but recommended)
+black>=23.0.0
+flake8>=6.0.0
+
+# Type checking (optional but recommended)
+mypy>=1.0.0
+
+# Documentation generation (optional)
+sphinx>=7.0.0
+
+# Additional utilities
+numpy>=1.24.0  # For advanced array operations if needed in future
