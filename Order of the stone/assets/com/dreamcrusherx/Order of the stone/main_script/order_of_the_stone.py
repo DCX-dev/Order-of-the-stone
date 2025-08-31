@@ -644,9 +644,27 @@ def update_chest_ui_geometry():
 
 # Initialize
 import pygame
-from managers.character_manager import CharacterManager
-from network.multiplayer_server import MultiplayerServer
-from ui.multiplayer_ui import MultiplayerUI
+# FIXED IMPORTS: Add proper path handling for modular imports
+import sys
+import os
+
+# Add parent directory to path so we can import our modules
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# Now import our modules with error handling
+try:
+    from managers.character_manager import CharacterManager
+    from network.multiplayer_server import MultiplayerServer
+    from UI.multiplayer_ui import MultiplayerUI  # Note: UI folder is capitalized
+except ImportError as e:
+    print(f"⚠️ Warning: Could not import some modules: {e}")
+    print("🎮 Game will run in basic mode without advanced features")
+    CharacterManager = None
+    MultiplayerServer = None
+    MultiplayerUI = None
 
 # Add signal handler for graceful shutdown on Unix systems (macOS)
 def signal_handler(signum, frame):
@@ -691,17 +709,50 @@ update_chest_ui_geometry()
 def centered_button(y, w=200, h=50):
     return pygame.Rect(center_x(w), y, w, h)
 
-# Folders
-TILE_DIR = "../../../../tiles"
-ITEM_DIR = "../../../../items"
-MOB_DIR = "../../../../mobs"
-PLAYER_DIR = "../../../../player"
-HP_DIR = "../../../../HP"
-SOUND_DIR = "../../../../../damage"
-SAVE_DIR = "../../../../../save_data"
+# FIXED ASSET PATHS: Use absolute paths that work regardless of execution directory
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+assets_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
 
+TILE_DIR = os.path.join(assets_root, "tiles")
+ITEM_DIR = os.path.join(assets_root, "items") 
+MOB_DIR = os.path.join(assets_root, "mobs")
+PLAYER_DIR = os.path.join(assets_root, "player")
+HP_DIR = os.path.join(assets_root, "HP")
+
+# Ensure directories exist and print paths for debugging
+for dir_name, dir_path in [("TILE_DIR", TILE_DIR), ("ITEM_DIR", ITEM_DIR), ("MOB_DIR", MOB_DIR), ("PLAYER_DIR", PLAYER_DIR), ("HP_DIR", HP_DIR)]:
+    if os.path.exists(dir_path):
+        print(f"✅ {dir_name}: {dir_path}")
+    else:
+        print(f"⚠️ {dir_name} not found: {dir_path}")
+        # Try alternative path
+        alt_path = os.path.join(current_script_dir, "..", "..", "assets", dir_name.split("_")[0].lower())
+        if os.path.exists(alt_path):
+            print(f"🔄 Using alternative path: {alt_path}")
+            if dir_name == "TILE_DIR": TILE_DIR = alt_path
+            elif dir_name == "ITEM_DIR": ITEM_DIR = alt_path
+            elif dir_name == "MOB_DIR": MOB_DIR = alt_path
+            elif dir_name == "PLAYER_DIR": PLAYER_DIR = alt_path
+            elif dir_name == "HP_DIR": HP_DIR = alt_path
+# Fix remaining asset paths
+SOUND_DIR = os.path.join(assets_root, "damage")
+SAVE_DIR = os.path.join(assets_root, "save_data")
+
+# Ensure save directory exists
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
+    print(f"📁 Created save directory: {SAVE_DIR}")
+
+# Check sound directory
+if os.path.exists(SOUND_DIR):
+    print(f"✅ SOUND_DIR: {SOUND_DIR}")
+else:
+    print(f"⚠️ SOUND_DIR not found: {SOUND_DIR}")
+    # Try alternative
+    alt_sound = os.path.join(current_script_dir, "..", "..", "damage")
+    if os.path.exists(alt_sound):
+        SOUND_DIR = alt_sound
+        print(f"🔄 Using alternative sound path: {SOUND_DIR}")
 
 def load_texture(path):
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(), (TILE_SIZE, TILE_SIZE))
@@ -1871,9 +1922,17 @@ def initialize_chat_system():
     global chat_system
     
     try:
-        from system.chat_system import ChatSystem
-        chat_system = ChatSystem(SCREEN_WIDTH, SCREEN_HEIGHT)
-        chat_system.set_fonts(font, font)  # Use the same font for now
+        try:
+            from system.chat_system import ChatSystem
+        except ImportError:
+            print("⚠️ Warning: Chat system not available")
+            ChatSystem = None
+        if ChatSystem:
+            chat_system = ChatSystem(SCREEN_WIDTH, SCREEN_HEIGHT)
+        else:
+            chat_system = None
+        if chat_system:
+            chat_system.set_fonts(font, font)  # Use the same font for now
         print("💬 Chat system initialized")
     except Exception as e:
         print(f"❌ Chat system initialization failed: {e}")
@@ -1884,9 +1943,16 @@ def initialize_coins_manager():
     global coins_manager
     
     try:
-        from managers.coins_manager import CoinsManager
-        coins_manager = CoinsManager("coins.json")
-        if GLOBAL_USERNAME:
+        try:
+            from managers.coins_manager import CoinsManager
+        except ImportError:
+            print("⚠️ Warning: Coins manager not available")
+            CoinsManager = None
+        if CoinsManager:
+            coins_manager = CoinsManager("coins.json")
+        else:
+            coins_manager = None
+        if coins_manager and GLOBAL_USERNAME:
             coins_manager.set_username(GLOBAL_USERNAME)
         print("💰 Coins manager initialized")
     except Exception as e:
@@ -7879,9 +7945,16 @@ initialize_chat_system()
 initialize_coins_manager()
 
 # Initialize enhanced systems
-from system.chest_system import ChestSystem
+try:
+    from system.chest_system import ChestSystem
+except ImportError:
+    print("⚠️ Warning: Chest system not available")
+    ChestSystem = None
 
-chest_system = ChestSystem()
+if ChestSystem:
+    chest_system = ChestSystem()
+else:
+    chest_system = None
 
 def print_chest_system_info():
     """Print information about the enhanced chest system"""
@@ -8193,7 +8266,11 @@ def load_game():
     
     try:
         # Use the new world generation module
-        from world_generation.world_gen import generate_world
+        try:
+            from world_generation.world_gen import generate_world
+        except ImportError:
+            print("⚠️ Warning: Advanced world generation not available, using basic generation")
+            generate_world = None
         
         print("🌍 Loading game with improved world generation...")
         
@@ -8263,18 +8340,37 @@ def load_game():
         return False
 
 # Initialize multiplayer system
-multiplayer_ui = MultiplayerUI(SCREEN_WIDTH, SCREEN_HEIGHT)
-multiplayer_ui.set_fonts(font, small_font, title_font)
+if MultiplayerUI:
+    multiplayer_ui = MultiplayerUI(SCREEN_WIDTH, SCREEN_HEIGHT)
+    multiplayer_ui.set_fonts(font, small_font, title_font)
+else:
+    multiplayer_ui = None
 
 # Initialize modern UI system
-from ui.modern_ui import ModernUI
-modern_ui = ModernUI(screen, font, small_font, title_font, BIG_FONT)
+try:
+    from UI.modern_ui import ModernUI  # Note: UI folder is capitalized
+except ImportError:
+    print("⚠️ Warning: Modern UI not available")
+    ModernUI = None
+if ModernUI:
+    modern_ui = ModernUI(screen, font, small_font, title_font, BIG_FONT)
+else:
+    modern_ui = None
 
 # Initialize world system and UI
-from system.world_system import WorldSystem
-from ui.world_ui import WorldUI
-world_system = WorldSystem()
-world_ui = WorldUI(screen, world_system, font, title_font)
+try:
+    from system.world_system import WorldSystem
+    from UI.world_ui import WorldUI  # Note: UI folder is capitalized
+except ImportError:
+    print("⚠️ Warning: World system/UI not available")
+    WorldSystem = None
+    WorldUI = None
+if WorldSystem and WorldUI:
+    world_system = WorldSystem()
+    world_ui = WorldUI(screen, world_system, font, title_font)
+else:
+    world_system = None
+    world_ui = None
 
 # Game state variables
 game_state = GameState.TITLE
