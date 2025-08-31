@@ -240,3 +240,1220 @@
 2025-08-21 19:19:10,674 - root - INFO - <module>:617 - Core systems initialized successfully
 2025-08-21 19:48:15,121 - root - INFO - __init__:546 - Performance monitor initialized
 2025-08-21 19:48:15,121 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:11:16,524 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:11:16,524 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:16:34,889 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:16:34,889 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:18:59,036 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:18:59,036 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:29:21,297 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:29:21,297 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:36:15,144 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:36:15,144 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:41:14,685 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:41:14,685 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-21 21:42:19,471 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-21 21:42:19,471 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-22 07:08:36,479 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-22 07:08:36,480 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-22 07:48:21,786 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-22 07:48:21,786 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-22 07:51:31,087 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-22 07:51:31,087 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-22 18:00:36,976 - root - INFO - __init__:752 - Performance monitor initialized
+2025-08-22 18:00:36,976 - root - INFO - <module>:823 - Core systems initialized successfully
+2025-08-22 18:03:28,111 - root - INFO - __init__:752 - Performance monitor initialized
+2025-08-22 18:03:28,112 - root - INFO - <module>:823 - Core systems initialized successfully
+2025-08-22 18:03:49,282 - root - INFO - __init__:752 - Performance monitor initialized
+2025-08-22 18:03:49,282 - root - INFO - <module>:823 - Core systems initialized successfully
+2025-08-22 18:17:37,347 - root - INFO - __init__:868 - Performance monitor initialized
+2025-08-22 18:17:37,347 - root - INFO - <module>:939 - Core systems initialized successfully
+2025-08-22 18:30:48,507 - root - INFO - __init__:868 - Performance monitor initialized
+2025-08-22 18:30:48,507 - root - INFO - <module>:939 - Core systems initialized successfully
+2025-08-22 18:37:54,220 - root - INFO - __init__:868 - Performance monitor initialized
+2025-08-22 18:37:54,220 - root - INFO - <module>:939 - Core systems initialized successfully
+2025-08-22 18:48:09,477 - root - INFO - __init__:868 - Performance monitor initialized
+2025-08-22 18:48:09,477 - root - INFO - <module>:939 - Core systems initialized successfully
+2025-08-22 19:01:54,130 - root - INFO - __init__:927 - Performance monitor initialized
+2025-08-22 19:01:54,130 - root - INFO - <module>:998 - Core systems initialized successfully
+2025-08-22 19:56:40,173 - root - INFO - __init__:927 - Performance monitor initialized
+2025-08-22 19:56:40,173 - root - INFO - <module>:998 - Core systems initialized successfully
+2025-08-22 20:01:04,591 - root - INFO - __init__:927 - Performance monitor initialized
+2025-08-22 20:01:04,591 - root - INFO - <module>:998 - Core systems initialized successfully
+2025-08-22 20:04:19,937 - root - INFO - __init__:927 - Performance monitor initialized
+2025-08-22 20:04:19,938 - root - INFO - <module>:998 - Core systems initialized successfully
+2025-08-22 20:11:28,131 - root - INFO - __init__:988 - Performance monitor initialized
+2025-08-22 20:11:28,131 - root - INFO - <module>:1059 - Core systems initialized successfully
+2025-08-22 20:15:09,235 - root - INFO - __init__:988 - Performance monitor initialized
+2025-08-22 20:15:09,235 - root - INFO - <module>:1059 - Core systems initialized successfully
+2025-08-22 20:20:42,683 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:20:42,683 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:21:18,906 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:21:18,907 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:21:52,141 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:21:52,141 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:21:55,485 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:21:55,485 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:34:30,372 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:34:30,372 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:34:33,069 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:34:33,069 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:34:37,404 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:34:37,404 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:35:56,503 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:35:56,503 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:45:57,175 - root - INFO - __init__:989 - Performance monitor initialized
+2025-08-22 20:45:57,175 - root - INFO - <module>:1060 - Core systems initialized successfully
+2025-08-22 20:55:03,548 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-22 20:55:03,548 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 09:00:46,697 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 09:00:46,697 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 09:19:02,877 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 09:19:02,878 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 09:19:28,288 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 09:19:28,288 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 09:25:50,978 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 09:25:50,978 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 09:54:46,848 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 09:54:46,848 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 10:16:11,631 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 10:16:11,631 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 11:04:48,945 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 11:04:48,945 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 11:17:18,775 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 11:17:18,775 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 11:18:24,985 - root - INFO - __init__:995 - Performance monitor initialized
+2025-08-23 11:18:24,985 - root - INFO - <module>:1066 - Core systems initialized successfully
+2025-08-23 11:26:31,658 - root - INFO - __init__:978 - Performance monitor initialized
+2025-08-23 11:26:31,658 - root - INFO - <module>:1049 - Core systems initialized successfully
+2025-08-23 11:58:45,486 - root - INFO - __init__:1000 - Performance monitor initialized
+2025-08-23 11:58:45,486 - root - INFO - <module>:1071 - Core systems initialized successfully
+2025-08-23 13:12:00,958 - root - INFO - __init__:1000 - Performance monitor initialized
+2025-08-23 13:12:00,958 - root - INFO - <module>:1071 - Core systems initialized successfully
+2025-08-23 13:15:04,680 - root - INFO - __init__:1000 - Performance monitor initialized
+2025-08-23 13:15:04,680 - root - INFO - <module>:1071 - Core systems initialized successfully
+2025-08-23 13:17:27,226 - root - INFO - __init__:1004 - Performance monitor initialized
+2025-08-23 13:17:27,227 - root - INFO - <module>:1075 - Core systems initialized successfully
+2025-08-23 13:17:43,382 - root - INFO - __init__:1004 - Performance monitor initialized
+2025-08-23 13:17:43,383 - root - INFO - <module>:1075 - Core systems initialized successfully
+2025-08-23 13:18:52,961 - root - INFO - __init__:1015 - Performance monitor initialized
+2025-08-23 13:18:52,961 - root - INFO - <module>:1086 - Core systems initialized successfully
+2025-08-23 13:21:16,258 - root - INFO - __init__:1015 - Performance monitor initialized
+2025-08-23 13:21:16,259 - root - INFO - <module>:1086 - Core systems initialized successfully
+2025-08-23 13:23:34,075 - root - INFO - __init__:1053 - Performance monitor initialized
+2025-08-23 13:23:34,075 - root - INFO - <module>:1124 - Core systems initialized successfully
+2025-08-23 13:24:04,658 - root - INFO - __init__:1053 - Performance monitor initialized
+2025-08-23 13:24:04,659 - root - INFO - <module>:1124 - Core systems initialized successfully
+2025-08-24 08:47:55,680 - root - INFO - __init__:1053 - Performance monitor initialized
+2025-08-24 08:47:55,680 - root - INFO - <module>:1124 - Core systems initialized successfully
+2025-08-24 08:50:39,812 - root - INFO - __init__:1053 - Performance monitor initialized
+2025-08-24 08:50:39,812 - root - INFO - <module>:1124 - Core systems initialized successfully
+2025-08-24 08:51:28,702 - root - INFO - __init__:1059 - Performance monitor initialized
+2025-08-24 08:51:28,702 - root - INFO - <module>:1130 - Core systems initialized successfully
+2025-08-24 08:51:51,312 - root - INFO - __init__:1059 - Performance monitor initialized
+2025-08-24 08:51:51,312 - root - INFO - <module>:1130 - Core systems initialized successfully
+2025-08-24 08:52:42,411 - root - INFO - __init__:1053 - Performance monitor initialized
+2025-08-24 08:52:42,411 - root - INFO - <module>:1124 - Core systems initialized successfully
+2025-08-24 08:57:08,936 - root - INFO - __init__:2135 - Performance monitor initialized
+2025-08-24 08:57:08,936 - root - INFO - __init__:2135 - Performance monitor initialized
+2025-08-24 08:57:08,936 - root - INFO - <module>:2206 - Core systems initialized successfully
+2025-08-24 08:57:08,936 - root - INFO - <module>:2206 - Core systems initialized successfully
+2025-08-24 08:59:23,590 - root - INFO - __init__:1994 - Performance monitor initialized
+2025-08-24 08:59:23,590 - root - INFO - __init__:1994 - Performance monitor initialized
+2025-08-24 08:59:23,590 - root - INFO - <module>:2065 - Core systems initialized successfully
+2025-08-24 08:59:23,590 - root - INFO - <module>:2065 - Core systems initialized successfully
+2025-08-24 08:59:51,985 - root - INFO - __init__:1994 - Performance monitor initialized
+2025-08-24 08:59:51,985 - root - INFO - __init__:1994 - Performance monitor initialized
+2025-08-24 08:59:51,985 - root - INFO - <module>:2065 - Core systems initialized successfully
+2025-08-24 08:59:51,985 - root - INFO - <module>:2065 - Core systems initialized successfully
+2025-08-24 08:59:59,857 - root - INFO - __init__:1994 - Performance monitor initialized
+2025-08-24 08:59:59,857 - root - INFO - __init__:1994 - Performance monitor initialized
+2025-08-24 08:59:59,857 - root - INFO - <module>:2065 - Core systems initialized successfully
+2025-08-24 08:59:59,857 - root - INFO - <module>:2065 - Core systems initialized successfully
+2025-08-24 09:02:24,109 - root - INFO - __init__:1909 - Performance monitor initialized
+2025-08-24 09:02:24,109 - root - INFO - __init__:1909 - Performance monitor initialized
+2025-08-24 09:02:24,110 - root - INFO - <module>:1980 - Core systems initialized successfully
+2025-08-24 09:02:24,110 - root - INFO - <module>:1980 - Core systems initialized successfully
+2025-08-24 09:03:44,009 - root - INFO - __init__:1877 - Performance monitor initialized
+2025-08-24 09:03:44,009 - root - INFO - __init__:1877 - Performance monitor initialized
+2025-08-24 09:03:44,010 - root - INFO - <module>:1948 - Core systems initialized successfully
+2025-08-24 09:03:44,010 - root - INFO - <module>:1948 - Core systems initialized successfully
+2025-08-24 09:03:56,271 - root - INFO - __init__:1877 - Performance monitor initialized
+2025-08-24 09:03:56,271 - root - INFO - __init__:1877 - Performance monitor initialized
+2025-08-24 09:03:56,271 - root - INFO - <module>:1948 - Core systems initialized successfully
+2025-08-24 09:03:56,271 - root - INFO - <module>:1948 - Core systems initialized successfully
+2025-08-24 09:07:23,844 - root - INFO - __init__:1803 - Performance monitor initialized
+2025-08-24 09:07:23,844 - root - INFO - __init__:1803 - Performance monitor initialized
+2025-08-24 09:07:23,846 - root - INFO - <module>:1874 - Core systems initialized successfully
+2025-08-24 09:07:23,846 - root - INFO - <module>:1874 - Core systems initialized successfully
+2025-08-24 09:07:58,895 - root - INFO - __init__:1801 - Performance monitor initialized
+2025-08-24 09:07:58,895 - root - INFO - __init__:1801 - Performance monitor initialized
+2025-08-24 09:07:58,898 - root - INFO - <module>:1872 - Core systems initialized successfully
+2025-08-24 09:07:58,898 - root - INFO - <module>:1872 - Core systems initialized successfully
+2025-08-24 09:08:34,478 - root - INFO - __init__:1862 - Performance monitor initialized
+2025-08-24 09:08:34,478 - root - INFO - __init__:1862 - Performance monitor initialized
+2025-08-24 09:08:34,479 - root - INFO - <module>:1933 - Core systems initialized successfully
+2025-08-24 09:08:34,479 - root - INFO - <module>:1933 - Core systems initialized successfully
+2025-08-24 09:11:11,541 - root - INFO - __init__:1876 - Performance monitor initialized
+2025-08-24 09:11:11,541 - root - INFO - __init__:1876 - Performance monitor initialized
+2025-08-24 09:11:11,542 - root - INFO - <module>:1947 - Core systems initialized successfully
+2025-08-24 09:11:11,542 - root - INFO - <module>:1947 - Core systems initialized successfully
+2025-08-24 09:18:39,971 - root - INFO - __init__:1876 - Performance monitor initialized
+2025-08-24 09:18:39,971 - root - INFO - __init__:1876 - Performance monitor initialized
+2025-08-24 09:18:39,971 - root - INFO - <module>:1947 - Core systems initialized successfully
+2025-08-24 09:18:39,971 - root - INFO - <module>:1947 - Core systems initialized successfully
+2025-08-24 09:19:34,699 - root - INFO - __init__:1876 - Performance monitor initialized
+2025-08-24 09:19:34,699 - root - INFO - __init__:1876 - Performance monitor initialized
+2025-08-24 09:19:34,699 - root - INFO - <module>:1947 - Core systems initialized successfully
+2025-08-24 09:19:34,699 - root - INFO - <module>:1947 - Core systems initialized successfully
+2025-08-24 09:21:27,336 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:21:27,336 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:21:27,336 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:21:27,336 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:21:42,129 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:21:42,129 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:21:42,129 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:21:42,129 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:22:34,814 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:22:34,814 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:22:34,814 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:22:34,814 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:23:38,459 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:23:38,459 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:23:38,463 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:23:38,463 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:26:24,824 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:26:24,824 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:26:24,825 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:26:24,825 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:29:09,881 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:29:09,881 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:29:09,881 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:29:09,881 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:30:17,949 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:30:17,949 - root - INFO - __init__:1881 - Performance monitor initialized
+2025-08-24 09:30:17,949 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:30:17,949 - root - INFO - <module>:1952 - Core systems initialized successfully
+2025-08-24 09:31:50,523 - root - INFO - __init__:1882 - Performance monitor initialized
+2025-08-24 09:31:50,523 - root - INFO - __init__:1882 - Performance monitor initialized
+2025-08-24 09:31:50,524 - root - INFO - <module>:1953 - Core systems initialized successfully
+2025-08-24 09:31:50,524 - root - INFO - <module>:1953 - Core systems initialized successfully
+2025-08-24 09:34:47,087 - root - INFO - __init__:1864 - Performance monitor initialized
+2025-08-24 09:34:47,087 - root - INFO - __init__:1864 - Performance monitor initialized
+2025-08-24 09:34:47,088 - root - INFO - <module>:1935 - Core systems initialized successfully
+2025-08-24 09:34:47,088 - root - INFO - <module>:1935 - Core systems initialized successfully
+2025-08-24 09:44:19,206 - root - INFO - __init__:1883 - Performance monitor initialized
+2025-08-24 09:44:19,206 - root - INFO - __init__:1883 - Performance monitor initialized
+2025-08-24 09:44:19,206 - root - INFO - <module>:1954 - Core systems initialized successfully
+2025-08-24 09:44:19,206 - root - INFO - <module>:1954 - Core systems initialized successfully
+2025-08-24 09:44:41,163 - root - INFO - __init__:1883 - Performance monitor initialized
+2025-08-24 09:44:41,163 - root - INFO - __init__:1883 - Performance monitor initialized
+2025-08-24 09:44:41,163 - root - INFO - <module>:1954 - Core systems initialized successfully
+2025-08-24 09:44:41,163 - root - INFO - <module>:1954 - Core systems initialized successfully
+2025-08-24 09:56:07,259 - root - INFO - __init__:1905 - Performance monitor initialized
+2025-08-24 09:56:07,259 - root - INFO - __init__:1905 - Performance monitor initialized
+2025-08-24 09:56:07,259 - root - INFO - <module>:1976 - Core systems initialized successfully
+2025-08-24 09:56:07,259 - root - INFO - <module>:1976 - Core systems initialized successfully
+2025-08-24 10:19:07,058 - root - INFO - __init__:1905 - Performance monitor initialized
+2025-08-24 10:19:07,058 - root - INFO - __init__:1905 - Performance monitor initialized
+2025-08-24 10:19:07,058 - root - INFO - <module>:1976 - Core systems initialized successfully
+2025-08-24 10:19:07,058 - root - INFO - <module>:1976 - Core systems initialized successfully
+2025-08-24 10:34:13,489 - root - INFO - __init__:1915 - Performance monitor initialized
+2025-08-24 10:34:13,489 - root - INFO - __init__:1915 - Performance monitor initialized
+2025-08-24 10:34:13,490 - root - INFO - <module>:1986 - Core systems initialized successfully
+2025-08-24 10:34:13,490 - root - INFO - <module>:1986 - Core systems initialized successfully
+2025-08-24 10:35:59,922 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:35:59,922 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:35:59,922 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:35:59,922 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:41:58,635 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:41:58,635 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:41:58,635 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:41:58,635 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:44:32,880 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:44:32,880 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:44:32,880 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:44:32,880 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:46:47,536 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:46:47,536 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 10:46:47,536 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 10:46:47,536 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 11:26:13,007 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 11:26:13,007 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 11:26:13,007 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 11:26:13,007 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 11:37:13,089 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 11:37:13,089 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 11:37:13,089 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 11:37:13,089 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 11:40:55,716 - root - INFO - __init__:1903 - Performance monitor initialized
+2025-08-24 11:40:55,716 - root - INFO - __init__:1903 - Performance monitor initialized
+2025-08-24 11:40:55,717 - root - INFO - <module>:1974 - Core systems initialized successfully
+2025-08-24 11:40:55,717 - root - INFO - <module>:1974 - Core systems initialized successfully
+2025-08-24 11:42:34,809 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 11:42:34,809 - root - INFO - __init__:1901 - Performance monitor initialized
+2025-08-24 11:42:34,809 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 11:42:34,809 - root - INFO - <module>:1972 - Core systems initialized successfully
+2025-08-24 13:47:35,511 - root - INFO - __init__:2055 - Performance monitor initialized
+2025-08-24 13:47:35,511 - root - INFO - __init__:2055 - Performance monitor initialized
+2025-08-24 13:47:35,512 - root - INFO - <module>:2126 - Core systems initialized successfully
+2025-08-24 13:47:35,512 - root - INFO - <module>:2126 - Core systems initialized successfully
+2025-08-24 14:01:19,612 - root - INFO - __init__:1558 - Performance monitor initialized
+2025-08-24 14:01:19,612 - root - INFO - __init__:1558 - Performance monitor initialized
+2025-08-24 14:01:19,613 - root - INFO - <module>:1629 - Core systems initialized successfully
+2025-08-24 14:01:19,613 - root - INFO - <module>:1629 - Core systems initialized successfully
+2025-08-24 14:02:30,977 - root - INFO - __init__:1558 - Performance monitor initialized
+2025-08-24 14:02:30,977 - root - INFO - __init__:1558 - Performance monitor initialized
+2025-08-24 14:02:30,977 - root - INFO - <module>:1629 - Core systems initialized successfully
+2025-08-24 14:02:30,977 - root - INFO - <module>:1629 - Core systems initialized successfully
+2025-08-24 14:03:29,881 - root - INFO - __init__:1558 - Performance monitor initialized
+2025-08-24 14:03:29,881 - root - INFO - __init__:1558 - Performance monitor initialized
+2025-08-24 14:03:29,881 - root - INFO - <module>:1629 - Core systems initialized successfully
+2025-08-24 14:03:29,881 - root - INFO - <module>:1629 - Core systems initialized successfully
+2025-08-24 14:06:33,332 - root - INFO - __init__:1789 - Performance monitor initialized
+2025-08-24 14:06:33,332 - root - INFO - __init__:1789 - Performance monitor initialized
+2025-08-24 14:06:33,332 - root - INFO - <module>:1860 - Core systems initialized successfully
+2025-08-24 14:06:33,332 - root - INFO - <module>:1860 - Core systems initialized successfully
+2025-08-24 14:07:16,242 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:07:16,242 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:07:16,242 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:07:16,242 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:08:35,339 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:08:35,339 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:08:35,339 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:08:35,339 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:11:24,206 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:11:24,206 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:11:24,206 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:11:24,206 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:12:54,582 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:12:54,582 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 14:12:54,582 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:12:54,582 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 14:19:12,741 - root - INFO - __init__:1805 - Performance monitor initialized
+2025-08-24 14:19:12,741 - root - INFO - __init__:1805 - Performance monitor initialized
+2025-08-24 14:19:12,742 - root - INFO - <module>:1876 - Core systems initialized successfully
+2025-08-24 14:19:12,742 - root - INFO - <module>:1876 - Core systems initialized successfully
+2025-08-24 18:10:45,516 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 18:10:45,516 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 18:10:45,516 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 18:10:45,516 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 18:12:00,084 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 18:12:00,084 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 18:12:00,085 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 18:12:00,085 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 18:12:41,309 - root - INFO - __init__:1793 - Performance monitor initialized
+2025-08-24 18:12:41,309 - root - INFO - __init__:1793 - Performance monitor initialized
+2025-08-24 18:12:41,309 - root - INFO - <module>:1864 - Core systems initialized successfully
+2025-08-24 18:12:41,309 - root - INFO - <module>:1864 - Core systems initialized successfully
+2025-08-24 18:17:05,978 - root - INFO - __init__:1802 - Performance monitor initialized
+2025-08-24 18:17:05,978 - root - INFO - __init__:1802 - Performance monitor initialized
+2025-08-24 18:17:05,978 - root - INFO - <module>:1873 - Core systems initialized successfully
+2025-08-24 18:17:05,978 - root - INFO - <module>:1873 - Core systems initialized successfully
+2025-08-24 18:21:59,710 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 18:21:59,710 - root - INFO - __init__:1788 - Performance monitor initialized
+2025-08-24 18:21:59,710 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 18:21:59,710 - root - INFO - <module>:1859 - Core systems initialized successfully
+2025-08-24 18:32:16,935 - root - INFO - __init__:1802 - Performance monitor initialized
+2025-08-24 18:32:16,935 - root - INFO - __init__:1802 - Performance monitor initialized
+2025-08-24 18:32:16,936 - root - INFO - <module>:1873 - Core systems initialized successfully
+2025-08-24 18:32:16,936 - root - INFO - <module>:1873 - Core systems initialized successfully
+2025-08-24 18:33:25,360 - root - INFO - __init__:1813 - Performance monitor initialized
+2025-08-24 18:33:25,360 - root - INFO - __init__:1813 - Performance monitor initialized
+2025-08-24 18:33:25,360 - root - INFO - <module>:1884 - Core systems initialized successfully
+2025-08-24 18:33:25,360 - root - INFO - <module>:1884 - Core systems initialized successfully
+2025-08-24 18:34:58,217 - root - INFO - __init__:1813 - Performance monitor initialized
+2025-08-24 18:34:58,217 - root - INFO - __init__:1813 - Performance monitor initialized
+2025-08-24 18:34:58,217 - root - INFO - <module>:1884 - Core systems initialized successfully
+2025-08-24 18:34:58,217 - root - INFO - <module>:1884 - Core systems initialized successfully
+2025-08-24 18:37:16,566 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 18:37:16,566 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 18:37:16,566 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 18:37:16,566 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 18:53:09,404 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 18:53:09,404 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 18:53:09,404 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 18:53:09,404 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 19:37:15,146 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 19:37:15,146 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 19:37:15,146 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 19:37:15,146 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 19:47:54,651 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 19:47:54,651 - root - INFO - __init__:1799 - Performance monitor initialized
+2025-08-24 19:47:54,651 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 19:47:54,651 - root - INFO - <module>:1870 - Core systems initialized successfully
+2025-08-24 20:17:34,118 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:17:34,118 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:17:34,119 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:17:34,119 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:17:34,119 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:17:34,119 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:17:52,470 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:17:52,470 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:17:52,470 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:17:52,470 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:17:52,470 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:17:52,470 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:18:12,396 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:18:12,396 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:18:12,396 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:18:12,396 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:18:12,396 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:18:12,396 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:18:12,396 - root - DEBUG - <module>:1976 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:18:12,396 - root - DEBUG - <module>:1976 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:18:33,296 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:18:33,296 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:18:36,403 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:18:36,403 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:18:38,691 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:18:38,691 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:18:41,491 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:18:41,491 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:18:44,825 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:18:44,825 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:19:42,633 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:19:42,633 - root - INFO - __init__:1898 - Performance monitor initialized
+2025-08-24 20:19:42,634 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:19:42,634 - root - INFO - <module>:1969 - Core systems initialized successfully
+2025-08-24 20:19:42,634 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:19:42,634 - root - INFO - test_character_flipping_system:475 - Testing character flipping system...
+2025-08-24 20:19:42,634 - root - DEBUG - <module>:1976 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:19:42,634 - root - DEBUG - <module>:1976 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:19:46,502 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:19:46,502 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:19:49,112 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:19:49,112 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:19:50,693 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:19:50,693 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:19:53,526 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:19:53,526 - root - DEBUG - update_player:7455 - Player facing direction changed to: right
+2025-08-24 20:19:54,693 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:19:54,693 - root - DEBUG - update_player:7455 - Player facing direction changed to: left
+2025-08-24 20:23:01,675 - root - INFO - __init__:1948 - Performance monitor initialized
+2025-08-24 20:23:01,675 - root - INFO - __init__:1948 - Performance monitor initialized
+2025-08-24 20:23:01,675 - root - INFO - <module>:2019 - Core systems initialized successfully
+2025-08-24 20:23:01,675 - root - INFO - <module>:2019 - Core systems initialized successfully
+2025-08-24 20:23:01,675 - root - INFO - test_character_flipping_system:525 - Testing character flipping system...
+2025-08-24 20:23:01,675 - root - INFO - test_character_flipping_system:525 - Testing character flipping system...
+2025-08-24 20:23:01,675 - root - DEBUG - <module>:2026 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:23:01,675 - root - DEBUG - <module>:2026 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:23:05,369 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:23:05,369 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:23:08,049 - root - DEBUG - update_player:7524 - Player facing direction changed to: right
+2025-08-24 20:23:08,049 - root - DEBUG - update_player:7524 - Player facing direction changed to: right
+2025-08-24 20:23:09,995 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:23:09,995 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:25:06,161 - root - INFO - __init__:1948 - Performance monitor initialized
+2025-08-24 20:25:06,161 - root - INFO - __init__:1948 - Performance monitor initialized
+2025-08-24 20:25:06,162 - root - INFO - <module>:2019 - Core systems initialized successfully
+2025-08-24 20:25:06,162 - root - INFO - <module>:2019 - Core systems initialized successfully
+2025-08-24 20:25:09,906 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:25:09,906 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:25:12,441 - root - DEBUG - update_player:7524 - Player facing direction changed to: right
+2025-08-24 20:25:12,441 - root - DEBUG - update_player:7524 - Player facing direction changed to: right
+2025-08-24 20:25:14,963 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:25:14,963 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:25:17,164 - root - DEBUG - update_player:7524 - Player facing direction changed to: right
+2025-08-24 20:25:17,164 - root - DEBUG - update_player:7524 - Player facing direction changed to: right
+2025-08-24 20:25:19,396 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:25:19,396 - root - DEBUG - update_player:7524 - Player facing direction changed to: left
+2025-08-24 20:36:53,133 - root - INFO - __init__:1972 - Performance monitor initialized
+2025-08-24 20:36:53,133 - root - INFO - __init__:1972 - Performance monitor initialized
+2025-08-24 20:36:53,134 - root - INFO - <module>:2043 - Core systems initialized successfully
+2025-08-24 20:36:53,134 - root - INFO - <module>:2043 - Core systems initialized successfully
+2025-08-24 20:36:53,134 - root - INFO - test_character_flipping_system:549 - Testing character flipping system...
+2025-08-24 20:36:53,134 - root - INFO - test_character_flipping_system:549 - Testing character flipping system...
+2025-08-24 20:36:53,134 - root - DEBUG - <module>:2050 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:36:53,134 - root - DEBUG - <module>:2050 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 20:36:56,616 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:36:56,616 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:00,391 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:00,391 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:02,609 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:02,609 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:09,642 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:09,642 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:40,332 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:40,332 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:52,642 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:52,642 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:53,809 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:53,809 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:37:56,309 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:37:56,309 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:52:09,459 - root - INFO - __init__:1972 - Performance monitor initialized
+2025-08-24 20:52:09,459 - root - INFO - __init__:1972 - Performance monitor initialized
+2025-08-24 20:52:09,459 - root - INFO - <module>:2043 - Core systems initialized successfully
+2025-08-24 20:52:09,459 - root - INFO - <module>:2043 - Core systems initialized successfully
+2025-08-24 20:52:13,014 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:52:13,014 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:52:17,325 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:52:17,325 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:52:18,238 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:52:18,238 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:57:48,172 - root - INFO - __init__:1972 - Performance monitor initialized
+2025-08-24 20:57:48,172 - root - INFO - __init__:1972 - Performance monitor initialized
+2025-08-24 20:57:48,172 - root - INFO - <module>:2043 - Core systems initialized successfully
+2025-08-24 20:57:48,172 - root - INFO - <module>:2043 - Core systems initialized successfully
+2025-08-24 20:57:52,131 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:57:52,131 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:57:59,460 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:57:59,460 - root - DEBUG - update_player:7548 - Player facing direction changed to: left
+2025-08-24 20:58:03,043 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:58:03,043 - root - DEBUG - update_player:7548 - Player facing direction changed to: right
+2025-08-24 20:59:34,974 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 20:59:34,974 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 20:59:34,974 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 20:59:34,974 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 20:59:37,933 - root - DEBUG - update_player:7564 - Player facing direction changed to: right
+2025-08-24 20:59:37,933 - root - DEBUG - update_player:7564 - Player facing direction changed to: right
+2025-08-24 20:59:42,078 - root - DEBUG - update_player:7564 - Player facing direction changed to: left
+2025-08-24 20:59:42,078 - root - DEBUG - update_player:7564 - Player facing direction changed to: left
+2025-08-24 20:59:43,377 - root - DEBUG - update_player:7564 - Player facing direction changed to: right
+2025-08-24 20:59:43,377 - root - DEBUG - update_player:7564 - Player facing direction changed to: right
+2025-08-24 21:02:04,260 - root - INFO - __init__:1985 - Performance monitor initialized
+2025-08-24 21:02:04,260 - root - INFO - __init__:1985 - Performance monitor initialized
+2025-08-24 21:02:04,260 - root - INFO - <module>:2056 - Core systems initialized successfully
+2025-08-24 21:02:04,260 - root - INFO - <module>:2056 - Core systems initialized successfully
+2025-08-24 21:02:07,770 - root - DEBUG - update_player:7571 - Player facing direction changed to: right
+2025-08-24 21:02:07,770 - root - DEBUG - update_player:7571 - Player facing direction changed to: right
+2025-08-24 21:02:10,743 - root - DEBUG - update_player:7571 - Player facing direction changed to: left
+2025-08-24 21:02:10,743 - root - DEBUG - update_player:7571 - Player facing direction changed to: left
+2025-08-24 21:02:12,313 - root - DEBUG - update_player:7571 - Player facing direction changed to: right
+2025-08-24 21:02:12,313 - root - DEBUG - update_player:7571 - Player facing direction changed to: right
+2025-08-24 21:04:16,701 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:04:16,701 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:04:16,701 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:04:16,701 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:04:16,701 - root - INFO - test_character_flipping_system:551 - Testing character flipping system...
+2025-08-24 21:04:16,701 - root - INFO - test_character_flipping_system:551 - Testing character flipping system...
+2025-08-24 21:04:16,701 - root - DEBUG - <module>:2052 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 21:04:16,701 - root - DEBUG - <module>:2052 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-24 21:04:21,656 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:21,656 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:23,630 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:04:23,630 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:04:25,417 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:25,417 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:26,718 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:04:26,718 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:04:29,001 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:29,001 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:30,301 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:04:30,301 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:04:34,434 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:34,434 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:04:58,073 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:04:58,073 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:04:58,073 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:04:58,073 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:05:01,056 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:05:01,056 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:05:02,779 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:02,779 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:04,234 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:05:04,234 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:05:05,301 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:05,301 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:28,436 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:05:28,436 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:05:28,436 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:05:28,436 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:05:31,109 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:31,109 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:33,141 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:05:33,141 - root - DEBUG - update_player:7550 - Player facing direction changed to: right
+2025-08-24 21:05:34,269 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:34,269 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:43,311 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:05:43,311 - root - INFO - __init__:1974 - Performance monitor initialized
+2025-08-24 21:05:43,311 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:05:43,311 - root - INFO - <module>:2045 - Core systems initialized successfully
+2025-08-24 21:05:45,524 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:05:45,524 - root - DEBUG - update_player:7550 - Player facing direction changed to: left
+2025-08-24 21:12:02,682 - root - INFO - __init__:1985 - Performance monitor initialized
+2025-08-24 21:12:02,682 - root - INFO - __init__:1985 - Performance monitor initialized
+2025-08-24 21:12:02,682 - root - INFO - <module>:2056 - Core systems initialized successfully
+2025-08-24 21:12:02,682 - root - INFO - <module>:2056 - Core systems initialized successfully
+2025-08-24 21:12:05,843 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:05,843 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:08,019 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:08,019 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:09,154 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:09,154 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:10,737 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:10,737 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:20,954 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:20,954 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:22,071 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:22,071 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:23,254 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:23,254 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:24,554 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:24,554 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:25,987 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:25,987 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:27,338 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:27,338 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:28,604 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:28,604 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:30,239 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:30,239 - root - DEBUG - update_player:7561 - Player facing direction changed to: right
+2025-08-24 21:12:31,372 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:12:31,372 - root - DEBUG - update_player:7561 - Player facing direction changed to: left
+2025-08-24 21:17:34,003 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:17:34,003 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:17:34,003 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:17:34,003 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:17:37,528 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:37,528 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:42,785 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:42,785 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:44,040 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:44,040 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:45,173 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:45,173 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:46,390 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:46,390 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:47,474 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:47,474 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:49,573 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:49,573 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:50,590 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:50,590 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:51,707 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:51,707 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:17:52,907 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:17:52,907 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:37:57,613 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:37:57,613 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:37:57,614 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:37:57,614 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:38:00,423 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:38:00,423 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:38:02,330 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:38:02,330 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:38:07,168 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:38:07,168 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:38:14,802 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:38:14,802 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:39:00,732 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:39:00,732 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:39:00,732 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:39:00,732 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:39:03,640 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:39:03,640 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:39:08,319 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:39:08,319 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:39:15,020 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:39:15,020 - root - DEBUG - update_player:7552 - Player facing direction changed to: left
+2025-08-24 21:39:16,019 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:39:16,019 - root - DEBUG - update_player:7552 - Player facing direction changed to: right
+2025-08-24 21:58:12,340 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:58:12,340 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-24 21:58:12,340 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:58:12,340 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-24 21:58:14,955 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:58:14,955 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:58:56,383 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:58:56,383 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:58:57,733 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:58:57,733 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:59:01,966 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:59:01,966 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:59:05,916 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:59:05,916 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:59:39,166 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:59:39,166 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:59:40,866 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:59:40,866 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-24 21:59:48,166 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-24 21:59:48,166 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-25 07:24:28,752 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-25 07:24:28,752 - root - INFO - __init__:1976 - Performance monitor initialized
+2025-08-25 07:24:28,752 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-25 07:24:28,752 - root - INFO - <module>:2047 - Core systems initialized successfully
+2025-08-25 07:24:33,304 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-25 07:24:33,304 - root - DEBUG - update_player:7573 - Player facing direction changed to: right
+2025-08-25 07:24:36,813 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-25 07:24:36,813 - root - DEBUG - update_player:7573 - Player facing direction changed to: left
+2025-08-25 07:56:40,472 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 07:56:40,472 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 07:56:40,472 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 07:56:40,472 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 07:56:58,842 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 07:56:58,842 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 07:57:09,158 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 07:57:09,158 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 07:57:09,158 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 07:57:09,158 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 07:57:11,912 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 07:57:11,912 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:02,637 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:00:02,637 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:00:02,637 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:00:02,637 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:00:02,637 - root - INFO - test_character_flipping_system:547 - Testing character flipping system...
+2025-08-25 08:00:02,637 - root - INFO - test_character_flipping_system:547 - Testing character flipping system...
+2025-08-25 08:00:02,637 - root - DEBUG - <module>:2048 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:00:02,637 - root - DEBUG - <module>:2048 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:00:06,045 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:06,045 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:09,686 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:09,686 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:11,367 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:11,367 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:17,468 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:17,468 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:19,101 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:19,101 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:28,231 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:28,231 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:46,431 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:46,431 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:48,100 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:48,100 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:49,531 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:49,531 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:00:59,167 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:00:59,167 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:01:11,931 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:01:11,931 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:01:14,267 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:01:14,267 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:01:15,601 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:01:15,601 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:01:19,601 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:01:19,601 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:01:21,632 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:01:21,632 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:20:19,338 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:20:19,338 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:20:19,338 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:20:19,338 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:20:19,338 - root - INFO - test_character_flipping_system:547 - Testing character flipping system...
+2025-08-25 08:20:19,338 - root - INFO - test_character_flipping_system:547 - Testing character flipping system...
+2025-08-25 08:20:19,338 - root - DEBUG - <module>:2048 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:20:19,338 - root - DEBUG - <module>:2048 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:21:58,306 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:21:58,306 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:21:58,338 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:21:58,338 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:24:04,210 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:24:04,210 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:24:04,210 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:24:04,210 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:24:12,302 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:24:12,302 - root - DEBUG - update_player:7567 - Player facing direction changed to: left
+2025-08-25 08:24:25,761 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:24:25,761 - root - INFO - __init__:1970 - Performance monitor initialized
+2025-08-25 08:24:25,762 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:24:25,762 - root - INFO - <module>:2041 - Core systems initialized successfully
+2025-08-25 08:24:28,383 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:24:28,383 - root - DEBUG - update_player:7567 - Player facing direction changed to: right
+2025-08-25 08:25:38,461 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 08:25:38,461 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 08:25:38,461 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 08:25:38,461 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 08:25:38,461 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 08:25:38,461 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 08:25:38,461 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:25:38,461 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:25:41,833 - root - DEBUG - update_player:7601 - Player facing direction changed to: right
+2025-08-25 08:25:41,833 - root - DEBUG - update_player:7601 - Player facing direction changed to: right
+2025-08-25 08:25:45,181 - root - DEBUG - update_player:7601 - Player facing direction changed to: left
+2025-08-25 08:25:45,181 - root - DEBUG - update_player:7601 - Player facing direction changed to: left
+2025-08-25 08:25:46,160 - root - DEBUG - update_player:7601 - Player facing direction changed to: right
+2025-08-25 08:25:46,160 - root - DEBUG - update_player:7601 - Player facing direction changed to: right
+2025-08-25 08:25:47,560 - root - DEBUG - update_player:7601 - Player facing direction changed to: left
+2025-08-25 08:25:47,560 - root - DEBUG - update_player:7601 - Player facing direction changed to: left
+2025-08-25 08:25:48,393 - root - DEBUG - update_player:7601 - Player facing direction changed to: right
+2025-08-25 08:25:48,393 - root - DEBUG - update_player:7601 - Player facing direction changed to: right
+2025-08-25 08:37:14,981 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 08:37:14,981 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 08:37:14,981 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 08:37:14,981 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 08:37:14,981 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 08:37:14,981 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 08:37:14,982 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:37:14,982 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:37:18,505 - root - DEBUG - update_player:7631 - Player facing direction changed to: right
+2025-08-25 08:37:18,505 - root - DEBUG - update_player:7631 - Player facing direction changed to: right
+2025-08-25 08:37:23,119 - root - DEBUG - update_player:7631 - Player facing direction changed to: left
+2025-08-25 08:37:23,119 - root - DEBUG - update_player:7631 - Player facing direction changed to: left
+2025-08-25 08:37:24,432 - root - DEBUG - update_player:7631 - Player facing direction changed to: right
+2025-08-25 08:37:24,432 - root - DEBUG - update_player:7631 - Player facing direction changed to: right
+2025-08-25 08:37:25,631 - root - DEBUG - update_player:7631 - Player facing direction changed to: left
+2025-08-25 08:37:25,631 - root - DEBUG - update_player:7631 - Player facing direction changed to: left
+2025-08-25 08:43:28,790 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 08:43:28,790 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 08:43:28,790 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 08:43:28,790 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 08:43:28,790 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 08:43:28,790 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 08:43:28,790 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 08:43:28,790 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 09:06:55,679 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:06:55,679 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:06:55,679 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:06:55,679 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:09:31,619 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:09:31,619 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:09:31,619 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:09:31,619 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:09:31,619 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 09:09:31,619 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 09:09:31,619 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 09:09:31,619 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 09:17:01,008 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:17:01,008 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:17:01,008 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:17:01,008 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:17:01,008 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 09:17:01,008 - root - INFO - test_character_flipping_system:570 - Testing character flipping system...
+2025-08-25 09:17:01,008 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 09:17:01,008 - root - DEBUG - <module>:2071 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 09:17:04,148 - root - DEBUG - update_player:7723 - Player facing direction changed to: left
+2025-08-25 09:17:04,148 - root - DEBUG - update_player:7723 - Player facing direction changed to: left
+2025-08-25 09:23:40,837 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:23:40,837 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:23:40,837 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:23:40,837 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:35:43,264 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:35:43,264 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:35:43,265 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:35:43,265 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:35:56,820 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:35:56,820 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:35:56,821 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:35:56,821 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:36:01,691 - root - DEBUG - update_player:7873 - Player facing direction changed to: right
+2025-08-25 09:36:01,691 - root - DEBUG - update_player:7873 - Player facing direction changed to: right
+2025-08-25 09:36:05,062 - root - DEBUG - update_player:7873 - Player facing direction changed to: left
+2025-08-25 09:36:05,062 - root - DEBUG - update_player:7873 - Player facing direction changed to: left
+2025-08-25 09:36:08,209 - root - DEBUG - update_player:7873 - Player facing direction changed to: right
+2025-08-25 09:36:08,209 - root - DEBUG - update_player:7873 - Player facing direction changed to: right
+2025-08-25 09:42:15,113 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:42:15,113 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:42:15,113 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:42:15,113 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:42:30,108 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:42:30,108 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 09:42:30,108 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:42:30,108 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 09:42:37,118 - root - DEBUG - update_player:7886 - Player facing direction changed to: left
+2025-08-25 09:42:37,118 - root - DEBUG - update_player:7886 - Player facing direction changed to: left
+2025-08-25 09:42:43,644 - root - DEBUG - update_player:7886 - Player facing direction changed to: right
+2025-08-25 09:42:43,644 - root - DEBUG - update_player:7886 - Player facing direction changed to: right
+2025-08-25 13:54:58,397 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 13:54:58,397 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 13:54:58,397 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 13:54:58,397 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 13:55:03,436 - root - DEBUG - update_player:7886 - Player facing direction changed to: right
+2025-08-25 13:55:03,436 - root - DEBUG - update_player:7886 - Player facing direction changed to: right
+2025-08-25 16:01:13,627 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 16:01:13,627 - root - INFO - __init__:1993 - Performance monitor initialized
+2025-08-25 16:01:13,627 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 16:01:13,627 - root - INFO - <module>:2064 - Core systems initialized successfully
+2025-08-25 16:01:16,489 - root - DEBUG - update_player:7886 - Player facing direction changed to: right
+2025-08-25 16:01:16,489 - root - DEBUG - update_player:7886 - Player facing direction changed to: right
+2025-08-25 16:09:23,297 - root - INFO - __init__:1910 - Performance monitor initialized
+2025-08-25 16:09:23,298 - root - INFO - <module>:1981 - Core systems initialized successfully
+2025-08-25 16:09:26,911 - root - DEBUG - update_player:7803 - Player facing direction changed to: right
+2025-08-25 16:18:49,840 - root - INFO - __init__:1910 - Performance monitor initialized
+2025-08-25 16:18:49,840 - root - INFO - <module>:1981 - Core systems initialized successfully
+2025-08-25 16:18:52,607 - root - DEBUG - update_player:7803 - Player facing direction changed to: right
+2025-08-25 16:19:11,166 - root - DEBUG - update_player:7803 - Player facing direction changed to: left
+2025-08-25 16:19:15,434 - root - DEBUG - update_player:7803 - Player facing direction changed to: right
+2025-08-25 16:19:24,534 - root - DEBUG - update_player:7803 - Player facing direction changed to: left
+2025-08-25 16:19:35,901 - root - DEBUG - update_player:7803 - Player facing direction changed to: right
+2025-08-25 16:21:23,959 - root - INFO - __init__:1910 - Performance monitor initialized
+2025-08-25 16:21:23,960 - root - INFO - <module>:1981 - Core systems initialized successfully
+2025-08-25 19:15:37,562 - root - INFO - __init__:2060 - Performance monitor initialized
+2025-08-25 19:15:37,562 - root - INFO - <module>:2131 - Core systems initialized successfully
+2025-08-25 19:15:53,954 - root - DEBUG - update_player:8007 - Player facing direction changed to: right
+2025-08-25 19:25:05,033 - root - INFO - __init__:2209 - Performance monitor initialized
+2025-08-25 19:25:05,033 - root - INFO - <module>:2280 - Core systems initialized successfully
+2025-08-25 19:25:33,462 - root - DEBUG - update_player:8186 - Player facing direction changed to: right
+2025-08-25 19:26:36,639 - root - INFO - __init__:2209 - Performance monitor initialized
+2025-08-25 19:26:36,640 - root - INFO - <module>:2280 - Core systems initialized successfully
+2025-08-25 19:27:00,739 - root - DEBUG - update_player:8186 - Player facing direction changed to: right
+2025-08-25 19:27:52,470 - root - INFO - __init__:2209 - Performance monitor initialized
+2025-08-25 19:27:52,470 - root - INFO - <module>:2280 - Core systems initialized successfully
+2025-08-25 19:28:09,265 - root - DEBUG - update_player:8190 - Player facing direction changed to: right
+2025-08-25 19:28:47,288 - root - INFO - __init__:2209 - Performance monitor initialized
+2025-08-25 19:28:47,288 - root - INFO - <module>:2280 - Core systems initialized successfully
+2025-08-25 19:28:47,288 - root - INFO - test_character_flipping_system:876 - Testing character flipping system...
+2025-08-25 19:28:47,288 - root - DEBUG - <module>:2287 - Character flipping system test skipped during import: name 'player' is not defined
+2025-08-25 19:29:00,081 - root - DEBUG - update_player:8190 - Player facing direction changed to: right
+2025-08-25 19:29:45,391 - root - DEBUG - update_player:8190 - Player facing direction changed to: left
+2025-08-25 19:29:47,001 - root - DEBUG - update_player:8190 - Player facing direction changed to: right
+2025-08-25 19:30:08,146 - root - DEBUG - update_player:8190 - Player facing direction changed to: left
+2025-08-25 19:30:09,193 - root - DEBUG - update_player:8190 - Player facing direction changed to: right
+2025-08-25 19:32:09,230 - root - INFO - __init__:2209 - Performance monitor initialized
+2025-08-25 19:32:09,231 - root - INFO - <module>:2280 - Core systems initialized successfully
+2025-08-25 19:32:31,024 - root - DEBUG - update_player:8190 - Player facing direction changed to: right
+2025-08-25 19:45:07,730 - root - INFO - __init__:2211 - Performance monitor initialized
+2025-08-25 19:45:07,730 - root - INFO - <module>:2282 - Core systems initialized successfully
+2025-08-25 19:47:36,535 - root - INFO - __init__:2211 - Performance monitor initialized
+2025-08-25 19:47:36,536 - root - INFO - <module>:2282 - Core systems initialized successfully
+2025-08-25 19:48:42,434 - root - INFO - __init__:2211 - Performance monitor initialized
+2025-08-25 19:48:42,434 - root - INFO - <module>:2282 - Core systems initialized successfully
+2025-08-25 19:49:19,982 - root - INFO - __init__:2211 - Performance monitor initialized
+2025-08-25 19:49:19,982 - root - INFO - <module>:2282 - Core systems initialized successfully
+2025-08-25 19:51:05,023 - root - INFO - __init__:2211 - Performance monitor initialized
+2025-08-25 19:51:05,024 - root - INFO - <module>:2282 - Core systems initialized successfully
+2025-08-25 19:54:18,763 - root - INFO - __init__:2253 - Performance monitor initialized
+2025-08-25 19:54:18,763 - root - INFO - <module>:2324 - Core systems initialized successfully
+2025-08-25 20:22:05,057 - root - INFO - __init__:2346 - Performance monitor initialized
+2025-08-25 20:22:05,057 - root - INFO - <module>:2417 - Core systems initialized successfully
+2025-08-25 20:22:23,501 - root - DEBUG - update_player:8332 - Player facing direction changed to: right
+2025-08-25 20:30:32,620 - root - INFO - __init__:2346 - Performance monitor initialized
+2025-08-25 20:30:32,620 - root - INFO - <module>:2417 - Core systems initialized successfully
+2025-08-25 20:35:42,969 - root - INFO - __init__:2383 - Performance monitor initialized
+2025-08-25 20:35:42,969 - root - INFO - <module>:2454 - Core systems initialized successfully
+2025-08-25 20:36:04,340 - root - DEBUG - update_player:8369 - Player facing direction changed to: right
+2025-08-25 20:39:07,288 - root - INFO - __init__:2397 - Performance monitor initialized
+2025-08-25 20:39:07,288 - root - INFO - <module>:2468 - Core systems initialized successfully
+2025-08-25 20:47:17,073 - root - INFO - __init__:2397 - Performance monitor initialized
+2025-08-25 20:47:17,073 - root - INFO - <module>:2468 - Core systems initialized successfully
+2025-08-26 13:47:42,682 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 13:47:42,682 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 13:47:46,028 - root - DEBUG - update_player:8275 - Player facing direction changed to: right
+2025-08-26 13:47:49,545 - root - DEBUG - update_player:8275 - Player facing direction changed to: left
+2025-08-26 13:47:51,826 - root - DEBUG - update_player:8275 - Player facing direction changed to: right
+2025-08-26 13:47:54,626 - root - DEBUG - update_player:8275 - Player facing direction changed to: left
+2025-08-26 13:47:57,326 - root - DEBUG - update_player:8275 - Player facing direction changed to: right
+2025-08-26 13:48:00,660 - root - DEBUG - update_player:8275 - Player facing direction changed to: left
+2025-08-26 13:48:03,726 - root - DEBUG - update_player:8275 - Player facing direction changed to: right
+2025-08-26 13:48:06,859 - root - DEBUG - update_player:8275 - Player facing direction changed to: left
+2025-08-26 13:48:11,959 - root - DEBUG - update_player:8275 - Player facing direction changed to: right
+2025-08-26 13:56:19,816 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 13:56:19,816 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 13:56:23,831 - root - DEBUG - update_player:8373 - Player facing direction changed to: right
+2025-08-26 13:57:25,055 - root - DEBUG - update_player:8373 - Player facing direction changed to: left
+2025-08-26 13:57:27,722 - root - DEBUG - update_player:8373 - Player facing direction changed to: right
+2025-08-26 13:57:29,055 - root - DEBUG - update_player:8373 - Player facing direction changed to: left
+2025-08-26 14:13:25,922 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:13:25,922 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:13:36,146 - root - DEBUG - update_player:8397 - Player facing direction changed to: right
+2025-08-26 14:14:09,243 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:14:09,243 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:14:12,178 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:15:25,047 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:15:26,270 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:15:29,271 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:15:30,304 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:15:36,571 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:15:39,304 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:15:41,137 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:15:48,537 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:15:55,271 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:15:56,204 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:16:22,871 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:16:25,871 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:16:42,105 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:16:42,671 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:17:02,405 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:17:07,405 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:17:11,272 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:17:52,106 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:17:57,073 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:18:00,673 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:18:14,540 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:18:15,506 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:18:17,040 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:18:19,573 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:18:28,240 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:18:58,474 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:19:00,774 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:19:44,374 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:19:48,141 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:20:00,974 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:20:02,541 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:20:09,708 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:20:13,208 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:20:25,242 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:23:49,404 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:23:49,404 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:23:53,967 - root - DEBUG - update_player:8356 - Player facing direction changed to: right
+2025-08-26 14:24:18,290 - root - DEBUG - update_player:8356 - Player facing direction changed to: left
+2025-08-26 14:31:46,716 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:31:46,716 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:31:52,529 - root - DEBUG - update_player:8406 - Player facing direction changed to: left
+2025-08-26 14:32:07,989 - root - DEBUG - update_player:8406 - Player facing direction changed to: right
+2025-08-26 14:35:41,555 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:35:41,556 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:35:46,494 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:36:37,286 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:36:40,919 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:36:47,251 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:36:50,551 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:36:53,252 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:36:55,120 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:37:01,321 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:37:07,654 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:37:15,084 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:37:17,020 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:37:20,853 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:37:22,454 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:37:52,884 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:37:54,281 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:38:21,551 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:38:22,385 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:38:28,986 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:38:32,352 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:38:54,018 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:38:54,785 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:47:10,678 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:47:10,678 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:48:24,255 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:48:47,108 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 14:48:48,875 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:54:17,246 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 14:54:17,246 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 14:54:20,264 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 14:54:24,389 - root - DEBUG - update_player:8425 - Player facing direction changed to: left
+2025-08-26 15:18:50,412 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 15:18:50,412 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 15:18:58,208 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 15:19:32,521 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 15:19:32,521 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 15:19:36,804 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 15:23:24,530 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 15:23:24,530 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 15:23:30,105 - root - DEBUG - update_player:8425 - Player facing direction changed to: right
+2025-08-26 15:24:49,603 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 15:24:49,603 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 15:24:54,671 - root - DEBUG - update_player:8426 - Player facing direction changed to: right
+2025-08-26 15:25:02,322 - root - DEBUG - update_player:8426 - Player facing direction changed to: left
+2025-08-26 19:12:38,064 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:12:38,065 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:12:46,113 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:12:49,684 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:12:52,165 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:15:12,896 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:15:12,896 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:15:20,048 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:17:26,427 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:17:26,427 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:17:34,209 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:17:40,762 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:17:42,862 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:17:43,462 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:17:45,329 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:17:46,296 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:17:47,729 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:18:09,129 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:21:48,987 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:21:48,987 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:22:26,492 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:22:26,492 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:22:29,468 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:22:39,393 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:23:58,959 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:23:58,959 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:24:05,838 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:24:12,192 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:24:15,726 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:24:20,926 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:25:08,012 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:25:08,012 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:25:11,099 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:25:16,625 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:28:06,033 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:28:06,033 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:28:10,002 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:28:17,824 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:29:02,243 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:29:02,243 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:29:07,297 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:29:32,870 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:29:32,870 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:29:36,528 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:33:07,593 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:33:07,593 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:33:16,063 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:33:37,587 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:33:38,987 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:33:40,154 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:33:41,887 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:33:48,587 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:34:03,087 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:34:19,754 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:34:22,054 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:34:23,487 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:34:27,554 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:34:28,087 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:37:55,062 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:38:34,021 - root - INFO - __init__:2289 - Performance monitor initialized
+2025-08-26 19:38:34,022 - root - INFO - <module>:2360 - Core systems initialized successfully
+2025-08-26 19:38:37,167 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 19:38:41,796 - root - DEBUG - update_player:8432 - Player facing direction changed to: left
+2025-08-26 19:38:42,529 - root - DEBUG - update_player:8432 - Player facing direction changed to: right
+2025-08-26 20:39:45,654 - root - INFO - __init__:2114 - Performance monitor initialized
+2025-08-26 20:39:45,654 - root - INFO - <module>:2185 - Core systems initialized successfully
+2025-08-26 20:39:51,634 - root - DEBUG - update_player:8257 - Player facing direction changed to: right
+2025-08-26 20:39:56,457 - root - DEBUG - update_player:8257 - Player facing direction changed to: left
+2025-08-26 20:40:40,092 - root - DEBUG - update_player:8257 - Player facing direction changed to: right
+2025-08-26 20:40:45,926 - root - DEBUG - update_player:8257 - Player facing direction changed to: left
+2025-08-26 20:40:51,859 - root - DEBUG - update_player:8257 - Player facing direction changed to: right
+2025-08-26 20:40:54,559 - root - DEBUG - update_player:8257 - Player facing direction changed to: left
+2025-08-26 20:40:55,260 - root - DEBUG - update_player:8257 - Player facing direction changed to: right
+2025-08-26 20:41:03,793 - root - DEBUG - update_player:8257 - Player facing direction changed to: left
+2025-08-26 20:41:05,827 - root - DEBUG - update_player:8257 - Player facing direction changed to: right
+2025-08-26 20:46:39,762 - root - INFO - __init__:2221 - Performance monitor initialized
+2025-08-26 20:46:39,762 - root - INFO - <module>:2292 - Core systems initialized successfully
+2025-08-26 20:46:45,253 - root - DEBUG - update_player:8360 - Player facing direction changed to: right
+2025-08-26 20:46:48,910 - root - DEBUG - update_player:8360 - Player facing direction changed to: left
+2025-08-26 20:46:51,041 - root - DEBUG - update_player:8360 - Player facing direction changed to: right
+2025-08-26 20:46:52,811 - root - DEBUG - update_player:8360 - Player facing direction changed to: left
+2025-08-26 20:46:53,778 - root - DEBUG - update_player:8360 - Player facing direction changed to: right
+2025-08-26 20:46:57,709 - root - DEBUG - update_player:8360 - Player facing direction changed to: left
+2025-08-26 20:47:07,044 - root - DEBUG - update_player:8360 - Player facing direction changed to: right
+2025-08-26 20:47:19,412 - root - DEBUG - update_player:8360 - Player facing direction changed to: left
+2025-08-26 20:47:22,578 - root - DEBUG - update_player:8360 - Player facing direction changed to: right
+2025-08-27 17:59:27,689 - root - INFO - __init__:2342 - Performance monitor initialized
+2025-08-27 17:59:27,689 - root - INFO - <module>:2413 - Core systems initialized successfully
+2025-08-27 17:59:41,224 - root - DEBUG - update_player:8510 - Player facing direction changed to: right
+2025-08-27 18:00:06,941 - root - INFO - __init__:2342 - Performance monitor initialized
+2025-08-27 18:00:06,941 - root - INFO - <module>:2413 - Core systems initialized successfully
+2025-08-27 18:00:17,020 - root - DEBUG - update_player:8511 - Player facing direction changed to: right
+2025-08-27 18:00:55,618 - root - INFO - __init__:2343 - Performance monitor initialized
+2025-08-27 18:00:55,618 - root - INFO - <module>:2414 - Core systems initialized successfully
+2025-08-27 18:01:02,654 - root - DEBUG - update_player:8512 - Player facing direction changed to: right
+2025-08-27 18:04:12,439 - root - INFO - __init__:2343 - Performance monitor initialized
+2025-08-27 18:04:12,439 - root - INFO - <module>:2414 - Core systems initialized successfully
+2025-08-27 18:04:23,121 - root - DEBUG - update_player:8512 - Player facing direction changed to: right
+2025-08-27 18:05:20,117 - root - INFO - __init__:2343 - Performance monitor initialized
+2025-08-27 18:05:20,117 - root - INFO - <module>:2414 - Core systems initialized successfully
+2025-08-27 18:06:35,749 - root - INFO - __init__:2343 - Performance monitor initialized
+2025-08-27 18:06:35,749 - root - INFO - <module>:2414 - Core systems initialized successfully
+2025-08-27 18:07:03,752 - root - DEBUG - update_player:8512 - Player facing direction changed to: right
+2025-08-27 18:07:15,243 - root - DEBUG - update_player:8512 - Player facing direction changed to: left
+2025-08-27 18:07:16,445 - root - DEBUG - update_player:8512 - Player facing direction changed to: right
+2025-08-27 18:14:29,567 - root - INFO - __init__:2336 - Performance monitor initialized
+2025-08-27 18:14:29,568 - root - INFO - <module>:2407 - Core systems initialized successfully
+2025-08-27 18:14:36,140 - root - DEBUG - update_player:8505 - Player facing direction changed to: right
+2025-08-27 18:17:54,615 - root - INFO - __init__:2336 - Performance monitor initialized
+2025-08-27 18:17:54,616 - root - INFO - <module>:2407 - Core systems initialized successfully
+2025-08-27 18:17:59,377 - root - DEBUG - update_player:8505 - Player facing direction changed to: right
+2025-08-27 18:18:03,533 - root - DEBUG - update_player:8505 - Player facing direction changed to: left
+2025-08-27 18:18:21,643 - root - DEBUG - update_player:8505 - Player facing direction changed to: right
+2025-08-27 18:18:23,140 - root - DEBUG - update_player:8505 - Player facing direction changed to: left
+2025-08-27 18:20:48,321 - root - INFO - __init__:2336 - Performance monitor initialized
+2025-08-27 18:20:48,322 - root - INFO - <module>:2407 - Core systems initialized successfully
+2025-08-27 18:20:54,927 - root - DEBUG - update_player:8505 - Player facing direction changed to: right
+2025-08-27 18:21:12,340 - root - DEBUG - update_player:8505 - Player facing direction changed to: left
+2025-08-27 18:21:13,809 - root - DEBUG - update_player:8505 - Player facing direction changed to: right
+2025-08-27 18:28:55,599 - root - INFO - __init__:2338 - Performance monitor initialized
+2025-08-27 18:28:55,599 - root - INFO - <module>:2409 - Core systems initialized successfully
+2025-08-27 18:29:07,390 - root - DEBUG - update_player:8507 - Player facing direction changed to: right
+2025-08-27 18:34:22,307 - root - INFO - __init__:2338 - Performance monitor initialized
+2025-08-27 18:34:22,307 - root - INFO - <module>:2409 - Core systems initialized successfully
+2025-08-27 18:34:28,792 - root - DEBUG - update_player:8507 - Player facing direction changed to: right
+2025-08-27 18:41:26,763 - root - INFO - __init__:2233 - Performance monitor initialized
+2025-08-27 18:41:26,763 - root - INFO - <module>:2304 - Core systems initialized successfully
+2025-08-27 18:41:34,708 - root - DEBUG - update_player:8382 - Player facing direction changed to: right
+2025-08-27 18:41:49,565 - root - DEBUG - update_player:8382 - Player facing direction changed to: left
+2025-08-27 20:07:31,228 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:07:31,228 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 20:07:36,910 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:07:36,910 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 20:13:22,818 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:13:22,819 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 20:19:27,607 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:19:27,608 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 20:20:24,863 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:20:24,863 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 20:45:33,886 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:45:33,886 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 20:59:57,621 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 20:59:57,622 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 21:15:39,255 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 21:15:39,255 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 21:27:56,964 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 21:27:56,964 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-27 21:30:14,938 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-27 21:30:14,938 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 07:17:58,052 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 07:17:58,052 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 07:18:51,270 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 07:18:51,271 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 07:20:09,921 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 07:20:09,921 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 07:40:16,974 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 07:40:16,974 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 14:49:14,179 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 14:49:14,179 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 16:35:42,237 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 16:35:42,237 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 16:37:47,735 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 16:37:47,735 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 16:42:42,084 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 16:42:42,084 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-28 16:49:29,222 - root - INFO - __init__:546 - Performance monitor initialized
+2025-08-28 16:49:29,222 - root - INFO - <module>:617 - Core systems initialized successfully
+2025-08-29 07:25:27,357 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:25:27,358 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:43:26,306 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:43:26,307 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:46:26,980 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:46:26,980 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:47:10,010 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:47:10,010 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:50:00,744 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:50:00,744 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:51:35,254 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:51:35,254 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:52:03,574 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:52:03,574 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:52:36,022 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:52:36,022 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:52:56,583 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:52:56,583 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:53:44,638 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:53:44,638 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:56:29,717 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:56:29,717 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 07:57:18,655 - root - INFO - __init__:547 - Performance monitor initialized
+2025-08-29 07:57:18,655 - root - INFO - <module>:618 - Core systems initialized successfully
+2025-08-29 10:02:25,603 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 10:02:25,603 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 10:03:22,149 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 10:03:22,149 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 10:03:53,356 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 10:03:53,356 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 10:04:28,576 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 10:04:28,576 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 10:09:09,249 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 10:09:09,249 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 10:59:43,794 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 10:59:43,794 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 14:16:55,000 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 14:16:55,000 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-29 14:19:49,362 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-29 14:19:49,362 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-30 20:03:00,085 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-30 20:03:00,085 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-30 20:03:20,853 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-30 20:03:20,853 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-30 20:07:10,476 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-30 20:07:10,476 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-30 20:10:29,030 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-30 20:10:29,030 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-30 20:14:54,868 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-30 20:14:54,868 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-30 20:35:27,434 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-30 20:35:27,434 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-31 06:50:12,305 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-31 06:50:12,305 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-31 06:53:18,406 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-31 06:53:18,406 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-31 07:32:10,152 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-31 07:32:10,153 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-31 08:55:13,228 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-31 08:55:13,228 - root - INFO - <module>:620 - Core systems initialized successfully
+2025-08-31 11:02:05,687 - root - INFO - __init__:549 - Performance monitor initialized
+2025-08-31 11:02:05,687 - root - INFO - <module>:620 - Core systems initialized successfully
