@@ -709,24 +709,28 @@ update_chest_ui_geometry()
 def centered_button(y, w=200, h=50):
     return pygame.Rect(center_x(w), y, w, h)
 
-# FIXED ASSET PATHS: Use absolute paths that work regardless of execution directory
+# COMPREHENSIVE ASSET PATH SYSTEM: Find all game directories automatically
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# The actual asset structure: Order of the stone/assets/[tiles|items|mobs|player|HP]
-# From main_script, we need to go: ../../../../../../../assets/
-def find_assets_directory():
-    """Find the assets directory by searching up the directory tree"""
+def find_game_root():
+    """Find the main 'Order of the stone' directory by searching up the directory tree"""
     search_dir = current_script_dir
     for _ in range(10):  # Limit search depth
-        # Check if assets directory exists at this level
-        potential_assets = os.path.join(search_dir, "Order of the stone", "assets")
-        if os.path.exists(potential_assets):
-            return potential_assets
+        # Look for the main game directory containing both assets and other folders
+        potential_root = os.path.join(search_dir, "Order of the stone")
+        if os.path.exists(potential_root):
+            # Verify it has the expected subdirectories
+            if (os.path.exists(os.path.join(potential_root, "assets")) and
+                os.path.exists(os.path.join(potential_root, "damage")) and
+                os.path.exists(os.path.join(potential_root, "save_data"))):
+                return potential_root
         
-        # Try just "assets" directory
-        potential_assets = os.path.join(search_dir, "assets")
-        if os.path.exists(potential_assets):
-            return potential_assets
+        # Check if we're already inside the Order of the stone directory
+        if os.path.basename(search_dir) == "Order of the stone":
+            if (os.path.exists(os.path.join(search_dir, "assets")) and
+                os.path.exists(os.path.join(search_dir, "damage")) and
+                os.path.exists(os.path.join(search_dir, "save_data"))):
+                return search_dir
             
         # Go up one level
         parent = os.path.dirname(search_dir)
@@ -736,48 +740,99 @@ def find_assets_directory():
     
     return None
 
-assets_root = find_assets_directory()
-if assets_root:
-    print(f"🎯 Found assets directory: {assets_root}")
+# Find the game root directory
+game_root = find_game_root()
+if game_root:
+    print(f"🎯 Found game root directory: {game_root}")
+    
+    # Set up all directory paths
+    assets_root = os.path.join(game_root, "assets")
+    TILE_DIR = os.path.join(assets_root, "tiles")
+    ITEM_DIR = os.path.join(assets_root, "items") 
+    MOB_DIR = os.path.join(assets_root, "mobs")
+    PLAYER_DIR = os.path.join(assets_root, "player")
+    HP_DIR = os.path.join(assets_root, "HP")
+    SOUND_DIR = os.path.join(game_root, "damage")
+    SAVE_DIR = os.path.join(game_root, "save_data")
+    
 else:
-    print("⚠️ Could not find assets directory, using fallback paths")
-    assets_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
+    print("⚠️ Could not find game root directory, using fallback paths")
+    # Fallback paths
+    game_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
+    assets_root = os.path.join(game_root, "assets")
+    TILE_DIR = os.path.join(assets_root, "tiles")
+    ITEM_DIR = os.path.join(assets_root, "items") 
+    MOB_DIR = os.path.join(assets_root, "mobs")
+    PLAYER_DIR = os.path.join(assets_root, "player")
+    HP_DIR = os.path.join(assets_root, "HP")
+    SOUND_DIR = os.path.join(game_root, "damage")
+    SAVE_DIR = os.path.join(game_root, "save_data")
 
-TILE_DIR = os.path.join(assets_root, "tiles")
-ITEM_DIR = os.path.join(assets_root, "items") 
-MOB_DIR = os.path.join(assets_root, "mobs")
-PLAYER_DIR = os.path.join(assets_root, "player")
-HP_DIR = os.path.join(assets_root, "HP")
+# Verify ALL paths and create missing directories
+directories = {
+    "TILE_DIR": TILE_DIR,
+    "ITEM_DIR": ITEM_DIR,
+    "MOB_DIR": MOB_DIR,
+    "PLAYER_DIR": PLAYER_DIR,
+    "HP_DIR": HP_DIR,
+    "SOUND_DIR": SOUND_DIR,
+    "SAVE_DIR": SAVE_DIR
+}
 
-# Verify and print paths
-for dir_name, dir_path in [("TILE_DIR", TILE_DIR), ("ITEM_DIR", ITEM_DIR), ("MOB_DIR", MOB_DIR), ("PLAYER_DIR", PLAYER_DIR), ("HP_DIR", HP_DIR)]:
+print("🔍 Verifying all game directories:")
+for dir_name, dir_path in directories.items():
     if os.path.exists(dir_path):
         print(f"✅ {dir_name}: {dir_path}")
     else:
         print(f"❌ {dir_name} not found: {dir_path}")
-        # This should not happen now, but keeping for safety
-# Fix remaining asset paths
-SOUND_DIR = os.path.join(assets_root, "damage")
-SAVE_DIR = os.path.join(assets_root, "save_data")
+        if dir_name == "SAVE_DIR":
+            # Create save directory if it doesn't exist
+            try:
+                os.makedirs(dir_path, exist_ok=True)
+                print(f"📁 Created {dir_name}: {dir_path}")
+            except Exception as e:
+                print(f"⚠️ Could not create {dir_name}: {e}")
 
-# Ensure save directory exists
-if not os.path.exists(SAVE_DIR):
-    os.makedirs(SAVE_DIR)
-    print(f"📁 Created save directory: {SAVE_DIR}")
-
-# Check sound directory
-if os.path.exists(SOUND_DIR):
-    print(f"✅ SOUND_DIR: {SOUND_DIR}")
-else:
-    print(f"⚠️ SOUND_DIR not found: {SOUND_DIR}")
-    # Try alternative
-    alt_sound = os.path.join(current_script_dir, "..", "..", "damage")
-    if os.path.exists(alt_sound):
-        SOUND_DIR = alt_sound
-        print(f"🔄 Using alternative sound path: {SOUND_DIR}")
+# Directory setup is now complete above
 
 def load_texture(path):
-    return pygame.transform.scale(pygame.image.load(path).convert_alpha(), (TILE_SIZE, TILE_SIZE))
+    """Load a texture with error handling and fallback generation"""
+    try:
+        if os.path.exists(path):
+            return pygame.transform.scale(pygame.image.load(path).convert_alpha(), (TILE_SIZE, TILE_SIZE))
+        else:
+            print(f"⚠️ Texture not found: {path}")
+            # Generate a simple colored square as fallback
+            filename = os.path.basename(path).lower()
+            fallback_surface = pygame.Surface((TILE_SIZE, TILE_SIZE))
+            
+            # Color based on filename
+            if "grass" in filename:
+                fallback_surface.fill((34, 139, 34))  # Forest green
+            elif "dirt" in filename:
+                fallback_surface.fill((139, 69, 19))   # Saddle brown
+            elif "stone" in filename:
+                fallback_surface.fill((128, 128, 128))  # Gray
+            elif "water" in filename:
+                fallback_surface.fill((0, 100, 200))    # Blue
+            elif "lava" in filename:
+                fallback_surface.fill((255, 69, 0))     # Red-orange
+            elif "player" in filename:
+                fallback_surface.fill((255, 192, 203))  # Pink
+            elif "monster" in filename or "mob" in filename:
+                fallback_surface.fill((139, 0, 0))      # Dark red
+            else:
+                fallback_surface.fill((200, 200, 200))  # Light gray
+            
+            print(f"🎨 Generated fallback texture for: {filename}")
+            return fallback_surface
+            
+    except Exception as e:
+        print(f"❌ Error loading texture {path}: {e}")
+        # Generate a simple error texture
+        error_surface = pygame.Surface((TILE_SIZE, TILE_SIZE))
+        error_surface.fill((255, 0, 255))  # Magenta for error
+        return error_surface
 
 # --- Ladder Texture Generator ---
 def make_ladder_texture(size):
@@ -1488,8 +1543,26 @@ dead_hp = load_texture(os.path.join(HP_DIR, "dead_hp.png"))
 
 # Boss texture will be loaded when needed
 
-# Load sound
-damage_sound = pygame.mixer.Sound(os.path.join(SOUND_DIR, "damage_sound.wav"))
+# Load sound with error handling
+try:
+    damage_sound_path = os.path.join(SOUND_DIR, "damage_sound.wav")
+    if os.path.exists(damage_sound_path):
+        damage_sound = pygame.mixer.Sound(damage_sound_path)
+        print(f"🔊 Loaded damage sound: {damage_sound_path}")
+    else:
+        print(f"⚠️ Sound file not found: {damage_sound_path}")
+        damage_sound = None
+except Exception as e:
+    print(f"❌ Error loading damage sound: {e}")
+    damage_sound = None
+
+def play_damage_sound():
+    """Safely play damage sound if available"""
+    try:
+        if damage_sound:
+            play_damage_sound()
+    except Exception as e:
+        print(f"⚠️ Could not play damage sound: {e}")
 
 # Fonts
 font = pygame.font.SysFont("Arial", 24)
@@ -5045,7 +5118,7 @@ def update_world_interactions():
     if block_at == "lava" or block_below == "lava":
         damage = calculate_armor_damage_reduction(1)
         player["health"] -= damage
-        damage_sound.play()
+        play_damage_sound()
         if player["health"] <= 0:
             show_death_screen()
 
@@ -5121,7 +5194,7 @@ def update_world_interactions():
         if fall_start_y is not None and player["y"] - fall_start_y >= 4:
             damage = calculate_armor_damage_reduction(1)
             player["health"] -= damage
-            damage_sound.play()
+            play_damage_sound()
         fall_start_y = None
 
 # --- Chest UI & logic ---
@@ -6893,7 +6966,7 @@ def update_monsters():
             if abs(player["x"] - mob["x"]) < 0.5 and abs(player["y"] - mob["y"]) < 1:
                 damage = calculate_armor_damage_reduction(3)
                 player["health"] -= damage
-                damage_sound.play()
+                play_damage_sound()
                 if player["health"] <= 0:
                     show_death_screen()
         
@@ -6933,7 +7006,7 @@ def update_monsters():
                 if abs(player["x"] - mob["x"]) < 0.8 and abs(player["y"] - mob["y"]) < 1:
                     damage = calculate_armor_damage_reduction(2)
                     player["health"] -= damage
-                    damage_sound.play()
+                    play_damage_sound()
                 if player["health"] <= 0:
                     show_death_screen()
 
@@ -6946,7 +7019,7 @@ def update_monsters():
                 base_damage = proj.get("damage", 3)
                 damage = calculate_armor_damage_reduction(base_damage)
                 player["health"] -= damage
-                damage_sound.play()
+                play_damage_sound()
                 entities.remove(proj)
                 if player["health"] <= 0:
                     show_death_screen()
@@ -6964,7 +7037,7 @@ def update_monsters():
                 base_damage = proj.get("damage", 2)
                 damage = calculate_armor_damage_reduction(base_damage)
                 player["health"] -= damage
-                damage_sound.play()
+                play_damage_sound()
                 entities.remove(proj)
                 print(f"💥 Rock projectile hit player! Damage: {damage}")
                 if player["health"] <= 0:
