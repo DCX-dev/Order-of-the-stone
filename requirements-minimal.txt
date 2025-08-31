@@ -1,0 +1,4 @@
+# Order of the Stone - Minimal Dependencies
+# Essential dependencies only
+pygame>=2.5.0
+Pillow>=10.0.0
