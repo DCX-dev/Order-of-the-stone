@@ -1143,22 +1143,7 @@ def make_door_texture(size):
 
     return surf
 
-# --- Villager Texture Generator ---
-def make_villager_texture(size):
-    """Procedural placeholder villager texture (used if mobs/villager.png is missing)."""
-    surf = pygame.Surface((size, size), pygame.SRCALPHA)
-    # Robe/body
-    pygame.draw.rect(surf, (150, 85, 45), (4, 10, size - 8, size - 12))
-    # Head
-    pygame.draw.rect(surf, (230, 200, 170), (8, 0, size - 16, 14))
-    # Eyes
-    pygame.draw.rect(surf, (20, 20, 20), (size//2 - 6, 5, 3, 3))
-    pygame.draw.rect(surf, (20, 20, 20), (size//2 + 3, 5, 3, 3))
-    # Nose
-    pygame.draw.rect(surf, (205, 170, 140), (size//2 - 1, 7, 2, 5))
-    # Outline
-    pygame.draw.rect(surf, (0, 0, 0, 180), (0, 0, size, size), 1)
-    return surf
+# --- Old villager texture generator removed - using new Python-themed one ---
 
 def make_zombie_texture(size):
     """Procedural placeholder zombie texture (used if mobs/zombie.png is missing)."""
@@ -1220,6 +1205,60 @@ def make_stone_sword_texture(size):
     
     return surf
 
+def make_villager_texture(size=32):
+    """Generate a Python-themed villager texture"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Python colors
+    python_blue = (53, 114, 165)
+    python_yellow = (255, 212, 59)
+    skin_color = (222, 184, 135)
+    white = (255, 255, 255)
+    black = (0, 0, 0)
+    brown = (101, 67, 33)
+    
+    # Head (skin color)
+    head_size = size // 3
+    pygame.draw.rect(surf, skin_color, (size//2 - head_size//2, 2, head_size, head_size))
+    
+    # Python logo on shirt (simplified)
+    body_y = head_size + 4
+    body_height = size - body_y - 4
+    
+    # Blue shirt background
+    pygame.draw.rect(surf, python_blue, (size//2 - head_size//2, body_y, head_size, body_height))
+    
+    # Yellow Python accent (simplified snake shape)
+    accent_size = head_size // 3
+    pygame.draw.circle(surf, python_yellow, (size//2 - accent_size//2, body_y + accent_size), accent_size//2)
+    pygame.draw.circle(surf, python_yellow, (size//2 + accent_size//2, body_y + accent_size*2), accent_size//2)
+    
+    # Eyes
+    eye_size = 2
+    pygame.draw.circle(surf, black, (size//2 - 4, 8), eye_size)
+    pygame.draw.circle(surf, black, (size//2 + 4, 8), eye_size)
+    
+    # Hair/hat (brown)
+    pygame.draw.rect(surf, brown, (size//2 - head_size//2, 2, head_size, 4))
+    
+    # Arms (skin color)
+    arm_width = 3
+    pygame.draw.rect(surf, skin_color, (size//2 - head_size//2 - arm_width, body_y + 2, arm_width, body_height//2))
+    pygame.draw.rect(surf, skin_color, (size//2 + head_size//2, body_y + 2, arm_width, body_height//2))
+    
+    # Legs (blue pants)
+    leg_width = head_size // 3
+    leg_y = body_y + body_height//2
+    pygame.draw.rect(surf, python_blue, (size//2 - leg_width, leg_y, leg_width//2, body_height//2))
+    pygame.draw.rect(surf, python_blue, (size//2 + leg_width//2, leg_y, leg_width//2, body_height//2))
+    
+    # Shoes (black)
+    shoe_height = 3
+    pygame.draw.rect(surf, black, (size//2 - leg_width, size - shoe_height, leg_width//2, shoe_height))
+    pygame.draw.rect(surf, black, (size//2 + leg_width//2, size - shoe_height, leg_width//2, shoe_height))
+    
+    return surf
+
 def generate_terrain_column(x):
     """Generate realistic terrain for a specific column if it hasn't been generated yet"""
     global generated_terrain_columns
@@ -1263,15 +1302,22 @@ def generate_terrain_column(x):
     
     # Add occasional surface features
     if random.random() < 0.1:  # 10% chance
-        # Add a tree
+        # Add a perfect tree with 2 stacked logs and 6 leaves in block formation
         if random.random() < 0.5:
-            set_block(x, ground_y - 1, "log")  # Tree trunk
-            set_block(x, ground_y - 2, "log")
-            set_block(x, ground_y - 3, "leaves")  # Tree top
-            # Tree branches
-            if random.random() < 0.7:
-                set_block(x - 1, ground_y - 2, "leaves")
-                set_block(x + 1, ground_y - 2, "leaves")
+            # Tree trunk: 2 stacked logs
+            set_block(x, ground_y - 1, "log")  # Bottom log
+            set_block(x, ground_y - 2, "log")  # Top log
+            
+            # Perfect 6-leaf formation in a block pattern
+            # Top row (3 leaves)
+            set_block(x - 1, ground_y - 3, "leaves")  # Left
+            set_block(x, ground_y - 3, "leaves")      # Center
+            set_block(x + 1, ground_y - 3, "leaves")  # Right
+            
+            # Bottom row (3 leaves)
+            set_block(x - 1, ground_y - 2, "leaves")  # Left (at log level)
+            set_block(x + 1, ground_y - 2, "leaves")  # Right (at log level)
+            set_block(x, ground_y - 4, "leaves")      # Top center (above the 3-leaf row)
     
     # Add underground ores (rare)
     if random.random() < 0.3:  # 30% chance for ore
@@ -2536,6 +2582,26 @@ def build_house(origin_x, ground_y, width=7, height=5):
         set_block(path_x, py, "stone")
     
     print(f"🏠 Built realistic village house at ({origin_x}, {ground_y}) with interior and entrance!")
+    
+    # EXTREME ENGINEERING: Spawn villagers INSIDE the house
+    # Spawn 1-3 villagers in different rooms of the house
+    num_villagers = random.randint(1, 3)
+    for i in range(num_villagers):
+        # Place villagers in different areas of the house interior
+        if i == 0:  # First villager in left room (bedroom area)
+            villager_x = origin_x + 2
+            villager_y = ground_y - 1
+        elif i == 1:  # Second villager in right room (living area)
+            villager_x = origin_x + width - 3
+            villager_y = ground_y - 1
+        else:  # Third villager in center area
+            villager_x = origin_x + width // 2
+            villager_y = ground_y - 1
+        
+        # Only spawn if the area is clear (not blocked by furniture)
+        if get_block(villager_x, villager_y) is None:
+            spawn_villager(villager_x, villager_y)
+            print(f"👤 Spawned house villager at ({villager_x}, {villager_y}) inside house!")
     
     # EXTREME ENGINEERING: Generate farm near the house (2 blocks away)
     farm_x = origin_x + random.choice([-8, 8])  # Left or right of house
