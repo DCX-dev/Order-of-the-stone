@@ -1221,33 +1221,72 @@ def make_stone_sword_texture(size):
     return surf
 
 def generate_terrain_column(x):
-    """Generate terrain for a specific column if it hasn't been generated yet"""
+    """Generate realistic terrain for a specific column if it hasn't been generated yet"""
     global generated_terrain_columns
     
     # Skip if already generated
     if x in generated_terrain_columns:
         return
     
-    print(f"🌍 Generating terrain for column {x}")
+    print(f"🌍 Generating terrain for NEW column {x}")
     
-    # Calculate ground height (same logic as main terrain generation)
-    prev_heights = [y for y in range(0, 100) if (x - 1, y) in world_data and world_data[(x - 1, y)] == "grass"]
-    if prev_heights:
-        ground_y = prev_heights[0]
-    else:
-        height_offset = int(3 * math.sin(x * 0.2))
-        ground_y = 50 + height_offset  # Base height around Y=50
+    # IMPROVED TERRAIN GENERATION: Create varied, realistic terrain
+    # Use multiple noise functions for more natural terrain
+    base_height = 115  # Surface around Y=115 (matches world generation system)
     
-    # Generate terrain layers
-    set_block(x, ground_y, "grass")
-    for y in range(ground_y + 1, ground_y + 4):  # Dirt layer
+    # Primary terrain variation
+    primary_wave = 8 * math.sin(x * 0.05)  # Large hills/valleys
+    secondary_wave = 3 * math.sin(x * 0.15)  # Medium variations  
+    tertiary_wave = 2 * math.sin(x * 0.3)   # Small details
+    
+    # Combine waves for natural terrain
+    height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+    ground_y = base_height + height_variation
+    
+    # Ensure ground is in reasonable range
+    ground_y = max(100, min(125, ground_y))
+    
+    # Generate terrain layers from top to bottom
+    set_block(x, ground_y, "grass")  # Surface
+    
+    # Dirt layer (2-4 blocks deep)
+    dirt_depth = random.randint(2, 4)
+    for y in range(ground_y + 1, ground_y + 1 + dirt_depth):
         set_block(x, y, "dirt")
-    for y in range(ground_y + 4, 125):  # Stone layer
+    
+    # Stone layer (fills to deep underground)
+    for y in range(ground_y + 1 + dirt_depth, 127):
         set_block(x, y, "stone")
-    set_block(x, 127, "bedrock")  # Bedrock at bottom
+    
+    # Bedrock at bottom
+    set_block(x, 127, "bedrock")
+    
+    # Add occasional surface features
+    if random.random() < 0.1:  # 10% chance
+        # Add a tree
+        if random.random() < 0.5:
+            set_block(x, ground_y - 1, "log")  # Tree trunk
+            set_block(x, ground_y - 2, "log")
+            set_block(x, ground_y - 3, "leaves")  # Tree top
+            # Tree branches
+            if random.random() < 0.7:
+                set_block(x - 1, ground_y - 2, "leaves")
+                set_block(x + 1, ground_y - 2, "leaves")
+    
+    # Add underground ores (rare)
+    if random.random() < 0.3:  # 30% chance for ore
+        # Ensure valid range for ore placement
+        min_ore_y = ground_y + 5
+        max_ore_y = 120
+        if min_ore_y <= max_ore_y:  # Only place ore if range is valid
+            ore_y = random.randint(min_ore_y, max_ore_y)
+            ore_type = random.choice(["coal", "iron", "gold", "diamond"])
+            set_block(x, ore_y, ore_type)
     
     # Mark as generated
     generated_terrain_columns.add(x)
+    
+    print(f"✅ Generated terrain column {x}: surface at Y={ground_y}")
 
 def fix_player_spawn_position():
     """Ensure player spawns on the surface, not underground"""
@@ -9276,76 +9315,14 @@ while running:
         for x in range(left_edge, right_edge):
             # CRITICAL FIX: Only generate terrain for columns that have NEVER been generated
             # This prevents broken blocks from being replaced by terrain regeneration
+            # Use the centralized terrain generation function for consistency
             if x not in generated_terrain_columns:
                 # Show exploration progress every 50 blocks for infinite world feedback
                 if x % 50 == 0:
                     print(f"🚀 INFINITE WORLD: Exploring new territory at X={x}")
-                elif x % 10 == 0:
-                    print(f"🌍 Generating terrain for column {x}")
-                prev_heights = [y for y in range(0, 100) if (x - 1, y) in world_data and world_data[(x - 1, y)] == "grass"]
-                if prev_heights:
-                    ground_y = prev_heights[0]
-                else:
-                    # Infinite world: varied terrain generation for endless exploration
-                    height_offset = int(4 * math.sin(x * 0.15) + 2 * math.cos(x * 0.3))
-                    ground_y = 114 + height_offset  # Varied terrain height for infinite world
-
-                set_block(x, ground_y, "grass")
-                for y in range(ground_y + 1, ground_y + 4):
-                    set_block(x, y, "dirt")
-                for y in range(ground_y + 4, ground_y + 12):
-                    ore_chance = random.random()
-                    if ore_chance < 0.05:
-                        set_block(x, y, "coal")
-                    elif ore_chance < 0.08:
-                        set_block(x, y, "iron")
-                    elif ore_chance < 0.10:
-                        set_block(x, y, "gold")
-                    elif ore_chance < 0.11:
-                        set_block(x, y, "diamond")
-                    else:
-                        set_block(x, y, "stone")
-                set_block(x, 127, "bedrock")  # Bedrock at Y=127 (bottom)
                 
-                # Mark this column as generated so it won't be regenerated
-                generated_terrain_columns.add(x)
-                # Enhanced Trees with TWO logs (improved engineering)
-                if random.random() < 0.08:  # Slightly reduced density for better spacing
-                    # Place TWO logs above grass (improved tree structure)
-                    set_block(x, ground_y - 1, "log")      # First log above grass
-                    set_block(x, ground_y - 2, "log")      # Second log above first
-                    
-                    # Enhanced leaf canopy (3x3 rectangle above the two logs)
-                    for dx in [-1, 0, 1]:  # Left, center, right
-                        for dy in [-3, -4]:  # Above the two logs
-                            set_block(x + dx, ground_y + dy, "leaves")
-                    
-                    # Add some random leaf variation for natural look
-                    if random.random() < 0.3:  # 30% chance for extra leaves
-                        extra_dx = random.choice([-2, 2])  # Left or right extension
-                        extra_dy = random.choice([-3, -4])  # Above logs
-                        set_block(x + extra_dx, ground_y + extra_dy, "leaves")
-
-                # Carrots: only spawn when not in trees and with better placement logic
-                if in_carrot_biome(x):
-                    if can_place_surface_item(x, ground_y) and random.random() < 0.6:
-                        set_block(x, ground_y - 1, "carrot")
-                    # Reduced neighbor spawning to avoid tree conflicts
-                    gy_r = ground_y_of_column(x + 1)
-                    if gy_r is not None and can_place_surface_item(x + 1, gy_r) and random.random() < 0.25:
-                        set_block(x + 1, gy_r - 1, "carrot")
-                    gy_l = ground_y_of_column(x - 1)
-                    if gy_l is not None and can_place_surface_item(x - 1, gy_l) and random.random() < 0.25:
-                        set_block(x - 1, gy_l - 1, "carrot")
-                else:
-                    if can_place_surface_item(x, ground_y) and random.random() < 0.03:
-                        set_block(x, ground_y - 1, "carrot")
-
-                # Chests: never inside trees, reduced spawn rate
-                if can_place_surface_item(x, ground_y) and random.random() < 0.03:
-                    set_block(x, ground_y - 1, "chest")
-                    # Generate loot for naturally spawned chests
-                    chest_system.generate_chest_loot("village")
+                # Use the improved terrain generation function (handles terrain, trees, ores, etc.)
+                generate_terrain_column(x)
                 # EXTREME ENGINEERING: Balanced night monster spawning
                 # Only spawn monsters at night when exploring new territory
                 if not is_day and random.random() < 0.008:  # Slightly increased spawn rate for better gameplay
