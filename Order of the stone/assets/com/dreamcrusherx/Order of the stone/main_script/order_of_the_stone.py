@@ -658,7 +658,7 @@ if parent_dir not in sys.path:
 try:
     from managers.character_manager import CharacterManager
     from network.multiplayer_server import MultiplayerServer
-    from UI.multiplayer_ui import MultiplayerUI  # Note: UI folder is capitalized
+    from ui.multiplayer_ui import MultiplayerUI
 except ImportError as e:
     print(f"⚠️ Warning: Could not import some modules: {e}")
     print("🎮 Game will run in basic mode without advanced features")
@@ -711,7 +711,37 @@ def centered_button(y, w=200, h=50):
 
 # FIXED ASSET PATHS: Use absolute paths that work regardless of execution directory
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
-assets_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
+
+# The actual asset structure: Order of the stone/assets/[tiles|items|mobs|player|HP]
+# From main_script, we need to go: ../../../../../../../assets/
+def find_assets_directory():
+    """Find the assets directory by searching up the directory tree"""
+    search_dir = current_script_dir
+    for _ in range(10):  # Limit search depth
+        # Check if assets directory exists at this level
+        potential_assets = os.path.join(search_dir, "Order of the stone", "assets")
+        if os.path.exists(potential_assets):
+            return potential_assets
+        
+        # Try just "assets" directory
+        potential_assets = os.path.join(search_dir, "assets")
+        if os.path.exists(potential_assets):
+            return potential_assets
+            
+        # Go up one level
+        parent = os.path.dirname(search_dir)
+        if parent == search_dir:  # Reached root
+            break
+        search_dir = parent
+    
+    return None
+
+assets_root = find_assets_directory()
+if assets_root:
+    print(f"🎯 Found assets directory: {assets_root}")
+else:
+    print("⚠️ Could not find assets directory, using fallback paths")
+    assets_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
 
 TILE_DIR = os.path.join(assets_root, "tiles")
 ITEM_DIR = os.path.join(assets_root, "items") 
@@ -719,21 +749,13 @@ MOB_DIR = os.path.join(assets_root, "mobs")
 PLAYER_DIR = os.path.join(assets_root, "player")
 HP_DIR = os.path.join(assets_root, "HP")
 
-# Ensure directories exist and print paths for debugging
+# Verify and print paths
 for dir_name, dir_path in [("TILE_DIR", TILE_DIR), ("ITEM_DIR", ITEM_DIR), ("MOB_DIR", MOB_DIR), ("PLAYER_DIR", PLAYER_DIR), ("HP_DIR", HP_DIR)]:
     if os.path.exists(dir_path):
         print(f"✅ {dir_name}: {dir_path}")
     else:
-        print(f"⚠️ {dir_name} not found: {dir_path}")
-        # Try alternative path
-        alt_path = os.path.join(current_script_dir, "..", "..", "assets", dir_name.split("_")[0].lower())
-        if os.path.exists(alt_path):
-            print(f"🔄 Using alternative path: {alt_path}")
-            if dir_name == "TILE_DIR": TILE_DIR = alt_path
-            elif dir_name == "ITEM_DIR": ITEM_DIR = alt_path
-            elif dir_name == "MOB_DIR": MOB_DIR = alt_path
-            elif dir_name == "PLAYER_DIR": PLAYER_DIR = alt_path
-            elif dir_name == "HP_DIR": HP_DIR = alt_path
+        print(f"❌ {dir_name} not found: {dir_path}")
+        # This should not happen now, but keeping for safety
 # Fix remaining asset paths
 SOUND_DIR = os.path.join(assets_root, "damage")
 SAVE_DIR = os.path.join(assets_root, "save_data")
@@ -8348,7 +8370,7 @@ else:
 
 # Initialize modern UI system
 try:
-    from UI.modern_ui import ModernUI  # Note: UI folder is capitalized
+    from ui.modern_ui import ModernUI
 except ImportError:
     print("⚠️ Warning: Modern UI not available")
     ModernUI = None
@@ -8360,7 +8382,7 @@ else:
 # Initialize world system and UI
 try:
     from system.world_system import WorldSystem
-    from UI.world_ui import WorldUI  # Note: UI folder is capitalized
+    from ui.world_ui import WorldUI
 except ImportError:
     print("⚠️ Warning: World system/UI not available")
     WorldSystem = None
