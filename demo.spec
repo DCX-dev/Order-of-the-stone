@@ -28,6 +28,13 @@ if os.path.exists(game_assets_path):
 if os.path.exists(save_data_path):
     datas.append((save_data_path, os.path.join('Order of the stone', 'save_data')))
 
+# Add all Python module directories
+module_dirs = ['managers', 'ui', 'network', 'system', 'world_generation']
+for module_dir in module_dirs:
+    module_path = os.path.join(current_dir, 'Order of the stone', 'assets', 'com', 'dreamcrusherx', 'Order of the stone', module_dir)
+    if os.path.exists(module_path):
+        datas.append((module_path, os.path.join('Order of the stone', 'assets', 'com', 'dreamcrusherx', 'Order of the stone', module_dir)))
+
 # Collect pygame data files
 pygame_datas = collect_data_files('pygame')
 
@@ -63,7 +70,19 @@ hiddenimports = [
     'os',
     'sys',
     'signal',
-    'logging'
+    'logging',
+    'managers.character_manager',
+    'managers.coins_manager',
+    'managers.block_breaker',
+    'ui.multiplayer_ui',
+    'ui.modern_ui',
+    'network.multiplayer_server',
+    'network.network_client',
+    'system.chat_system',
+    'system.world_system',
+    'system.chest_system',
+    'world_generation.world_gen',
+    'world_generation.world_generator'
 ]
 
 # Analysis configuration

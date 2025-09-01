@@ -2119,16 +2119,23 @@ def initialize_character_manager():
     """Load all character textures from the player folder"""
     global character_manager
     
-    character_manager = CharacterManager(PLAYER_DIR, TILE_SIZE)
-    print("🎭 Character manager initialized")
+    # Check if CharacterManager is available
+    if CharacterManager is None:
+        print("⚠️ CharacterManager not available, using fallback")
+        character_manager = None
+        return
     
-    # Debug: Show what textures were loaded
-    if character_manager:
-        print(f"🎭 Available characters: {[char['name'] for char in character_manager.available_characters]}")
-        print(f"🎭 Current selected character: {character_manager.get_current_character_name()}")
-        print(f"🎭 Loaded textures: {list(character_manager.character_textures.keys())}")
-    else:
-        print("❌ Character manager initialization failed!")
+    try:
+        character_manager = CharacterManager(PLAYER_DIR, TILE_SIZE)
+        print("🎭 Character manager initialized")
+        
+        # Debug: Show what textures were loaded
+        if character_manager:
+            print(f"🎭 Available characters: {[char['name'] for char in character_manager.available_characters]}")
+            print(f"🎭 Current selected character: {character_manager.get_current_character_name()}")
+    except Exception as e:
+        print(f"⚠️ Failed to initialize character manager: {e}")
+        character_manager = None
 
 def initialize_chat_system():
     """Initialize the chat system"""
