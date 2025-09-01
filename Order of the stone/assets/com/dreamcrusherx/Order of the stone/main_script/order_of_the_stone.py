@@ -57,8 +57,23 @@ class ResourceError(GameError):
 # Configure comprehensive logging
 def setup_logging():
     """Setup comprehensive logging system with multiple handlers"""
-    log_dir = Path("../../../../../logs")
-    log_dir.mkdir(exist_ok=True)
+    # FIXED: Use proper path resolution for both development and executable
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        base_path = Path(sys._MEIPASS)
+        log_dir = base_path / "logs"
+    else:
+        # Running as script
+        base_path = Path(__file__).parent
+        log_dir = base_path / ".." / ".." / ".." / ".." / ".." / "logs"
+    
+    # Ensure log directory exists
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Fallback to current directory if we can't create logs directory
+        log_dir = Path.cwd() / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
     
     # Create formatters
     detailed_formatter = logging.Formatter(
