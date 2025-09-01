@@ -1906,15 +1906,17 @@ def start_multiplayer_server(world_name):
     
     try:
         multiplayer_server = MultiplayerServer()
-        if multiplayer_server.start_server(world_name):
+        if multiplayer_server.start_server("My Server", world_name, 5555):
             is_hosting = True
             show_message(f"🌐 Server started! Others can join at {multiplayer_server.host}:{multiplayer_server.port}")
+            print(f"🌐 Multiplayer server started: {multiplayer_server.server_name} hosting {world_name}")
             return True
         else:
             show_message("❌ Failed to start server")
             return False
     except Exception as e:
         show_message(f"❌ Server error: {e}")
+        print(f"❌ Multiplayer server error: {e}")
         return False
 
 def join_multiplayer_server(server_ip, server_port):
@@ -1922,13 +1924,29 @@ def join_multiplayer_server(server_ip, server_port):
     global multiplayer_client, is_connected
     
     try:
-        # This would connect to the server
-        # For now, just simulate connection
-        is_connected = True
-        show_message(f"🔗 Connected to {server_ip}:{server_port}")
-        return True
+        from network.multiplayer_server import MultiplayerClient
+        multiplayer_client = MultiplayerClient()
+        
+        # Get username from saved data
+        username = "Player"
+        try:
+            username_data = load_username()
+            if username_data and "username" in username_data:
+                username = username_data["username"]
+        except:
+            pass
+        
+        if multiplayer_client.connect_to_server(server_ip, server_port, username):
+            is_connected = True
+            show_message(f"🔗 Connected to {server_ip}:{server_port}")
+            print(f"🔗 Connected to multiplayer server as {username}")
+            return True
+        else:
+            show_message("❌ Failed to connect to server")
+            return False
     except Exception as e:
         show_message(f"❌ Connection failed: {e}")
+        print(f"❌ Multiplayer connection error: {e}")
         return False
 
 def create_new_world_with_seed(seed_input):
@@ -2583,25 +2601,30 @@ def build_house(origin_x, ground_y, width=7, height=5):
     
     print(f"🏠 Built realistic village house at ({origin_x}, {ground_y}) with interior and entrance!")
     
-    # EXTREME ENGINEERING: Spawn villagers INSIDE the house
-    # Spawn 1-3 villagers in different rooms of the house
+    # EXTREME ENGINEERING: Spawn villagers ON SOLID GROUND next to houses
+    # Spawn 1-3 villagers outside the house on solid ground
     num_villagers = random.randint(1, 3)
     for i in range(num_villagers):
-        # Place villagers in different areas of the house interior
-        if i == 0:  # First villager in left room (bedroom area)
-            villager_x = origin_x + 2
+        # Place villagers outside the house on solid ground
+        if i == 0:  # First villager to the left of house
+            villager_x = origin_x - 2
             villager_y = ground_y - 1
-        elif i == 1:  # Second villager in right room (living area)
-            villager_x = origin_x + width - 3
+        elif i == 1:  # Second villager to the right of house
+            villager_x = origin_x + width + 1
             villager_y = ground_y - 1
-        else:  # Third villager in center area
+        else:  # Third villager in front of house
             villager_x = origin_x + width // 2
             villager_y = ground_y - 1
         
-        # Only spawn if the area is clear (not blocked by furniture)
-        if get_block(villager_x, villager_y) is None:
+        # Check for solid ground and air space above
+        ground_block = get_block(villager_x, villager_y + 1)
+        air_space = get_block(villager_x, villager_y)
+        
+        # Only spawn if there's solid ground below and air space above
+        if (ground_block and ground_block not in ["water", "lava"] and 
+            air_space is None):
             spawn_villager(villager_x, villager_y)
-            print(f"👤 Spawned house villager at ({villager_x}, {villager_y}) inside house!")
+            print(f"👤 Spawned house villager at ({villager_x}, {villager_y}) on solid ground!")
     
     # EXTREME ENGINEERING: Generate farm near the house (2 blocks away)
     farm_x = origin_x + random.choice([-8, 8])  # Left or right of house
@@ -2649,21 +2672,23 @@ def spawn_villager(x, y):
     print(f"👤 Spawned {personality} villager '{villager_name}' at ({x}, {y})")
 
 def generate_village_farm(farm_x, farm_y):
-    """EXTREME ENGINEERING: Generate realistic village farms with dirt platforms and carrots"""
-    # Farm platform (4x4 dirt area)
+    """EXTREME ENGINEERING: Generate realistic village farms with dirt blocks at ground level and planted carrots"""
+    # Farm platform (4x4 dirt area at ground level)
     farm_size = 4
     for dx in range(farm_size):
         for dy in range(farm_size):
             x = farm_x + dx
             y = farm_y + dy
-            # Create dirt platform
+            # Create dirt platform at ground level (not floating)
             set_block(x, y, "dirt")
     
-    # EXTREME ENGINEERING: Plant carrots in the front row (4 carrots)
+    # EXTREME ENGINEERING: Plant carrots directly in the dirt (not floating above)
     for dx in range(farm_size):
         carrot_x = farm_x + dx
-        carrot_y = farm_y - 1  # One block above the dirt platform
-        set_block(carrot_x, carrot_y, "carrot")
+        carrot_y = farm_y - 1  # Plant carrots in the dirt blocks
+        # Only plant if there's dirt below (not floating)
+        if get_block(carrot_x, farm_y) == "dirt":
+            set_block(carrot_x, carrot_y, "carrot")
     
     # EXTREME ENGINEERING: Add farm decorations
     # Fence around the farm
@@ -3239,31 +3264,54 @@ def discover_servers():
     """EXTREME ENGINEERING: Discover available multiplayer servers"""
     global server_list
     
-    # In a real implementation, this would use UDP broadcast or a central server list
-    # For now, we'll simulate server discovery
-    discovered_servers = [
-        {
-            "name": "Epic Adventure Server",
-            "world": "Epic World",
-            "players": 3,
-            "max_players": 20,
-            "version": "1.0.0",
-            "description": "Join us for epic adventures!",
-            "address": "127.0.0.1"
-        },
-        {
-            "name": "Creative Building Server", 
-            "world": "Creative World",
-            "players": 8,
-            "max_players": 20,
-            "version": "1.0.0",
-            "description": "Build amazing creations together!",
-            "address": "127.0.0.2"
-        }
-    ]
+    try:
+        from network.multiplayer_server import ServerDiscovery
+        discovery = ServerDiscovery()
+        discovered_servers = discovery.discover_servers()
+        
+        # Convert to our format
+        server_list = []
+        for server in discovered_servers:
+            server_info = {
+                "name": server.name,
+                "world": "Default World",  # Server doesn't specify world
+                "players": server.players,
+                "max_players": server.max_players,
+                "version": server.version,
+                "description": f"Server at {server.host}:{server.port}",
+                "address": server.host,
+                "port": server.port
+            }
+            server_list.append(server_info)
+        
+        print(f"🔍 Discovered {len(server_list)} servers")
+    except Exception as e:
+        print(f"⚠️ Server discovery failed: {e}")
+        # Fallback to demo servers
+        server_list = [
+            {
+                "name": "Epic Adventure Server",
+                "world": "Epic World",
+                "players": 3,
+                "max_players": 20,
+                "version": "1.0.0",
+                "description": "Join us for epic adventures!",
+                "address": "127.0.0.1",
+                "port": 5555
+            },
+            {
+                "name": "Creative Building Server", 
+                "world": "Creative World",
+                "players": 8,
+                "max_players": 20,
+                "version": "1.0.0",
+                "description": "Build amazing creations together!",
+                "address": "127.0.0.2",
+                "port": 5555
+            }
+        ]
+        print(f"🔍 Using fallback servers: {len(server_list)} servers")
     
-    server_list = discovered_servers
-    print(f"🌐 Discovered {len(server_list)} servers")
     return server_list
 
 def register_server_for_discovery(server_info: dict):
@@ -8714,7 +8762,13 @@ while running:
                 update_pause_state()  # Pause time when opening shop
                 continue
             
-            # Toggle chat with C key (and keep slash as alternative)
+            # Toggle chat with T key (primary)
+            if event.key == pygame.K_t and game_state == GameState.GAME:
+                if chat_system:
+                    chat_system.toggle_chat()
+                continue
+            
+            # Toggle chat with C key (alternative)
             if event.key == pygame.K_c and game_state == GameState.GAME:
                 if chat_system:
                     chat_system.toggle_chat()
@@ -8765,8 +8819,8 @@ while running:
                         chat_input += event.unicode
                     continue
             
-            # Open/Close full inventory with T key
-            if event.key == pygame.K_t:
+            # Open/Close full inventory with I key
+            if event.key == pygame.K_i:
                 if game_state == GameState.GAME:
                     game_state = GameState.INVENTORY
                     update_pause_state()  # Pause time when opening inventory

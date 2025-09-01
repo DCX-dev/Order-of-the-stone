@@ -135,7 +135,6 @@ class ModernUI:
             ("Play", "play", self.colors["success"]),
             ("Change Username", "username", self.colors["info"]),
             ("Multiplayer", "multiplayer", self.colors["accent"]),
-            ("Controllers", "controllers", self.colors["warning"]),
             ("Controls", "controls", self.colors["button"]),
             ("About", "about", self.colors["button"]),
             ("Options", "options", self.colors["button"]),
