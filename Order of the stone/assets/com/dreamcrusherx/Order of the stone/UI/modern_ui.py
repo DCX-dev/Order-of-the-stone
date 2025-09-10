@@ -134,10 +134,10 @@ class ModernUI:
         buttons = [
             ("Play", "play", self.colors["success"]),
             ("Change Username", "username", self.colors["info"]),
-            ("Multiplayer", "multiplayer", self.colors["accent"]),
             ("Controls", "controls", self.colors["button"]),
             ("About", "about", self.colors["button"]),
             ("Options", "options", self.colors["button"]),
+            ("Credits", "credits", self.colors["accent"]),
             ("Quit", "quit", self.colors["danger"])
         ]
         
@@ -470,6 +470,63 @@ class ModernUI:
             "close": close_btn
         }
     
+    def draw_credits_screen(self, mouse_pos: tuple) -> Dict[str, pygame.Rect]:
+        """Draw beautiful credits screen"""
+        # Enhanced background
+        self.draw_gradient_background()
+        self.draw_decorative_elements()
+        
+        # Title
+        title = self.big_font.render("🎬 Credits", True, self.colors["text"])
+        title_x = (self.screen.get_width() - title.get_width()) // 2
+        
+        # Title glow
+        glow_surface = self.big_font.render("🎬 Credits", True, self.colors["accent_glow"])
+        self.screen.blit(glow_surface, (title_x + 2, 52))
+        self.screen.blit(title, (title_x, 50))
+        
+        # Credits content
+        credits_text = [
+            "Made by Team Banana Labs",
+            "",
+            "Development Team:",
+            "• DreamCrusherX - Lead Developer",
+            "• Team Banana Labs - Studio Lead",
+            "",
+            "Special Thanks:",
+            "• Pygame Community",
+            "• Python Developers",
+            "• All Beta Testers",
+            "",
+            "Version 1.0.0",
+            "© 2025 Team Banana Labs"
+        ]
+        
+        # Draw credits text
+        y_offset = 150
+        for line in credits_text:
+            if line == "Made by Team Banana Labs":
+                text_surface = self.title_font.render(line, True, self.colors["accent"])
+            elif line.startswith("•"):
+                text_surface = self.font.render(line, True, self.colors["text_secondary"])
+            elif line == "":
+                text_surface = None
+            else:
+                text_surface = self.font.render(line, True, self.colors["text"])
+            
+            if text_surface:
+                text_x = (self.screen.get_width() - text_surface.get_width()) // 2
+                self.screen.blit(text_surface, (text_x, y_offset))
+            
+            y_offset += 30
+        
+        # Back button
+        back_btn = self.draw_modern_button("Back", self.screen.get_height() - 100, mouse_pos, self.colors["button"])
+        
+        return {
+            "back": back_btn
+        }
+
     def draw_multiplayer_screen(self, mouse_pos: tuple) -> Dict[str, pygame.Rect]:
         """Draw beautiful multiplayer screen"""
         # Enhanced background
