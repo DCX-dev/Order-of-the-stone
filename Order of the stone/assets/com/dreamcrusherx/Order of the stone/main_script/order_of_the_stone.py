@@ -1948,8 +1948,7 @@ player = {
         "last_y": 0
 }
 
-# Global username for all worlds
-GLOBAL_USERNAME = "dreamcrusherx"
+# Username will be loaded from username.json file
 
 MAX_FALL_SPEED = 10
 GRAVITY = 1
@@ -2382,17 +2381,7 @@ def join_multiplayer_server(server_ip, server_port):
         multiplayer_client = MultiplayerClient()
         
         # Get username from saved data
-        username = "Player"
-        try:
-            username_dir = os.path.join("../../../../../save_data", "username")
-            username_file = os.path.join(username_dir, "username.json")
-            if os.path.exists(username_file):
-                with open(username_file, 'r') as f:
-                    username_data = json.load(f)
-                    if username_data and "username" in username_data:
-                        username = username_data["username"]
-        except:
-            pass
+        username = get_current_username()
         
         if multiplayer_client.connect_to_server(server_ip, server_port, username):
             is_connected = True
@@ -2621,9 +2610,10 @@ def initialize_coins_manager():
         coins_manager = CoinsManager("coins.json")
     else:
         coins_manager = None
-    if coins_manager and GLOBAL_USERNAME:
+    if coins_manager:
         try:
-            coins_manager.set_username(GLOBAL_USERNAME)
+            current_username = get_current_username()
+            coins_manager.set_username(current_username)
             print("💰 Coins manager initialized")
         except Exception as e:
             print(f"❌ Coins manager initialization failed: {e}")
@@ -4629,8 +4619,9 @@ def show_death_screen():
 
 def draw_status_bars():
     # Draw player info at the top
-    if GLOBAL_USERNAME:
-        username_text = font.render(f"Player: {GLOBAL_USERNAME}", True, (255, 255, 100))
+    current_username = get_current_username()
+    if current_username:
+        username_text = font.render(f"Player: {current_username}", True, (255, 255, 100))
         screen.blit(username_text, (10, 10))
     
     # Draw coins display at the top
@@ -5989,7 +5980,7 @@ def update_thrown_sword():
     if not sword["returning"]:
         # Check for monster hits along the sword's path BEFORE moving
         hit_monster = False
-        for mob in entities[:]:
+    for mob in entities[:]:
             if mob["type"] in ["monster", "zombie"]:
                 mob_x, mob_y = mob["x"], mob["y"]
                 # Check if sword is close enough to hit the monster
@@ -6150,8 +6141,8 @@ def attack_monsters(mx, my):
             # Monster defeated - chance to drop coins
             if random.random() < 0.15 and coins_manager:
                 coin_amount = random.randint(1, 2)
-                coins_manager.add_coins(coin_amount)
-            
+                            coins_manager.add_coins(coin_amount)
+                        
             entities.remove(closest_monster)
     else:
         # Long range - throw sword
@@ -6522,7 +6513,8 @@ def draw_full_inventory_ui():
     screen.blit(title, (inv_x + 20, inv_y + 20))
     
     # Player info
-    player_info = font.render(f"Player: {GLOBAL_USERNAME or 'Unknown'}", True, (255, 255, 100))
+    current_username = get_current_username()
+    player_info = font.render(f"Player: {current_username or 'Unknown'}", True, (255, 255, 100))
     screen.blit(player_info, (inv_x + 20, inv_y + 70))
     
     # Inventory tabs
@@ -8727,16 +8719,8 @@ def draw_username_creation_screen():
     screen.fill((0, 0, 128))  # Blue background
     
     # EXTREME ENGINEERING: Dynamic title and instructions based on username existence
-    username_exists = False
-    try:
-        username_dir = os.path.join("../../../../../save_data", "username")
-        username_file = os.path.join(username_dir, "username.json")
-        if os.path.exists(username_file):
-            with open(username_file, 'r') as f:
-                file_data = json.load(f)
-                username_exists = bool(file_data.get("username", "").strip())
-    except Exception:
-        username_exists = False
+    current_username = get_current_username()
+    username_exists = current_username and current_username != "Player" and current_username.strip() != ""
     
     # Dynamic title based on whether username exists
     if username_exists:
@@ -8946,10 +8930,9 @@ def validate_world_seed(seed):
     
     return True, "Seed is valid"
 
-def set_global_username(username):
-    """Set the global username for all worlds"""
-    global GLOBAL_USERNAME, player, coins_manager
-    GLOBAL_USERNAME = username
+def set_username(username):
+    """Set the username and save to file"""
+    global player, coins_manager
     player["username"] = username
     
     # Update coins manager with new username
@@ -8962,7 +8945,36 @@ def set_global_username(username):
     
     # Save username to JSON file
     save_username_to_file(username)
-    print(f"✅ Global username updated to: {username}")
+    print(f"✅ Username updated to: {username}")
+
+def load_username_from_file():
+    """Load username from username.json file"""
+    try:
+        username_dir = os.path.join(SAVE_DIR, "username")
+        username_file = os.path.join(username_dir, "username.json")
+        
+        if not os.path.exists(username_file):
+            print("🔍 No username.json file found, using default")
+            return "Player"
+        
+        with open(username_file, 'r') as f:
+            username_data = json.load(f)
+            username = username_data.get("username", "Player")
+            
+            if not username or username.strip() == "":
+                print("🔍 Username.json is empty, using default")
+                return "Player"
+            
+            print(f"✅ Username loaded from file: {username}")
+            return username
+            
+    except Exception as e:
+        print(f"⚠️ Error loading username from file: {e}")
+        return "Player"
+
+def get_current_username():
+    """Get the current username (loads from file each time)"""
+    return load_username_from_file()
 
 def save_username_to_file(username):
     """Save username to username.json file"""
@@ -9010,42 +9022,18 @@ def backup_corrupted_save():
                 print("⚠️ Could not remove corrupted save.json")
 
 def check_username_required():
-    """EXTREME ENGINEERING: Comprehensive username validation checking both memory and file system"""
-    global GLOBAL_USERNAME
-    
-    # Check if username exists in memory
-    if not GLOBAL_USERNAME or GLOBAL_USERNAME.strip() == "":
-        print("🔍 Username check: No username in memory")
-        return True
-    
-    # Check if username.json file exists and is valid
+    """Check if username is required (username.json file doesn't exist or is invalid)"""
     try:
-        username_dir = os.path.join("../../../../../save_data", "username")
-        username_file = os.path.join(username_dir, "username.json")
-        
-        if not os.path.exists(username_file):
-            print("🔍 Username check: username.json file not found")
+        current_username = get_current_username()
+        if not current_username or current_username.strip() == "" or current_username == "Player":
+            print("🔍 Username check: No valid username found")
             return True
         
-        # Try to read and validate the username file
-        with open(username_file, 'r') as f:
-            file_data = json.load(f)
-            file_username = file_data.get("username", "")
-            
-            if not file_username or file_username.strip() == "":
-                print("🔍 Username check: username.json is empty or invalid")
-                return True
-            
-            # Update global username if file has valid data
-            if file_username != GLOBAL_USERNAME:
-                print(f"🔄 Username check: Updating global username from file: {file_username}")
-                GLOBAL_USERNAME = file_username
-            
-            print(f"✅ Username check: Valid username found: {GLOBAL_USERNAME}")
+        print(f"✅ Username check: Valid username found: {current_username}")
             return False
             
     except Exception as e:
-        print(f"⚠️ Username check: Error reading username file: {e}")
+        print(f"⚠️ Username check: Error checking username: {e}")
         return True
 
 def require_username_check():
@@ -9071,7 +9059,7 @@ def handle_virtual_keyboard_click(mouse_pos):
                 # Validate and confirm username
                 is_valid, message = validate_username(username_input)
                 if is_valid:
-                    set_global_username(username_input)
+                    set_username(username_input)
                     return "confirm"
                 else:
                     show_username_error(message)
@@ -9944,7 +9932,7 @@ while running:
                     # Validate username
                     is_valid, message = validate_username(username_input)
                     if is_valid:
-                        set_global_username(username_input)
+                        set_username(username_input)
                         game_state = GameState.TITLE
                         update_pause_state()  # Resume time when returning to title
                     else:
@@ -10188,9 +10176,10 @@ while running:
                     print("🌍 Opening world selection screen!")
                 elif username_btn.collidepoint(event.pos):
                     # If changing username, save the current one first
-                    if GLOBAL_USERNAME:
-                        save_username_to_file(GLOBAL_USERNAME)
-                        print(f"💾 Current username saved before change: {GLOBAL_USERNAME}")
+                    current_username = get_current_username()
+                    if current_username and current_username != "Player":
+                        save_username_to_file(current_username)
+                        print(f"💾 Current username saved before change: {current_username}")
                     game_state = GameState.USERNAME_CREATE
                     update_pause_state()  # Pause time when leaving title
 
@@ -10323,7 +10312,7 @@ while running:
                     # Validate username
                     is_valid, message = validate_username(username_input)
                     if is_valid:
-                        set_global_username(username_input)
+                        set_username(username_input)
                         game_state = GameState.TITLE
                         update_pause_state()  # Resume time when returning to title
                     else:
@@ -10758,10 +10747,11 @@ print("🔄 Game loop ended, cleaning up...")
 # Force cleanup of any remaining resources
 try:
     # Save username before quitting
-    if GLOBAL_USERNAME:
+    current_username = get_current_username()
+    if current_username and current_username != "Player":
         try:
-            save_username_to_file(GLOBAL_USERNAME)
-            print(f"💾 Username saved before exit: {GLOBAL_USERNAME}")
+            save_username_to_file(current_username)
+            print(f"💾 Username saved before exit: {current_username}")
         except Exception as e:
             print(f"⚠️ Error saving username: {e}")
 
