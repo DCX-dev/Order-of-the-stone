@@ -19,6 +19,23 @@ class ChestSystem:
         
         # Enhanced loot tables with guaranteed essential items
         self.chest_loot_tables = {
+            "starter": [
+                # GUARANTEED ESSENTIAL ITEMS (always included)
+                {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                
+                # STARTER ITEMS (high chance for new players)
+                {"item": "bread", "count": (2, 4), "chance": 1.0, "guaranteed": True},
+                {"item": "carrot", "count": (3, 6), "chance": 1.0, "guaranteed": True},
+                {"item": "coal", "count": (5, 8), "chance": 1.0, "guaranteed": True},
+                {"item": "stone", "count": (4, 6), "chance": 1.0, "guaranteed": True},
+                {"item": "oak_planks", "count": (3, 5), "chance": 1.0, "guaranteed": True},
+                
+                # BONUS ITEMS (medium chance)
+                {"item": "iron", "count": (2, 3), "chance": 0.8},
+                {"item": "dirt", "count": (5, 8), "chance": 0.7},
+                {"item": "ladder", "count": (1, 2), "chance": 0.6}
+            ],
             "village": [
                 # GUARANTEED ITEMS (always included)
                 {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},

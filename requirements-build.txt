@@ -1,0 +1,10 @@
+# Order of the Stone - Build Dependencies
+# Core game dependencies
+pygame>=2.5.0
+Pillow>=10.0.0
+
+# Build tool
+pyinstaller>=6.0.0
+
+# Additional dependencies that might be needed
+numpy>=1.24.0

@@ -841,6 +841,9 @@ discovery_timer = 0
 head_bump_timer = 0
 head_bump_effect = False
 
+# Blood particle system
+blood_particles = []
+
 
 def apply_display_mode():
     """Apply windowed or fullscreen mode and keep SCREEN_WIDTH/HEIGHT in sync."""
@@ -1512,6 +1515,17 @@ def generate_terrain_column(x):
             ore_type = random.choice(["coal", "iron", "gold", "diamond"])
             set_block(x, ore_y, ore_type)
     
+    # Add surface items (carrots and chests)
+    if can_place_surface_item(x, ground_y):
+        # Carrots - 15% chance
+        if random.random() < 0.15:
+            set_block(x, ground_y - 1, "carrot")
+        
+        # Chests - 2% chance (rare but not too rare)
+        if random.random() < 0.02:
+            set_block(x, ground_y - 1, "chest")
+            chest_system.generate_chest_loot("village")
+    
     # Mark as generated
     generated_terrain_columns.add(x)
     
@@ -1589,37 +1603,43 @@ def fix_player_spawn_position():
     return True
 
 def place_starter_chest():
-    """Place a guaranteed starter chest near the player spawn point"""
+    """Place a guaranteed starter chest near the player spawn point with essential tools"""
     global player
     
     spawn_x = int(player["x"])
     spawn_y = int(player["y"])
     
-    # Try to place chest 3-5 blocks to the right of spawn
-    for offset in range(3, 6):
+    # Try to place chest 2-6 blocks to the right of spawn
+    for offset in range(2, 7):
         chest_x = spawn_x + offset
         chest_y = spawn_y + 2  # Place on ground level
         
         # Check if position is suitable for chest
         if can_place_surface_item(chest_x, chest_y):
             set_block(chest_x, chest_y - 1, "chest")
-            chest_system.place_chest(world_system, chest_x, chest_y, "village")
-            print(f"🎁 Placed starter chest at ({chest_x}, {chest_y})")
+            # Create a special starter chest with guaranteed tools
+            chest_system.place_chest(world_system, chest_x, chest_y, "starter")
+            print(f"🎁 Placed starter chest at ({chest_x}, {chest_y}) with essential tools!")
             return True
     
     # If right side doesn't work, try left side
-    for offset in range(3, 6):
+    for offset in range(2, 7):
         chest_x = spawn_x - offset
         chest_y = spawn_y + 2
         
         if can_place_surface_item(chest_x, chest_y):
             set_block(chest_x, chest_y - 1, "chest")
-            chest_system.place_chest(world_system, chest_x, chest_y, "village")
-            print(f"🎁 Placed starter chest at ({chest_x}, {chest_y})")
+            chest_system.place_chest(world_system, chest_x, chest_y, "starter")
+            print(f"🎁 Placed starter chest at ({chest_x}, {chest_y}) with essential tools!")
             return True
     
-    print("⚠️ Could not place starter chest - no suitable location found")
-    return False
+    # If still no luck, try placing directly at spawn (force placement)
+    chest_x = spawn_x + 1
+    chest_y = spawn_y + 2
+    set_block(chest_x, chest_y - 1, "chest")
+    chest_system.place_chest(world_system, chest_x, chest_y, "starter")
+    print(f"🎁 Placed starter chest at ({chest_x}, {chest_y}) with essential tools!")
+    return True
 
 # Load textures
 textures = {
@@ -2235,6 +2255,63 @@ def draw_head_bump_effect(px, py):
     text_y = effect_y - 15
     screen.blit(ouch_text, (text_x, text_y))
 
+def create_blood_particles(x, y, count=8):
+    """Create blood particles at the specified location"""
+    global blood_particles
+    
+    for _ in range(count):
+        # Random direction and speed for each particle
+        angle = random.uniform(0, 2 * math.pi)
+        speed = random.uniform(2, 6)
+        life = random.randint(20, 40)  # Frames to live
+        
+        particle = {
+            'x': x,
+            'y': y,
+            'vel_x': math.cos(angle) * speed,
+            'vel_y': math.sin(angle) * speed,
+            'life': life,
+            'max_life': life,
+            'size': random.randint(2, 4)
+        }
+        blood_particles.append(particle)
+
+def update_blood_particles():
+    """Update all blood particles"""
+    global blood_particles
+    
+    # Update each particle
+    for particle in blood_particles[:]:  # Use slice to avoid modification during iteration
+        # Update position
+        particle['x'] += particle['vel_x']
+        particle['y'] += particle['vel_y']
+        
+        # Apply gravity
+        particle['vel_y'] += 0.3
+        
+        # Reduce life
+        particle['life'] -= 1
+        
+        # Remove dead particles
+        if particle['life'] <= 0:
+            blood_particles.remove(particle)
+
+def draw_blood_particles():
+    """Draw all blood particles"""
+    for particle in blood_particles:
+        # Calculate alpha based on remaining life
+        alpha = int(255 * (particle['life'] / particle['max_life']))
+        
+        # Create surface with alpha
+        particle_surface = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        
+        # Draw blood particle as red circle
+        color = (255, 0, 0, alpha)  # Red with alpha
+        pygame.draw.circle(particle_surface, color, (particle['size'], particle['size']), particle['size'])
+        
+        # Blit to screen
+        screen.blit(particle_surface, (particle['x'] - particle['size'], particle['y'] - particle['size']))
+
 def draw_multiplayer_chat():
     """Draw the multiplayer chat interface"""
     if not is_connected:
@@ -2430,6 +2507,13 @@ mouse_pos = (0, 0)
 # --- Inventory Drag-and-Drop state ---
 inventory_drag_item = None  # Item being dragged in inventory
 inventory_drag_from = None  # ('hotbar', index) or ('backpack', index) or ('armor', slot_name)
+
+# --- Sword Throwing System ---
+thrown_sword = None  # {'x': float, 'y': float, 'target_x': float, 'target_y': float, 'returning': bool, 'sword_type': str, 'original_slot': int}
+sword_throw_speed = 0.3  # Speed of sword projectile
+sword_return_speed = 0.2  # Speed of sword returning
+sword_throw_range = 8  # Maximum throw range in tiles
+sword_slash_range = 2  # Range for close combat slash
 
 # --- World Generation Control ---
 world_loaded_from_save = False  # Flag to prevent overwriting saved world data
@@ -3096,6 +3180,58 @@ def spawn_villager(x, y):
     })
     
     print(f"👤 Spawned {personality} villager '{villager_name}' at ({x}, {y})")
+
+def build_village_center(center_x, center_y):
+    """Build a special village center building (town hall or meeting place)"""
+    # Village center is larger and more impressive than regular houses
+    width = 11
+    height = 7
+    
+    # Foundation
+    for dx in range(width):
+        set_block(center_x + dx, center_y, "oak_planks")
+    
+    # Walls (red brick for special building)
+    for dy in range(1, height + 1):
+        for dx in range(width):
+            x = center_x + dx
+            y = center_y - dy
+            if dx == 0 or dx == width - 1 or dy == height:  # Exterior walls
+                set_block(x, y, "red_brick")
+            else:
+                # Interior air
+                if get_block(x, y) not in (None, "air"):
+                    world_data.pop((x, y), None)
+    
+    # Floor levels
+    for floor_y in [center_y - 2, center_y - 4, center_y - 6]:
+        for dx in range(1, width - 1):
+            set_block(center_x + dx, floor_y, "oak_planks")
+    
+    # Main entrance (3 blocks wide)
+    for dy in range(1, 4):
+        set_block(center_x + width//2 - 1, center_y - dy, "air")
+        set_block(center_x + width//2, center_y - dy, "air")
+        set_block(center_x + width//2 + 1, center_y - dy, "air")
+    
+    # Windows on sides
+    for dy in range(2, 5):
+        set_block(center_x, center_y - dy, "air")  # Left window
+        set_block(center_x + width - 1, center_y - dy, "air")  # Right window
+    
+    # Roof (stairs effect)
+    for dy in range(height + 1, height + 3):
+        for dx in range(1, width - 1):
+            if dx < width - 2:  # Create stair effect
+                set_block(center_x + dx, center_y - dy, "oak_planks")
+    
+    # Add a chest in the center building
+    chest_x = center_x + width//2
+    chest_y = center_y - 1
+    set_block(chest_x, chest_y, "chest")
+    chest_system.place_chest(world_system, chest_x, chest_y, "village")
+    
+    print(f"🏛️ Built village center at ({center_x}, {center_y}) with {width}x{height} dimensions!")
 
 def generate_village_farm(farm_x, farm_y):
     """EXTREME ENGINEERING: Generate realistic village farms with dirt blocks at ground level and planted carrots"""
@@ -3980,7 +4116,7 @@ def damage_boss(damage):
             show_message("🏆 FINAL BOSS PHASE DEFEATED! Victory!", 2000)
 
 def maybe_generate_village_for_chunk(chunk_id, base_x):
-    """15% chance to create a small village (1-2 houses) in this 50-wide chunk.
+    """25% chance to create a larger village (3-6 houses) in this 50-wide chunk.
     Allow spawning even when a world is loaded (we now route through set_block).
     """
     
@@ -3989,12 +4125,29 @@ def maybe_generate_village_for_chunk(chunk_id, base_x):
         return
         
     rng = random.Random(f"village-{chunk_id}")
-    if rng.random() < 0.25:  # Increased from 18% to 25%
-        # choose number of houses and spacing
-        house_count = rng.randint(1, 2)
-        spacing = rng.randint(10, 16)
+    if rng.random() < 0.25:  # 25% chance for village
+        # choose number of houses and spacing - INCREASED for larger villages
+        house_count = rng.randint(3, 6)  # Increased from 1-2 to 3-6 houses
+        spacing = rng.randint(8, 12)  # Reduced spacing for more clustered villages
         start_x = base_x + rng.randint(5, 15)
         last_house_ground_y = None
+        # Create village center with special building
+        village_center_x = start_x + (house_count * spacing) // 2
+        village_center_gy = ground_y_of_column(village_center_x)
+        if village_center_gy is None:
+            village_center_gy = 0 + int(2 * math.sin(village_center_x * 0.2))
+            set_block(village_center_x, village_center_gy, "grass")
+            for y in range(village_center_gy + 1, village_center_gy + 7):
+                set_block(village_center_x, y, "dirt" if y < village_center_gy + 4 else "stone")
+            set_block(village_center_x, village_center_gy + 7, "bedrock")
+        
+        # Build village center (larger building)
+        build_village_center(village_center_x, village_center_gy)
+        
+        # Spawn more villagers at the center
+        for _ in range(3):
+            spawn_villager(village_center_x + rng.randint(-2, 2), village_center_gy + 1)
+        
         for i in range(house_count):
             hx = start_x + i * spacing
             gy = ground_y_of_column(hx)
@@ -4031,8 +4184,19 @@ def maybe_generate_village_for_chunk(chunk_id, base_x):
                             set_block(hx + dx, y, "stone")
                         else:
                             set_block(hx + dx, y, "bedrock")
-            # build the house aligned to elevated village position
-            build_house(hx, village_y, width=7, height=5)
+            
+            # Build different types of houses for variety
+            if i == 0:  # First house - regular house
+                build_house(hx, village_y, width=7, height=5)
+            elif i == 1:  # Second house - larger house
+                build_house(hx, village_y, width=9, height=6)
+            elif i == 2:  # Third house - farm house
+                build_house(hx, village_y, width=7, height=5)
+                # Add farm next to farm house
+                generate_village_farm(hx + 8, village_y)
+            else:  # Other houses - regular houses
+                build_house(hx, village_y, width=7, height=5)
+            
             # spawn 2-3 villagers near the doorway on the ground
             spawn_villager(hx + 3, village_y + 1)
             spawn_villager(hx + 2, village_y + 1)
@@ -5006,6 +5170,9 @@ def draw_world():
             boss_label = font.render("BOSS", True, (255, 255, 255))
             screen.blit(boss_label, (boss_screen_x, boss_screen_y - 20))
 
+    # Draw thrown sword projectile
+    draw_thrown_sword()
+
     # Draw player with animation system
     px = int(player["x"] * TILE_SIZE) - camera_x
     py = int(player["y"] * TILE_SIZE) - camera_y
@@ -5050,6 +5217,9 @@ def draw_world():
     
     # Draw head bump effect
     draw_head_bump_effect(px, py)
+    
+    # Draw blood particles
+    draw_blood_particles()
     
     # Name tag removed - no more floating name above player
     
@@ -5218,16 +5388,6 @@ def add_to_backpack(item_type, count=1):
     player["backpack"].append({"type": item_type, "count": count})
     normalize_backpack()
 
-def place_starter_chest():
-    """Place a starter chest at spawn location with only sword and pickaxe using existing chest system"""
-    # Place chest at spawn location (x=10, y=ground level)
-    spawn_x = 10
-    spawn_y = 110  # Ground level for new world generation
-    
-    # Use existing chest system to place chest
-    chest_system.place_chest(world_system, spawn_x, spawn_y, "village")
-    
-    print(f"📦 Starter chest placed at spawn ({spawn_x}, {spawn_y}) with sword and pickaxe!")
 
 def give_starting_items():
     """Give the player starting items - REMOVED: Now using starter chest instead"""
@@ -5742,21 +5902,113 @@ def place_block(mx, my):
     
     return True  # Success
 
-def attack_monsters(mx, my):
-    """Attack monsters with sword - monsters die in exactly 4 hits"""
-    px, py = player["x"], player["y"]
+def is_sword_type(item_type):
+    """Check if an item type is a sword"""
+    return item_type in ["sword", "stone_sword", "diamond_sword", "gold_sword", "enchanted_sword", "legendary_sword"]
+
+def throw_sword_at_target(target_x, target_y):
+    """Throw sword at a target location, prioritizing closest monster"""
+    global thrown_sword
+    
+    if not is_sword_type(player["inventory"][player["selected"]]["type"]):
+        return False
+    
+    # Find closest monster to click location
+    closest_monster = None
+    closest_distance = float('inf')
+    final_target_x = target_x
+    final_target_y = target_y
     
     for mob in entities[:]:
-        if mob["type"] == "monster":
-            dx = (mx + camera_x) / TILE_SIZE - mob["x"]
-            dy = (my + camera_y) / TILE_SIZE - mob["y"]
-            if math.hypot(dx, dy) <= 2:
-                # Only swords can damage; each hit deals 1 (4 hits to defeat)
-                if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]["type"] == "sword":
-                    mob["hp"] = mob.get("hp", 4) - 1  # Start with 4 HP, die in 4 hits
+        if mob["type"] in ["monster", "zombie"]:
+            mob_x, mob_y = mob["x"], mob["y"]
+            click_distance = math.hypot(target_x - mob_x, target_y - mob_y)
+            if click_distance < closest_distance:
+                closest_distance = click_distance
+                closest_monster = mob
+                final_target_x = mob_x
+                final_target_y = mob_y
+    
+    # Calculate distance to final target
+    px, py = player["x"], player["y"]
+    distance = math.hypot(final_target_x - px, final_target_y - py)
+    
+    if distance > sword_throw_range:
+        print(f"🎯 Target too far! Range: {distance:.1f}, Max: {sword_throw_range}")
+        return False
+    
+    # Store sword info and remove from inventory
+    sword_item = player["inventory"][player["selected"]].copy()
+    original_slot = player["selected"]
+    
+    # Remove sword from inventory temporarily
+    player["inventory"][player["selected"]] = None
+    normalize_inventory()
+    
+    # Create thrown sword projectile
+    thrown_sword = {
+        'x': px,
+        'y': py,
+        'target_x': final_target_x,
+        'target_y': final_target_y,
+        'returning': False,
+        'sword_type': sword_item["type"],
+        'original_slot': original_slot,
+        'sword_item': sword_item
+    }
+    
+    if closest_monster:
+        print(f"🗡️ Throwing {sword_item['type']} at {closest_monster['type']}!")
+    else:
+        print(f"🗡️ Throwing {sword_item['type']} at target location!")
+    return True
+
+def slash_sword_at_target(target_x, target_y):
+    """Perform close-range sword slash"""
+    px, py = player["x"], player["y"]
+    distance = math.hypot(target_x - px, target_y - py)
+    
+    if distance > sword_slash_range:
+        print(f"⚔️ Target too far for slash! Range: {distance:.1f}, Max: {sword_slash_range}")
+        return False
+    
+    print(f"⚔️ Performing sword slash!")
+    # Trigger slash animation (will be handled by animation system)
+    return True
+
+def update_thrown_sword():
+    """Update thrown sword position and handle collisions"""
+    global thrown_sword
+    
+    if not thrown_sword:
+        return
+    
+    sword = thrown_sword
+    px, py = player["x"], player["y"]
+    
+    if not sword["returning"]:
+        # Check for monster hits along the sword's path BEFORE moving
+        hit_monster = False
+        for mob in entities[:]:
+            if mob["type"] in ["monster", "zombie"]:
+                mob_x, mob_y = mob["x"], mob["y"]
+                # Check if sword is close enough to hit the monster
+                if math.hypot(sword["x"] - mob_x, sword["y"] - mob_y) <= 0.8:
+                    # Hit monster!
+                    mob["hp"] = mob.get("hp", 4) - 1
+                    hit_monster = True
+                    print(f"🗡️ Sword hit {mob['type']}! HP: {mob['hp']}/4")
+                    
+                    # Create hit effect particles
+                    hit_x = (mob["x"] * TILE_SIZE) - camera_x
+                    hit_y = (mob["y"] * TILE_SIZE) - camera_y
+                    create_blood_particles(hit_x, hit_y, 8)
+                    
                     if mob["hp"] <= 0:
-                        # Check for first monster kill achievement
-                        check_achievement("first_monster_kill", 25, "Defeated first monster!")
+                        # Create more blood particles for death
+                        death_x = (mob["x"] * TILE_SIZE) - camera_x
+                        death_y = (mob["y"] * TILE_SIZE) - camera_y
+                        create_blood_particles(death_x, death_y, 15)
                         
                         # Monster defeated - chance to drop coins
                         if random.random() < 0.15 and coins_manager:
@@ -5764,29 +6016,156 @@ def attack_monsters(mx, my):
                             coins_manager.add_coins(coin_amount)
                         
                         entities.remove(mob)
+                        print(f"💀 {mob['type']} defeated!")
+                    break
         
-        elif mob["type"] == "zombie":
-            dx = (mx + camera_x) / TILE_SIZE - mob["x"]
-            dy = (my + camera_y) / TILE_SIZE - mob["y"]
-            if math.hypot(dx, dy) <= 2:
-                # Only swords can damage zombies; each hit deals 1 (4 hits to defeat)
-                if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]["type"] == "sword":
-                    mob["hp"] = mob.get("hp", 4) - 1  # Start with 4 HP, die in 4 hits
-                    if mob["hp"] <= 0:
-                        # Check for first monster kill achievement
-                        check_achievement("first_monster_kill", 25, "Defeated first zombie!")
-                        
-                        # Zombie defeated - chance to drop coins
-                        if random.random() < 0.2 and coins_manager:
-                            coin_amount = random.randint(1, 3)
-                            coins_manager.add_coins(coin_amount)
-                        
-                        entities.remove(mob)
+        if hit_monster:
+            # Sword hit something, start returning immediately
+            sword["returning"] = True
+        else:
+            # Move towards target
+            dx = sword["target_x"] - sword["x"]
+            dy = sword["target_y"] - sword["y"]
+            distance = math.hypot(dx, dy)
+            
+            if distance < 0.1:  # Reached target
+                # Start returning to player
+                sword["returning"] = True
+            else:
+                # Move towards target
+                move_x = (dx / distance) * sword_throw_speed
+                move_y = (dy / distance) * sword_throw_speed
+                sword["x"] += move_x
+                sword["y"] += move_y
+    else:
+        # Returning to player
+        dx = px - sword["x"]
+        dy = py - sword["y"]
+        distance = math.hypot(dx, dy)
         
-        # Handle chess piece interaction
-        elif mob.get("type", "").startswith("chess_"):
-            dx = (mx + camera_x) / TILE_SIZE - mob["x"]
-            dy = (my + camera_y) / TILE_SIZE - mob["y"]
+        if distance < 0.5:  # Close enough to player
+            # Return sword to inventory
+            if sword["original_slot"] < len(player["inventory"]):
+                player["inventory"][sword["original_slot"]] = sword["sword_item"]
+            else:
+                # Add to first available slot
+                for i, slot in enumerate(player["inventory"]):
+                    if slot is None:
+                        player["inventory"][i] = sword["sword_item"]
+                        break
+            
+            normalize_inventory()
+            print(f"🗡️ {sword['sword_type']} returned to inventory!")
+            thrown_sword = None
+        else:
+            # Move towards player
+            move_x = (dx / distance) * sword_return_speed
+            move_y = (dy / distance) * sword_return_speed
+            sword["x"] += move_x
+            sword["y"] += move_y
+
+def draw_thrown_sword():
+    """Draw the thrown sword projectile with visual effects"""
+    if not thrown_sword:
+        return
+    
+    sword = thrown_sword
+    screen_x = (sword["x"] * TILE_SIZE) - camera_x
+    screen_y = (sword["y"] * TILE_SIZE) - camera_y
+    
+    # Only draw if sword is on screen
+    if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+        # Draw sword texture (use sword texture from textures dict)
+        sword_texture = textures.get(sword["sword_type"], textures.get("sword"))
+        if sword_texture:
+            # Rotate sword based on direction
+            dx = sword["target_x"] - sword["x"] if not sword["returning"] else player["x"] - sword["x"]
+            dy = sword["target_y"] - sword["y"] if not sword["returning"] else player["y"] - sword["y"]
+            angle = math.atan2(dy, dx) * 180 / math.pi
+            
+            # Rotate and draw sword
+            rotated_sword = pygame.transform.rotate(sword_texture, -angle)
+            sword_rect = rotated_sword.get_rect(center=(screen_x + TILE_SIZE//2, screen_y + TILE_SIZE//2))
+            screen.blit(rotated_sword, sword_rect)
+            
+            # Add a glowing effect around the sword
+            glow_radius = 8
+            glow_surface = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+            glow_color = (255, 255, 100, 80)  # Yellow glow with transparency
+            pygame.draw.circle(glow_surface, glow_color, (glow_radius, glow_radius), glow_radius)
+            glow_rect = glow_surface.get_rect(center=(screen_x + TILE_SIZE//2, screen_y + TILE_SIZE//2))
+            screen.blit(glow_surface, glow_rect)
+        else:
+            # Fallback: draw a simple sword shape
+            pygame.draw.rect(screen, (200, 200, 200), (screen_x + 12, screen_y + 8, 8, 16))
+            pygame.draw.rect(screen, (139, 69, 19), (screen_x + 14, screen_y + 20, 4, 8))  # Handle
+
+def attack_monsters(mx, my):
+    """Attack monsters with sword - distance-based combat"""
+    px, py = player["x"], player["y"]
+    target_x = (mx + camera_x) / TILE_SIZE
+    target_y = (my + camera_y) / TILE_SIZE
+    distance = math.hypot(target_x - px, target_y - py)
+    
+    # Check if player has a sword equipped
+    if player["selected"] >= len(player["inventory"]) or not player["inventory"][player["selected"]]:
+        return
+    
+    sword_type = player["inventory"][player["selected"]]["type"]
+    if not is_sword_type(sword_type):
+        return
+    
+    # Check if sword is already thrown
+    if thrown_sword:
+        print("🗡️ Sword is already thrown! Wait for it to return.")
+        return
+    
+    # Find closest monster to click location
+    closest_monster = None
+    closest_distance = float('inf')
+    
+    for mob in entities[:]:
+        if mob["type"] in ["monster", "zombie"]:
+            mob_x, mob_y = mob["x"], mob["y"]
+            click_distance = math.hypot(target_x - mob_x, target_y - mob_y)
+            if click_distance < closest_distance:
+                closest_distance = click_distance
+                closest_monster = mob
+    
+    if not closest_monster:
+        return
+    
+    # Determine combat type based on distance
+    if distance <= sword_slash_range:
+        # Close combat - slash animation
+        slash_sword_at_target(target_x, target_y)
+        # Deal damage immediately for close combat
+        closest_monster["hp"] = closest_monster.get("hp", 4) - 1
+        if closest_monster["hp"] <= 0:
+            # Create blood particles
+            death_x = (closest_monster["x"] * TILE_SIZE) - camera_x
+            death_y = (closest_monster["y"] * TILE_SIZE) - camera_y
+            create_blood_particles(death_x, death_y, 12)
+            
+            # Monster defeated - chance to drop coins
+            if random.random() < 0.15 and coins_manager:
+                coin_amount = random.randint(1, 2)
+                coins_manager.add_coins(coin_amount)
+            
+            entities.remove(closest_monster)
+    else:
+        # Long range - throw sword
+        throw_sword_at_target(target_x, target_y)
+
+def handle_chess_piece_interaction(mx, my):
+    """Handle clicking on chess pieces to collect loot"""
+    target_x = (mx + camera_x) / TILE_SIZE
+    target_y = (my + camera_y) / TILE_SIZE
+    
+    for mob in entities[:]:
+        if mob.get("type", "").startswith("chess_"):
+            dx = target_x - mob["x"]
+            dy = target_y - mob["y"]
             if math.hypot(dx, dy) <= 2:
                 # Chess pieces can be clicked to collect loot
                 if "loot" in mob:
@@ -8062,8 +8441,8 @@ def generate_initial_world(world_seed=None):
             if can_place_surface_item(x, ground_y) and world_rng.random() < 0.15:  # Increased from 0.05 to 0.15
                 set_block(x, ground_y - 1, "carrot")
 
-        # Clean chest placement (only on grass, no messy spawning) - MODERATE FREQUENCY
-        if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:  # 5% chance - common but not too common
+        # Clean chest placement (only on grass, no messy spawning) - REDUCED FREQUENCY
+        if can_place_surface_item(x, ground_y) and world_rng.random() < 0.02:  # 2% chance - rare but not too rare
             set_block(x, ground_y - 1, "chest")
             chest_system.generate_chest_loot("village")
         
@@ -9665,6 +10044,7 @@ while running:
                     # Not clicking the UI: attack/break in world
                     print(f"🎯 Left click at ({mx}, {my}) - attempting to break blocks/attack monsters")
                     attack_monsters(mx, my)
+                    handle_chess_piece_interaction(mx, my)
                     break_block(mx, my)
 
                 elif event.button == 3:  # RIGHT CLICK - Place blocks and open chests
@@ -10185,6 +10565,8 @@ while running:
         update_villagers()  # EXTREME ENGINEERING: Enhanced villager AI
         update_boss()  # EXTREME ENGINEERING: Legendary boss AI and attacks
         update_hunger()  # Update hunger system
+        update_thrown_sword()  # Update sword throwing system
+        update_blood_particles()  # Update blood particle effects
         
         # Check for underground fortress trigger
         check_underground_fortress_trigger()

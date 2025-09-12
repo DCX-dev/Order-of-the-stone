@@ -150,6 +150,12 @@ class ModernUI:
         version_text = self.small_font.render("v1.0 - Modern UI Edition", True, self.colors["text_dim"])
         self.screen.blit(version_text, (10, self.screen.get_height() - 30))
         
+        # Copyright text - Bottom right corner
+        copyright_bottom_text = self.small_font.render("Copyright © 2025 Team Banana Labs Studios. All rights reserved.", True, self.colors["text_dim"])
+        copyright_bottom_x = self.screen.get_width() - copyright_bottom_text.get_width() - 10
+        copyright_bottom_y = self.screen.get_height() - 30
+        self.screen.blit(copyright_bottom_text, (copyright_bottom_x, copyright_bottom_y))
+        
         return button_states
     
     def draw_modern_button(self, text: str, y: int, mouse_pos: tuple, base_color: tuple) -> pygame.Rect:
@@ -333,9 +339,7 @@ class ModernUI:
             "",
             "Features:",
             "• Procedural world generation",
-            "• Multiple character classes",
             "• Village and fortress exploration",
-            "• Multiplayer support",
             "• Beautiful modern UI",
             "",
             "Created with Python and Pygame"
