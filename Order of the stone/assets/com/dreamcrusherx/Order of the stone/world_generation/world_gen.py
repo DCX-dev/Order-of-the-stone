@@ -83,16 +83,16 @@ class WorldGenerator:
             height = max(112, min(118, height))  # Keep within smaller bounds
             heights.append(height)
             
-            # Generate terrain column
-            for y in range(height, height + 15):  # 15 blocks deep
+            # Generate terrain column with 4000-block stone layer
+            for y in range(height, height + 4000 + 15):  # 4000 blocks of stone + 15 blocks for surface layers
                 if y == height:
                     blocks[f"{x},{y}"] = "grass"
                 elif y < height + 4:
                     blocks[f"{x},{y}"] = "dirt"
-                elif y < height + 12:
+                elif y < height + 4000 + 4:  # 4000 blocks of stone
                     blocks[f"{x},{y}"] = "stone"
                 else:
-                    blocks[f"{x},{y}"] = "bedrock"
+                    blocks[f"{x},{y}"] = "bedrock"  # Bedrock at bottom of 4000-block stone layer
     
     def _generate_simple_trees(self, blocks: Dict[str, str], world_width: int):
         """Generate simple, clean trees in small clusters"""
