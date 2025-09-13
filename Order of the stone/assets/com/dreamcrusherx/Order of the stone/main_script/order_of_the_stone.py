@@ -129,7 +129,7 @@ class GameConfig:
     
     # World settings
     world_chunk_size: int = 50
-    max_world_height: int = 4000000  # 4 million blocks build limit
+    max_world_height: int = 4000  # 4000 blocks build limit
     min_world_height: int = 0
     
     # Performance settings
@@ -1481,12 +1481,12 @@ def generate_terrain_column(x):
     for y in range(ground_y + 1, ground_y + 1 + dirt_depth):
         set_block(x, y, "dirt")
     
-    # Stone layer (4000 blocks deep as requested)
-    for y in range(ground_y + 1 + dirt_depth, ground_y + 1 + dirt_depth + 4000):
+    # Stone layer (200 blocks deep - reduced from 4000)
+    for y in range(ground_y + 1 + dirt_depth, ground_y + 1 + dirt_depth + 200):
         set_block(x, y, "stone")
     
-    # Bedrock at bottom of 4000-block stone layer
-    bedrock_y = ground_y + 1 + dirt_depth + 4000
+    # Bedrock at bottom of 200-block stone layer
+    bedrock_y = ground_y + 1 + dirt_depth + 200
     set_block(x, bedrock_y, "bedrock")
     
     # Add occasional surface features
