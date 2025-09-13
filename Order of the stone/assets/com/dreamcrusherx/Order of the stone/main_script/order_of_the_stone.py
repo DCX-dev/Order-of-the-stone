@@ -9563,63 +9563,121 @@ def generate_terrain_for_chunk(chunk_x, chunk_y, chunk_size=16):
     
     print(f"🌍 Generating new terrain for chunk ({chunk_x}, {chunk_y})")
     
-    # Use the world generation system to generate this chunk
+    # Generate terrain for this specific chunk only
     try:
-        from world_generation.world_gen import generate_world
+        # Calculate chunk boundaries
+        start_x = chunk_x * chunk_size
+        end_x = start_x + chunk_size
+        start_y = chunk_y * chunk_size
+        end_y = start_y + chunk_size
         
-        # Generate a small world centered on this chunk
-        world_info = generate_world(seed=None, world_width=chunk_size)
+        # Generate simple terrain for this chunk
+        blocks_generated = 0
         
-        # Extract blocks from the generated world
-        generated_blocks = world_info.get("blocks", {})
+        # Generate terrain height map for this chunk
+        for x in range(start_x, end_x):
+            # Simple height calculation based on position
+            height = 115 + int(5 * (x / 50)) % 10  # Vary height based on x position
+            
+            # Generate terrain column
+            for y in range(height, height + 15):
+                world_pos = f"{x},{y}"
+                
+                if y == height:
+                    world_data[world_pos] = "grass"
+                elif y < height + 4:
+                    world_data[world_pos] = "dirt"
+                elif y < height + 12:
+                    world_data[world_pos] = "stone"
+                else:
+                    world_data[world_pos] = "bedrock"
+                
+                blocks_generated += 1
         
-        # Add blocks to our world data, offset by chunk position
-        offset_x = chunk_x * chunk_size
-        offset_y = chunk_y * chunk_size
-        
-        for pos, block_type in generated_blocks.items():
-            if block_type and block_type != "air":  # Skip air blocks
-                x_str, y_str = pos.split(',')
-                world_x = int(x_str) + offset_x
-                world_y = int(y_str) + offset_y
-                world_data[f"{world_x},{world_y}"] = block_type
+        # Add some trees occasionally
+        if chunk_x % 3 == 0 and chunk_y % 3 == 0:  # Every 3rd chunk
+            tree_x = start_x + chunk_size // 2
+            tree_y = 115  # Surface level
+            
+            # Place a simple tree
+            world_data[f"{tree_x},{tree_y}"] = "log"
+            world_data[f"{tree_x},{tree_y-1}"] = "log"
+            world_data[f"{tree_x},{tree_y-2}"] = "leaves"
+            world_data[f"{tree_x-1},{tree_y-2}"] = "leaves"
+            world_data[f"{tree_x+1},{tree_y-2}"] = "leaves"
         
         # Mark this chunk as generated
         world_data[chunk_key] = "generated"
         
-        print(f"✅ Generated {len(generated_blocks)} blocks for chunk ({chunk_x}, {chunk_y})")
+        print(f"✅ Generated {blocks_generated} blocks for chunk ({chunk_x}, {chunk_y})")
         
     except Exception as e:
         print(f"⚠️ Error generating chunk ({chunk_x}, {chunk_y}): {e}")
 
+# Global variables for terrain generation
+last_terrain_check_x = None
+last_terrain_check_y = None
+terrain_generation_cooldown = 0
+
 def ensure_terrain_around_player():
     """Ensure terrain exists around the player's current position"""
-    global world_data, player
+    global world_data, player, last_terrain_check_x, last_terrain_check_y, terrain_generation_cooldown
     
     if not player:
+        return
+    
+    # Add cooldown to prevent excessive generation
+    if terrain_generation_cooldown > 0:
+        terrain_generation_cooldown -= 1
         return
     
     # Get player position
     px, py = int(player["x"]), int(player["y"])
     
+    # Only check for terrain generation if player has moved significantly
+    if (last_terrain_check_x is not None and last_terrain_check_y is not None and 
+        abs(px - last_terrain_check_x) < 8 and abs(py - last_terrain_check_y) < 8):
+        return
+    
+    # Update last check position
+    last_terrain_check_x = px
+    last_terrain_check_y = py
+    
     # Define chunk size and range
     chunk_size = 16
-    render_distance = 3  # Generate chunks within 3 chunks of player
+    render_distance = 1  # Only generate 1 chunk around player
     
     # Calculate which chunks to generate
     player_chunk_x = px // chunk_size
     player_chunk_y = py // chunk_size
     
-    # Generate chunks around the player
-    for dx in range(-render_distance, render_distance + 1):
-        for dy in range(-render_distance, render_distance + 1):
-            chunk_x = player_chunk_x + dx
-            chunk_y = player_chunk_y + dy
-            
-            # Check if this chunk needs generation
-            chunk_key = f"chunk_{chunk_x}_{chunk_y}"
-            if chunk_key not in world_data:
-                generate_terrain_for_chunk(chunk_x, chunk_y, chunk_size)
+    # Check if player is in an area that needs terrain
+    needs_terrain = False
+    for dx in range(-1, 2):
+        for dy in range(-1, 2):
+            check_x = px + dx * 8  # Check every 8 blocks
+            check_y = py + dy * 8
+            if f"{check_x},{check_y}" not in world_data:
+                needs_terrain = True
+                break
+        if needs_terrain:
+            break
+    
+    # Only generate terrain if needed
+    if needs_terrain:
+        # Generate chunks around the player
+        for dx in range(-render_distance, render_distance + 1):
+            for dy in range(-render_distance, render_distance + 1):
+                chunk_x = player_chunk_x + dx
+                chunk_y = player_chunk_y + dy
+                
+                # Check if this chunk needs generation
+                chunk_key = f"chunk_{chunk_x}_{chunk_y}"
+                if chunk_key not in world_data:
+                    generate_terrain_for_chunk(chunk_x, chunk_y, chunk_size)
+        
+        # Set cooldown to prevent excessive generation
+        terrain_generation_cooldown = 60  # 1 second at 60 FPS
 
 def load_game():
     """Load game using the world system - preserves player builds"""
