@@ -9902,8 +9902,8 @@ def load_game():
         if "character_class" not in player:
             player["character_class"] = "default"
         
-        # Generate terrain around the player's current position
-        ensure_terrain_around_player()
+        # DISABLED: Terrain generation around player to prevent blocks spawning
+        # ensure_terrain_around_player()
         
         # Place a guaranteed starter chest near the player spawn if it doesn't exist
         place_starter_chest()
@@ -10786,9 +10786,10 @@ while running:
         update_daylight()
         update_player()
         
-        # Generate terrain around player as they explore
-        if game_state == GameState.GAME:
-            ensure_terrain_around_player()
+        # DISABLED: Terrain generation around player to prevent blocks spawning
+        # This was causing blocks to appear every time the player moved
+        # if game_state == GameState.GAME:
+        #     ensure_terrain_around_player()
         
         update_world_interactions()
         update_monsters()
