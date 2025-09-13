@@ -317,6 +317,7 @@ class ResourceManager:
 
 class GameState(Enum):
     """Enumeration of all possible game states"""
+    SPLASH = "splash"  # Splash screen with Team Banana Labs Studios logo
     TITLE = "title"
     WORLD_SELECTION = "world_selection"  # New state for world selection
     USERNAME_REQUIRED = "username_required"  # New state for username required
@@ -338,7 +339,7 @@ class StateManager:
     """Robust state management with validation and transitions"""
     
     def __init__(self):
-        self._current_state = GameState.TITLE
+        self._current_state = GameState.SPLASH
         self._previous_state = None
         self._state_stack: List[GameState] = []
         self._state_data: Dict[GameState, Dict[str, Any]] = {}
@@ -405,6 +406,7 @@ class StateManager:
         """Check if state transition is valid"""
                 # Define valid transitions
         valid_transitions = {
+            GameState.SPLASH: [GameState.TITLE],
             GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.SHOP, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION, GameState.CREDITS],
             GameState.WORLD_SELECTION: [GameState.TITLE, GameState.GAME, GameState.USERNAME_REQUIRED],
             GameState.USERNAME_REQUIRED: [GameState.TITLE],
@@ -9073,6 +9075,105 @@ def handle_virtual_keyboard_click(mouse_pos):
     
     return "typing"
 
+# --- Splash Screen Drawing Function ---
+def draw_splash_screen():
+    """Draw the Team Banana Labs Studios splash screen"""
+    global splash_start_time, splash_duration
+    
+    # Initialize splash timing if not set
+    if not hasattr(draw_splash_screen, 'splash_start_time'):
+        draw_splash_screen.splash_start_time = time.time()
+        draw_splash_screen.splash_duration = 3.0  # 3 seconds
+    
+    # Calculate fade effect
+    current_time = time.time()
+    elapsed = current_time - draw_splash_screen.splash_start_time
+    progress = min(elapsed / draw_splash_screen.splash_duration, 1.0)
+    
+    # Background - gradient from black to dark blue
+    screen.fill((0, 0, 20))
+    
+    # Create a subtle gradient effect
+    for y in range(SCREEN_HEIGHT):
+        alpha = int(255 * (1 - y / SCREEN_HEIGHT) * 0.3)
+        color = (0, 0, min(50 + alpha, 100))
+        pygame.draw.line(screen, color, (0, y), (SCREEN_WIDTH, y))
+    
+    # Calculate center position
+    center_x = SCREEN_WIDTH // 2
+    center_y = SCREEN_HEIGHT // 2
+    
+    # Fade in effect
+    alpha = int(255 * min(progress * 2, 1.0))  # Fade in over first half
+    
+    # Draw the banana controller logo (ASCII art style)
+    logo_size = 120
+    logo_x = center_x - logo_size // 2
+    logo_y = center_y - 100
+    
+    # Create a surface for the logo with alpha
+    logo_surface = pygame.Surface((logo_size, logo_size), pygame.SRCALPHA)
+    
+    # Draw banana shape (yellow)
+    banana_rect = pygame.Rect(20, 30, 80, 40)
+    pygame.draw.ellipse(logo_surface, (255, 255, 0, alpha), banana_rect)  # Yellow banana
+    
+    # Draw banana outline (black)
+    pygame.draw.ellipse(logo_surface, (0, 0, 0, alpha), banana_rect, 3)
+    
+    # Draw controller elements
+    # D-pad (left side)
+    d_pad_rect = pygame.Rect(25, 45, 20, 20)
+    pygame.draw.rect(logo_surface, (0, 0, 0, alpha), d_pad_rect)
+    pygame.draw.rect(logo_surface, (255, 255, 0, alpha), (27, 47, 16, 16))
+    
+    # Action buttons (right side)
+    button_positions = [(75, 40), (85, 50), (75, 60), (65, 50)]
+    for bx, by in button_positions:
+        pygame.draw.circle(logo_surface, (0, 0, 0, alpha), (bx, by), 6)
+        pygame.draw.circle(logo_surface, (255, 255, 0, alpha), (bx, by), 4)
+    
+    # Blit the logo to the screen
+    screen.blit(logo_surface, (logo_x, logo_y))
+    
+    # Draw studio name with fade effect
+    studio_text = title_font.render("Team Banana Labs Studios", True, (255, 255, 255))
+    studio_rect = studio_text.get_rect(center=(center_x, center_y + 50))
+    
+    # Create text surface with alpha
+    text_surface = pygame.Surface(studio_text.get_size(), pygame.SRCALPHA)
+    text_surface.blit(studio_text, (0, 0))
+    text_surface.set_alpha(alpha)
+    
+    screen.blit(text_surface, studio_rect)
+    
+    # Draw subtitle
+    subtitle_text = font.render("Presents", True, (200, 200, 200))
+    subtitle_rect = subtitle_text.get_rect(center=(center_x, center_y + 90))
+    
+    subtitle_surface = pygame.Surface(subtitle_text.get_size(), pygame.SRCALPHA)
+    subtitle_surface.blit(subtitle_text, (0, 0))
+    subtitle_surface.set_alpha(alpha)
+    
+    screen.blit(subtitle_surface, subtitle_rect)
+    
+    # Draw game title
+    game_title_text = BIG_FONT.render("Order of the Stone", True, (255, 215, 0))  # Gold color
+    game_title_rect = game_title_text.get_rect(center=(center_x, center_y + 130))
+    
+    game_title_surface = pygame.Surface(game_title_text.get_size(), pygame.SRCALPHA)
+    game_title_surface.blit(game_title_text, (0, 0))
+    game_title_surface.set_alpha(alpha)
+    
+    screen.blit(game_title_surface, game_title_rect)
+    
+    # Auto-advance to title screen after duration
+    if elapsed >= draw_splash_screen.splash_duration:
+        global game_state
+        game_state = GameState.TITLE
+        update_pause_state()  # Resume time when entering title
+        print("🎬 Splash screen completed, transitioning to title screen")
+
 # --- Title Screen Drawing Function ---
 def draw_title_screen():
     global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, shop_btn, credits_btn
@@ -9772,7 +9873,7 @@ else:
     world_ui = None
 
 # Game state variables
-game_state = GameState.TITLE
+game_state = GameState.SPLASH
 # World creation variables removed - game goes directly to play
 world_deletion_state = None  # None or world name to delete
 
@@ -10721,6 +10822,8 @@ while running:
 
         if player["health"] <= 0:
             show_death_screen()
+    elif game_state == GameState.SPLASH:
+        draw_splash_screen()
     elif game_state == GameState.TITLE:
         draw_title_screen()
     elif game_state == GameState.WORLD_SELECTION:
