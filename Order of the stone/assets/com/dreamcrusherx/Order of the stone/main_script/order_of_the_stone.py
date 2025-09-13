@@ -5980,7 +5980,7 @@ def update_thrown_sword():
     if not sword["returning"]:
         # Check for monster hits along the sword's path BEFORE moving
         hit_monster = False
-    for mob in entities[:]:
+        for mob in entities[:]:
             if mob["type"] in ["monster", "zombie"]:
                 mob_x, mob_y = mob["x"], mob["y"]
                 # Check if sword is close enough to hit the monster
@@ -6141,7 +6141,7 @@ def attack_monsters(mx, my):
             # Monster defeated - chance to drop coins
             if random.random() < 0.15 and coins_manager:
                 coin_amount = random.randint(1, 2)
-                            coins_manager.add_coins(coin_amount)
+                coins_manager.add_coins(coin_amount)
                         
             entities.remove(closest_monster)
     else:
@@ -9030,7 +9030,7 @@ def check_username_required():
             return True
         
         print(f"✅ Username check: Valid username found: {current_username}")
-            return False
+        return False
             
     except Exception as e:
         print(f"⚠️ Username check: Error checking username: {e}")
@@ -9552,26 +9552,91 @@ CRAFTING_RECIPES = {
     }
 }
 
+def generate_terrain_for_chunk(chunk_x, chunk_y, chunk_size=16):
+    """Generate terrain for a specific chunk if it hasn't been explored yet"""
+    global world_data
+    
+    # Check if this chunk has already been generated
+    chunk_key = f"chunk_{chunk_x}_{chunk_y}"
+    if chunk_key in world_data:
+        return  # Chunk already exists
+    
+    print(f"🌍 Generating new terrain for chunk ({chunk_x}, {chunk_y})")
+    
+    # Use the world generation system to generate this chunk
+    try:
+        from world_generation.world_gen import generate_world
+        
+        # Generate a small world centered on this chunk
+        world_info = generate_world(seed=None, world_width=chunk_size)
+        
+        # Extract blocks from the generated world
+        generated_blocks = world_info.get("blocks", {})
+        
+        # Add blocks to our world data, offset by chunk position
+        offset_x = chunk_x * chunk_size
+        offset_y = chunk_y * chunk_size
+        
+        for pos, block_type in generated_blocks.items():
+            if block_type and block_type != "air":  # Skip air blocks
+                x_str, y_str = pos.split(',')
+                world_x = int(x_str) + offset_x
+                world_y = int(y_str) + offset_y
+                world_data[f"{world_x},{world_y}"] = block_type
+        
+        # Mark this chunk as generated
+        world_data[chunk_key] = "generated"
+        
+        print(f"✅ Generated {len(generated_blocks)} blocks for chunk ({chunk_x}, {chunk_y})")
+        
+    except Exception as e:
+        print(f"⚠️ Error generating chunk ({chunk_x}, {chunk_y}): {e}")
+
+def ensure_terrain_around_player():
+    """Ensure terrain exists around the player's current position"""
+    global world_data, player
+    
+    if not player:
+        return
+    
+    # Get player position
+    px, py = int(player["x"]), int(player["y"])
+    
+    # Define chunk size and range
+    chunk_size = 16
+    render_distance = 3  # Generate chunks within 3 chunks of player
+    
+    # Calculate which chunks to generate
+    player_chunk_x = px // chunk_size
+    player_chunk_y = py // chunk_size
+    
+    # Generate chunks around the player
+    for dx in range(-render_distance, render_distance + 1):
+        for dy in range(-render_distance, render_distance + 1):
+            chunk_x = player_chunk_x + dx
+            chunk_y = player_chunk_y + dy
+            
+            # Check if this chunk needs generation
+            chunk_key = f"chunk_{chunk_x}_{chunk_y}"
+            if chunk_key not in world_data:
+                generate_terrain_for_chunk(chunk_x, chunk_y, chunk_size)
+
 def load_game():
-    """Load game using improved world generation system"""
+    """Load game using the world system - preserves player builds"""
     global world_data, entities, player, is_day, day_start_time
     
     try:
-        # Use the new world generation module
-        try:
-            from world_generation.world_gen import generate_world
-        except ImportError:
-            print("⚠️ Warning: Advanced world generation not available, using basic generation")
-            generate_world = None
+        print("🌍 Loading game using world system...")
         
-        print("🌍 Loading game with improved world generation...")
+        # Check if we have a current world loaded
+        if not world_system.current_world_name:
+            print("⚠️ No world loaded, cannot load game")
+            return False
         
-        # Generate world using the new system
-        world_info = generate_world(seed=None, world_width=200)
-        
-        # Extract world data
-        world_data = world_info["blocks"]
-        entities = world_info["entities"]
+        # Load world data from the world system
+        if not load_world_data():
+            print("❌ Failed to load world data")
+            return False
         
         # Convert traveler blocks to entities (monsters will spawn at night)
         travelers_converted = 0
@@ -9592,39 +9657,20 @@ def load_game():
         
         print(f"🎮 Converted {travelers_converted} travelers to entities (monsters spawn at night)")
         
-        # Set up player at spawn location
-        spawn_x = world_info["spawn_x"]
-        spawn_y = world_info["spawn_y"]
+        # Ensure player has all required fields
+        if "character_class" not in player:
+            player["character_class"] = "default"
         
-        player.update({
-            "x": float(spawn_x),
-            "y": float(spawn_y),
-            "vel_y": 0.0,
-            "on_ground": False,
-            "health": 10,
-            "max_health": 10,
-            "hunger": 100,
-            "max_hunger": 100,
-            "stamina": 100,
-            "max_stamina": 100,
-            "inventory": [],
-            "backpack": [],
-            "selected": 0,
-            "username": "Player",
-            "armor": {"helmet": None, "chestplate": None, "leggings": None, "boots": None},
-            "character_class": "default"
-        })
+        # Generate terrain around the player's current position
+        ensure_terrain_around_player()
         
-        # Set world settings
-        is_day = True
-        day_start_time = time.time()
-        
-        # Place a guaranteed starter chest near the player spawn
+        # Place a guaranteed starter chest near the player spawn if it doesn't exist
         place_starter_chest()
         
         print(f"🎉 Game loaded successfully!")
         print(f"  - Total blocks: {len(world_data)}")
-        print(f"  - Player spawn: ({spawn_x}, {spawn_y})")
+        print(f"  - Player position: ({player['x']}, {player['y']})")
+        print(f"  - World: {world_system.current_world_name}")
         
         return True
         
@@ -10548,6 +10594,11 @@ while running:
 
         update_daylight()
         update_player()
+        
+        # Generate terrain around player as they explore
+        if game_state == GameState.GAME:
+            ensure_terrain_around_player()
+        
         update_world_interactions()
         update_monsters()
         update_chess_pieces()  # Chess piece spawning and behavior
