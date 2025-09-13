@@ -19,6 +19,9 @@ from enum import Enum
 from pathlib import Path
 from PIL import Image
 
+# Import infinite world generation
+from world_generation.infinite_world_generator import infinite_world_generator
+
 # Ensure the game runs from the correct directory (where the game files are located)
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
@@ -9804,7 +9807,7 @@ last_terrain_check_y = None
 terrain_generation_cooldown = 0
 
 def ensure_terrain_around_player():
-    """Ensure terrain exists around the player's current position"""
+    """Ensure terrain exists around the player's current position using infinite world generator"""
     global world_data, player, last_terrain_check_x, last_terrain_check_y, terrain_generation_cooldown
     
     if not player:
@@ -9827,41 +9830,29 @@ def ensure_terrain_around_player():
     last_terrain_check_x = px
     last_terrain_check_y = py
     
-    # Define chunk size and range
+    # Use infinite world generator to generate chunks around player
     chunk_size = 16
-    render_distance = 1  # Only generate 1 chunk around player
+    player_chunk_x, player_chunk_y = infinite_world_generator.get_chunk_coordinates(px, py, chunk_size)
     
-    # Calculate which chunks to generate
-    player_chunk_x = px // chunk_size
-    player_chunk_y = py // chunk_size
-    
-    # Check if player is in an area that needs terrain
-    needs_terrain = False
+    # Generate a 3x3 area of chunks around the player
     for dx in range(-1, 2):
         for dy in range(-1, 2):
-            check_x = px + dx * 8  # Check every 8 blocks
-            check_y = py + dy * 8
-            if f"{check_x},{check_y}" not in world_data:
-                needs_terrain = True
-                break
-        if needs_terrain:
-            break
-    
-    # Only generate terrain if needed
-    if needs_terrain:
-        # Generate chunks around the player
-        for dx in range(-render_distance, render_distance + 1):
-            for dy in range(-render_distance, render_distance + 1):
-                chunk_x = player_chunk_x + dx
-                chunk_y = player_chunk_y + dy
+            check_chunk_x = player_chunk_x + dx
+            check_chunk_y = player_chunk_y + dy
+            
+            if not infinite_world_generator.is_chunk_generated(check_chunk_x, check_chunk_y):
+                # Generate terrain for this chunk
+                chunk_blocks = infinite_world_generator.generate_chunk(check_chunk_x, check_chunk_y, chunk_size)
+                for pos, block_type in chunk_blocks.items():
+                    world_data[pos] = block_type
                 
-                # Check if this chunk needs generation
-                chunk_key = f"chunk_{chunk_x}_{chunk_y}"
-                if chunk_key not in world_data:
-                    generate_terrain_for_chunk(chunk_x, chunk_y, chunk_size)
-        
-        # Set cooldown to prevent excessive generation
-        terrain_generation_cooldown = 60  # 1 second at 60 FPS
+                # Generate structures for this chunk
+                structures = infinite_world_generator.generate_structures_in_chunk(check_chunk_x, check_chunk_y, chunk_size)
+                for pos, block_type in structures.items():
+                    world_data[pos] = block_type
+    
+    # Set cooldown to prevent excessive generation
+    terrain_generation_cooldown = 30  # 0.5 seconds at 60 FPS
 
 def load_game():
     """Load game using the world system - preserves player builds"""
@@ -10768,10 +10759,31 @@ while running:
             # Generate structures for chunk
             maybe_generate_village_for_chunk(ch, base_x)
             maybe_generate_fortress_for_chunk(ch, base_x)
-        # DISABLED: Automatic terrain generation to prevent blocks spawning underground
-        # This was causing blocks to generate every time the player moved
-        # Terrain will only be generated when explicitly needed for gameplay
-        pass
+        # INFINITE WORLD: Generate terrain on-demand using the world generator
+        if player:
+            player_x = int(player["x"])
+            player_y = int(player["y"])
+            
+            # Generate chunks around the player
+            chunk_size = 16
+            player_chunk_x, player_chunk_y = infinite_world_generator.get_chunk_coordinates(player_x, player_y, chunk_size)
+            
+            # Generate a 3x3 area of chunks around the player
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    check_chunk_x = player_chunk_x + dx
+                    check_chunk_y = player_chunk_y + dy
+                    
+                    if not infinite_world_generator.is_chunk_generated(check_chunk_x, check_chunk_y):
+                        # Generate terrain for this chunk
+                        chunk_blocks = infinite_world_generator.generate_chunk(check_chunk_x, check_chunk_y, chunk_size)
+                        for pos, block_type in chunk_blocks.items():
+                            world_data[pos] = block_type
+                        
+                        # Generate structures for this chunk
+                        structures = infinite_world_generator.generate_structures_in_chunk(check_chunk_x, check_chunk_y, chunk_size)
+                        for pos, block_type in structures.items():
+                            world_data[pos] = block_type
         
         # DISABLED: Monster spawning to prevent issues with terrain generation
         # This was causing problems when terrain generation was disabled
@@ -10787,10 +10799,9 @@ while running:
         update_daylight()
         update_player()
         
-        # DISABLED: Terrain generation around player to prevent blocks spawning
-        # This was causing blocks to appear every time the player moved
-        # if game_state == GameState.GAME:
-        #     ensure_terrain_around_player()
+        # ENABLED: Terrain generation around player for infinite world
+        if game_state == GameState.GAME:
+            ensure_terrain_around_player()
         
         update_world_interactions()
         update_monsters()
