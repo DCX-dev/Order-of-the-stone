@@ -10767,45 +10767,14 @@ while running:
             # Generate structures for chunk
             maybe_generate_village_for_chunk(ch, base_x)
             maybe_generate_fortress_for_chunk(ch, base_x)
-        for x in range(left_edge, right_edge):
-            # CRITICAL FIX: Only generate terrain for columns that have NEVER been generated
-            # This prevents broken blocks from being replaced by terrain regeneration
-            # Use the centralized terrain generation function for consistency
-            if x not in generated_terrain_columns:
-                # Show exploration progress every 50 blocks for infinite world feedback
-                if x % 50 == 0:
-                    print(f"🚀 INFINITE WORLD: Exploring new territory at X={x}")
-                
-                # Use the improved terrain generation function (handles terrain, trees, ores, etc.)
-                generate_terrain_column(x)
-                # EXTREME ENGINEERING: Balanced night monster spawning
-                # Only spawn monsters at night when exploring new territory
-                if not is_day and random.random() < 0.008:  # Slightly increased spawn rate for better gameplay
-                    # Check total monster count globally to prevent overcrowding
-                    total_monsters = sum(1 for entity in entities if entity["type"] == "monster")
-                    
-                    # Check if there are already monsters nearby to prevent clustering
-                    nearby_monsters = 0
-                    for entity in entities:
-                        if entity["type"] == "monster":
-                            distance = abs(entity["x"] - x)
-                            if distance < 40:  # Within 40 blocks
-                                nearby_monsters += 1
-                    
-                    # Balanced spawning: max 8 total monsters, max 1 per 40-block radius
-                    if total_monsters < 8 and nearby_monsters == 0:
-                        # Find ground level for this column
-                        spawn_ground_y = ground_y_of_column(x)
-                        if spawn_ground_y is not None:
-                            entities.append({
-                                "type": "monster",
-                                "x": x,
-                                "y": spawn_ground_y - 1,
-                                "image": monster_image,
-                                "hp": 6,  # Balanced HP for fair combat
-                                "cooldown": 0
-                            })
-                            print(f"👹 Night monster spawned at ({x}, {spawn_ground_y - 1}) - Total monsters: {total_monsters + 1}/8")
+        # DISABLED: Automatic terrain generation to prevent blocks spawning underground
+        # This was causing blocks to generate every time the player moved
+        # Terrain will only be generated when explicitly needed for gameplay
+        pass
+        
+        # DISABLED: Monster spawning to prevent issues with terrain generation
+        # This was causing problems when terrain generation was disabled
+        pass
                 
         # EXTREME ENGINEERING: Check for Legend NPC spawn
         check_legend_npc_spawn()
