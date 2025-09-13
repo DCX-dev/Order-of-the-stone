@@ -10779,28 +10779,9 @@ while running:
         # EXTREME ENGINEERING: Check for Legend NPC spawn
         check_legend_npc_spawn()
         
-        # EXTREME ENGINEERING: Controlled villager spawning - much less frequent
-        if random.random() < 0.01:  # Reduced from 0.05 to 0.01 (5x less)
-                    # Check for nearby villagers to prevent overcrowding
-                    nearby_villagers = 0
-                    for entity in entities:
-                        if entity["type"] == "villager":
-                            distance = abs(entity["x"] - x)
-                            if distance < 30:  # Within 30 blocks
-                                nearby_villagers += 1
-                    
-                    # Only spawn if there are less than 1 villager in a 30-block radius
-                    if nearby_villagers < 1:
-                        # Find ground level for this column
-                        spawn_ground_y = ground_y_of_column(x)
-                        if spawn_ground_y is not None:
-                            entities.append({
-                                "type": "villager",
-                                "x": x,
-                                "y": spawn_ground_y - 1,
-                                "dialogue_cooldown": 0
-                            })
-                            print(f"👤 Spawned random villager at ({x}, {spawn_ground_y - 1})")
+        # DISABLED: Villager spawning to prevent issues with undefined variables
+        # This was causing NameError because 'x' variable was undefined after disabling terrain generation
+        pass
 
         update_daylight()
         update_player()
