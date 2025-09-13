@@ -9124,7 +9124,7 @@ def draw_splash_screen():
         
         # Center the logo
         logo_x = center_x - new_width // 2
-        logo_y = center_y - new_height // 2 - 50  # Position above center
+        logo_y = center_y - new_height // 2 - 100  # Position higher above center
         
         # Create a surface for the logo with alpha
         logo_surface = pygame.Surface(scaled_logo.get_size(), pygame.SRCALPHA)
