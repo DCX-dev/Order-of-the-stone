@@ -9077,13 +9077,15 @@ def handle_virtual_keyboard_click(mouse_pos):
 
 # --- Splash Screen Drawing Function ---
 def draw_splash_screen():
-    """Draw the Team Banana Labs Studios splash screen"""
+    """Draw the Team Banana Labs Studios splash screen with logo image"""
     global splash_start_time, splash_duration
     
     # Initialize splash timing if not set
     if not hasattr(draw_splash_screen, 'splash_start_time'):
         draw_splash_screen.splash_start_time = time.time()
         draw_splash_screen.splash_duration = 3.0  # 3 seconds
+        # Load studio logo image
+        draw_splash_screen.studio_logo = load_studio_logo()
     
     # Calculate fade effect
     current_time = time.time()
@@ -9106,35 +9108,60 @@ def draw_splash_screen():
     # Fade in effect
     alpha = int(255 * min(progress * 2, 1.0))  # Fade in over first half
     
-    # Draw the banana controller logo (ASCII art style)
-    logo_size = 120
-    logo_x = center_x - logo_size // 2
-    logo_y = center_y - 100
-    
-    # Create a surface for the logo with alpha
-    logo_surface = pygame.Surface((logo_size, logo_size), pygame.SRCALPHA)
-    
-    # Draw banana shape (yellow)
-    banana_rect = pygame.Rect(20, 30, 80, 40)
-    pygame.draw.ellipse(logo_surface, (255, 255, 0, alpha), banana_rect)  # Yellow banana
-    
-    # Draw banana outline (black)
-    pygame.draw.ellipse(logo_surface, (0, 0, 0, alpha), banana_rect, 3)
-    
-    # Draw controller elements
-    # D-pad (left side)
-    d_pad_rect = pygame.Rect(25, 45, 20, 20)
-    pygame.draw.rect(logo_surface, (0, 0, 0, alpha), d_pad_rect)
-    pygame.draw.rect(logo_surface, (255, 255, 0, alpha), (27, 47, 16, 16))
-    
-    # Action buttons (right side)
-    button_positions = [(75, 40), (85, 50), (75, 60), (65, 50)]
-    for bx, by in button_positions:
-        pygame.draw.circle(logo_surface, (0, 0, 0, alpha), (bx, by), 6)
-        pygame.draw.circle(logo_surface, (255, 255, 0, alpha), (bx, by), 4)
-    
-    # Blit the logo to the screen
-    screen.blit(logo_surface, (logo_x, logo_y))
+    # Draw the studio logo image
+    if draw_splash_screen.studio_logo:
+        # Scale logo to appropriate size (max 200x200)
+        logo_width, logo_height = draw_splash_screen.studio_logo.get_size()
+        max_size = 200
+        
+        # Calculate scaling to fit within max_size while maintaining aspect ratio
+        scale_factor = min(max_size / logo_width, max_size / logo_height)
+        new_width = int(logo_width * scale_factor)
+        new_height = int(logo_height * scale_factor)
+        
+        # Scale the logo
+        scaled_logo = pygame.transform.scale(draw_splash_screen.studio_logo, (new_width, new_height))
+        
+        # Center the logo
+        logo_x = center_x - new_width // 2
+        logo_y = center_y - new_height // 2 - 50  # Position above center
+        
+        # Create a surface for the logo with alpha
+        logo_surface = pygame.Surface(scaled_logo.get_size(), pygame.SRCALPHA)
+        logo_surface.blit(scaled_logo, (0, 0))
+        logo_surface.set_alpha(alpha)
+        
+        screen.blit(logo_surface, (logo_x, logo_y))
+    else:
+        # Fallback: Draw the banana controller logo (ASCII art style) if no image found
+        logo_size = 120
+        logo_x = center_x - logo_size // 2
+        logo_y = center_y - 100
+        
+        # Create a surface for the logo with alpha
+        logo_surface = pygame.Surface((logo_size, logo_size), pygame.SRCALPHA)
+        
+        # Draw banana shape (yellow)
+        banana_rect = pygame.Rect(20, 30, 80, 40)
+        pygame.draw.ellipse(logo_surface, (255, 255, 0, alpha), banana_rect)  # Yellow banana
+        
+        # Draw banana outline (black)
+        pygame.draw.ellipse(logo_surface, (0, 0, 0, alpha), banana_rect, 3)
+        
+        # Draw controller elements
+        # D-pad (left side)
+        d_pad_rect = pygame.Rect(25, 45, 20, 20)
+        pygame.draw.rect(logo_surface, (0, 0, 0, alpha), d_pad_rect)
+        pygame.draw.rect(logo_surface, (255, 255, 0, alpha), (27, 47, 16, 16))
+        
+        # Action buttons (right side)
+        button_positions = [(75, 40), (85, 50), (75, 60), (65, 50)]
+        for bx, by in button_positions:
+            pygame.draw.circle(logo_surface, (0, 0, 0, alpha), (bx, by), 6)
+            pygame.draw.circle(logo_surface, (255, 255, 0, alpha), (bx, by), 4)
+        
+        # Blit the logo to the screen
+        screen.blit(logo_surface, (logo_x, logo_y))
     
     # Draw studio name with fade effect
     studio_text = title_font.render("Team Banana Labs Studios", True, (255, 255, 255))
@@ -9173,6 +9200,61 @@ def draw_splash_screen():
         game_state = GameState.TITLE
         update_pause_state()  # Resume time when entering title
         print("🎬 Splash screen completed, transitioning to title screen")
+
+def load_studio_logo():
+    """Load the studio logo image from the studio_logo folder"""
+    try:
+        # Define the studio logo directory using the same path structure as other assets
+        studio_logo_dir = os.path.join(TILE_DIR, "..", "studio_logo")
+        studio_logo_dir = os.path.abspath(studio_logo_dir)
+        
+        print(f"🎨 Looking for studio logo in: {studio_logo_dir}")
+        
+        # Check if directory exists
+        if not os.path.exists(studio_logo_dir):
+            print(f"⚠️ Studio logo directory not found: {studio_logo_dir}")
+            return None
+        
+        # Look for common image formats
+        image_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp']
+        logo_files = []
+        
+        for ext in image_extensions:
+            # Look for files with "logo" in the name
+            for filename in os.listdir(studio_logo_dir):
+                if filename.lower().endswith(ext) and 'logo' in filename.lower():
+                    logo_files.append(os.path.join(studio_logo_dir, filename))
+        
+        # If no logo files found, look for any image files
+        if not logo_files:
+            for ext in image_extensions:
+                for filename in os.listdir(studio_logo_dir):
+                    if filename.lower().endswith(ext):
+                        logo_files.append(os.path.join(studio_logo_dir, filename))
+        
+        if not logo_files:
+            print("⚠️ No logo images found in studio_logo directory")
+            return None
+        
+        # Use the first logo file found
+        logo_path = logo_files[0]
+        print(f"🎨 Loading studio logo: {logo_path}")
+        
+        # Load the image
+        logo_image = pygame.image.load(logo_path)
+        
+        # Convert to RGBA for alpha support
+        if logo_image.get_flags() & pygame.SRCALPHA:
+            logo_image = logo_image.convert_alpha()
+        else:
+            logo_image = logo_image.convert()
+        
+        print(f"✅ Studio logo loaded successfully: {logo_image.get_size()}")
+        return logo_image
+        
+    except Exception as e:
+        print(f"❌ Error loading studio logo: {e}")
+        return None
 
 # --- Title Screen Drawing Function ---
 def draw_title_screen():
