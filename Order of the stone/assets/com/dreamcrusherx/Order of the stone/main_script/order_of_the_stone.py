@@ -9816,6 +9816,24 @@ def draw_world_selection_screen():
     """EXTREME ENGINEERING: Draw the world selection screen with username validation"""
     global world_play_btn, world_delete_btn, world_create_btn, world_back_btn
     
+    # Check if world UI is available
+    if not world_ui:
+        print("⚠️ World UI not available, using fallback")
+        # Fallback: draw a simple world selection screen
+        screen.fill((50, 50, 50))
+        title_text = font.render("World Selection", True, (255, 255, 255))
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 100))
+        
+        error_text = font.render("World UI system not available", True, (255, 0, 0))
+        screen.blit(error_text, (SCREEN_WIDTH // 2 - error_text.get_width() // 2, 200))
+        
+        # Create dummy button states
+        world_play_btn = None
+        world_delete_btn = None
+        world_create_btn = None
+        world_back_btn = None
+        return
+    
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
     
@@ -11066,39 +11084,45 @@ while running:
                         continue  # Don't proceed to game
                     
                     # Play selected world (if any world is selected)
-                    selected_world = world_ui.get_selected_world()
-                    if selected_world:
-                        world_name = selected_world["name"]
-                        if world_system.load_world(world_name):
-                            # Load the world data into the game
-                            if load_world_data():
-                                # Fix player spawn position to ensure surface spawning
-                                fix_player_spawn_position()
-                                game_state = GameState.GAME
-                                update_pause_state()  # Resume time when entering game
-                                print(f"🎮 Starting game with world: {world_name}")
-                                print("🎮 Controls: WASD or Arrow Keys = Move + Flip Character, Space = Jump")
-                                # give_starting_items()  # Removed starting items
+                    if world_ui:
+                        selected_world = world_ui.get_selected_world()
+                        if selected_world:
+                            world_name = selected_world["name"]
+                            if world_system.load_world(world_name):
+                                # Load the world data into the game
+                                if load_world_data():
+                                    # Fix player spawn position to ensure surface spawning
+                                    fix_player_spawn_position()
+                                    game_state = GameState.GAME
+                                    update_pause_state()  # Resume time when entering game
+                                    print(f"🎮 Starting game with world: {world_name}")
+                                    print("🎮 Controls: WASD or Arrow Keys = Move + Flip Character, Space = Jump")
+                                    # give_starting_items()  # Removed starting items
+                                else:
+                                    print(f"❌ Failed to load world data for: {world_name}")
                             else:
-                                print(f"❌ Failed to load world data for: {world_name}")
+                                print(f"❌ Failed to load world: {world_name}")
                         else:
-                            print(f"❌ Failed to load world: {world_name}")
+                            print("❌ No world selected")
                     else:
-                        print("❌ No world selected")
+                        print("❌ World UI not available")
                 elif world_delete_btn and world_delete_btn.collidepoint(event.pos):
                     # Delete selected world (if any world is selected)
-                    selected_world = world_ui.get_selected_world()
-                    if selected_world:
-                        world_name = selected_world["name"]
-                        if world_system.delete_world(world_name):
-                            print(f"🗑️ Deleted world: {world_name}")
-                            # Refresh the world selection screen and selection state
-                            world_system._load_world_list()
-                            world_ui.refresh_world_selection()
+                    if world_ui:
+                        selected_world = world_ui.get_selected_world()
+                        if selected_world:
+                            world_name = selected_world["name"]
+                            if world_system.delete_world(world_name):
+                                print(f"🗑️ Deleted world: {world_name}")
+                                # Refresh the world selection screen and selection state
+                                world_system._load_world_list()
+                                world_ui.refresh_world_selection()
+                            else:
+                                print(f"❌ Failed to delete world: {world_name}")
                         else:
-                            print(f"❌ Failed to delete world: {world_name}")
+                            print("❌ No world selected")
                     else:
-                        print("❌ No world selected")
+                        print("❌ World UI not available")
             elif game_state == GameState.PAUSED:
                 if resume_btn.collidepoint(event.pos):
                     game_state = GameState.GAME
