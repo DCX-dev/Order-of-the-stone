@@ -5381,14 +5381,27 @@ def calculate_armor_damage_reduction(base_damage):
         return base_damage
 
 def draw_world():
-    # Draw blocks safely (skip None, air, or unknown keys)
+    """Optimized world rendering with viewport culling"""
+    # Calculate viewport bounds for efficient culling
+    viewport_left = camera_x // TILE_SIZE - 1
+    viewport_right = (camera_x + SCREEN_WIDTH) // TILE_SIZE + 1
+    viewport_top = camera_y // TILE_SIZE - 1
+    viewport_bottom = (camera_y + SCREEN_HEIGHT) // TILE_SIZE + 1
+    
+    # Only iterate through blocks in viewport
+    blocks_drawn = 0
     for key, block in world_data.items():
         if not block or block == "air":
             continue
+        
         # Parse the "x,y" string key format
         try:
             x, y = map(int, key.split(','))
         except (ValueError, AttributeError):
+            continue
+        
+        # Early viewport culling - skip blocks outside viewport
+        if x < viewport_left or x > viewport_right or y < viewport_top or y > viewport_bottom:
             continue
         
         img = textures.get(block)
@@ -5410,8 +5423,15 @@ def draw_world():
         
         screen_x = x * TILE_SIZE - camera_x
         screen_y = y * TILE_SIZE - camera_y
+        
+        # Final viewport check (should always pass due to early culling)
         if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
             screen.blit(img, (screen_x, screen_y))
+            blocks_drawn += 1
+    
+    # Debug info (only show occasionally to avoid spam)
+    if frame_count % 300 == 0:  # Every 5 seconds at 60 FPS
+        print(f"🎨 Rendered {blocks_drawn} blocks in viewport")
 
     # Draw entities
     for entity in entities:
@@ -8076,10 +8096,8 @@ def update_player():
     # This makes the player flip instantly when pressing A/D, even if they can't move
     if move_left:
         player["facing_direction"] = -1  # Face left when A/LEFT is pressed
-        print(f"🔄 Player flipped LEFT (A/LEFT pressed)")
     elif move_right:
         player["facing_direction"] = 1   # Face right when D/RIGHT is pressed
-        print(f"🔄 Player flipped RIGHT (D/RIGHT pressed)")
     
     # Store current position for next frame comparison
     player["last_x"] = player["x"]
@@ -9291,16 +9309,28 @@ def load_username_from_file():
                 print("🔍 Username.json is empty, using default")
                 return "Player"
             
-            print(f"✅ Username loaded from file: {username}")
+            # Username loaded successfully (no debug spam)
             return username
             
     except Exception as e:
         print(f"⚠️ Error loading username from file: {e}")
         return "Player"
 
+# Cache username to avoid loading from file every frame
+_cached_username = None
+_username_cache_time = 0
+
 def get_current_username():
-    """Get the current username (loads from file each time)"""
-    return load_username_from_file()
+    """Get the current username (cached for performance)"""
+    global _cached_username, _username_cache_time
+    
+    # Only reload username every 5 seconds to avoid spam
+    current_time = time.time()
+    if _cached_username is None or current_time - _username_cache_time > 5:
+        _cached_username = load_username_from_file()
+        _username_cache_time = current_time
+    
+    return _cached_username
 
 def save_username_to_file(username):
     """Save username to username.json file"""
@@ -9953,7 +9983,6 @@ def update_player_animation():
     # Update animation if state changed
     if hasattr(player_animator, 'current_animation_name') and player_animator.current_animation_name != player_state:
         player_animator.current_animation_name = player_state
-        print(f"🎬 Animation state changed to: {player_state}")
     
     # Update animation frame
     if hasattr(player_animator, 'update'):

@@ -15,7 +15,7 @@ class WorldGenerator:
         self.rng = random.Random(seed)
         print(f"🌍 World Generator initialized with seed: {seed}")
     
-    def generate_world(self, world_width: int = 2000, world_height: int = 200, progress_callback=None) -> Dict:
+    def generate_world(self, world_width: int = 800, world_height: int = 200, progress_callback=None) -> Dict:
         """Generate an infinite world with loading progress"""
         print(f"🌍 Starting infinite world generation ({world_width} blocks wide)...")
         
