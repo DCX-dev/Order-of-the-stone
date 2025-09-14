@@ -1659,15 +1659,10 @@ def fix_player_spawn_position():
     # Keep the current X position but find proper Y position
     spawn_x = int(player["x"])
     
-    # CRITICAL: Generate terrain at spawn point first!
-    # This ensures terrain exists before we try to find a surface
-    print(f"🌍 Generating terrain at spawn point ({spawn_x}) to ensure surface exists")
-    
-    # Generate terrain for a small area around spawn point
-    for x in range(spawn_x - 5, spawn_x + 6):  # 11 columns around spawn
-        generate_terrain_column(x)
-    
-    print(f"✅ Terrain generated around spawn point, now finding surface...")
+    # DISABLED: Terrain generation at spawn point removed
+    # This was causing chunks to spawn when player moves
+    # Terrain generation now handled by infinite_world_generator
+    print(f"🌍 Using infinite world generator for spawn terrain")
     
     # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location
     # Search from the correct range for new world generation system
@@ -10857,17 +10852,10 @@ while running:
         # Ensure camera doesn't go above the world (keep ground visible)
         camera_y = max(camera_y, 0)
         
-        # Infinite world generation: calculate terrain generation bounds
-        left_edge = int((camera_x) // TILE_SIZE) - 8  # Increased buffer for smoother exploration
-        right_edge = int((camera_x + SCREEN_WIDTH) // TILE_SIZE) + 8  # Increased buffer
-        # Village check per 50‑column chunk
-        chunk_left = left_edge // 50
-        chunk_right = right_edge // 50
-        for ch in range(chunk_left, chunk_right + 1):
-            base_x = ch * 50
-            # Generate structures for chunk
-            maybe_generate_village_for_chunk(ch, base_x)
-            maybe_generate_fortress_for_chunk(ch, base_x)
+        # DISABLED: Old terrain generation system completely removed
+        # This was causing chunks to spawn when player moves
+        # All terrain generation now handled by infinite_world_generator
+        pass
         # DISABLED: Duplicate infinite world generation removed
         # This was causing big chunks to spawn due to double generation
         # Terrain generation is now handled only in ensure_terrain_around_player()
