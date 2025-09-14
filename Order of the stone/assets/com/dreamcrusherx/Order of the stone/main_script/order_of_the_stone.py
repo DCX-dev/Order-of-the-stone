@@ -1664,41 +1664,43 @@ def fix_player_spawn_position():
     # Terrain generation now handled by infinite_world_generator
     print(f"🌍 Using infinite world generator for spawn terrain")
     
-    # IMPROVED SPAWN LOGIC: Find the actual surface (grass level)
-    # Search from top to bottom to find the first grass surface
+    # IMPROVED SPAWN LOGIC: Find the highest solid surface with air above
+    # Search from top to bottom to find the first solid block with air above it
     surface_y = None
     for y in range(200, 0, -1):  # Search from top down
         block = get_block(spawn_x, y)
-        if block == "grass":  # Found grass surface - this is the actual ground level
-            surface_y = y
-            break
+        if block and block in ["grass", "dirt", "stone"]:  # Found solid ground
+            # Check if there's air above this block (at least 2 blocks of air for player)
+            air_above_1 = get_block(spawn_x, y - 1)
+            air_above_2 = get_block(spawn_x, y - 2)
+            
+            # Make sure there's air above for the player to stand in
+            if (not air_above_1 or air_above_1 in ["", None]) and \
+               (not air_above_2 or air_above_2 in ["", None]):
+                surface_y = y
+                break
     
     if surface_y is not None:
-        # Place player 1 block above the grass surface
+        # Place player 1 block above the solid surface
         player["y"] = float(surface_y - 1)
         player["vel_y"] = 0.0
         player["on_ground"] = True
-        print(f"✅ Player spawned on grass surface at Y={surface_y - 1} (grass at Y={surface_y})")
+        print(f"✅ Player spawned on surface at Y={surface_y - 1} ({get_block(spawn_x, surface_y)} at Y={surface_y})")
         return True
     else:
-        # Fallback: search for any solid surface (dirt, stone) if no grass found
-        for y in range(200, 0, -1):
-            block = get_block(spawn_x, y)
-            if block and block in ["dirt", "stone"]:
-                # Check if there's air above this block
-                air_above = get_block(spawn_x, y - 1)
-                if not air_above or air_above in ["", None]:  # Air above
-                    player["y"] = float(y - 1)
-                    player["vel_y"] = 0.0
-                    player["on_ground"] = True
-                    print(f"✅ Player spawned on solid surface at Y={y - 1} ({block} at Y={y})")
-                    return True
+        # Last resort: spawn at a safe height and clear blocks around player
+        safe_y = 115
+        # Clear a 3x3 area around the player to ensure they can move
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                clear_x = spawn_x + dx
+                clear_y = safe_y + dy
+                world_data[f"{clear_x},{clear_y}"] = None  # Clear the block
         
-        # Last resort: spawn at a safe height
-        player["y"] = 115.0  # Default safe height
+        player["y"] = float(safe_y)
         player["vel_y"] = 0.0
         player["on_ground"] = False
-        print(f"⚠️ No suitable surface found, spawning at default height Y=115")
+        print(f"⚠️ No suitable surface found, cleared area and spawned at Y={safe_y}")
         return False
 
 def place_starter_chest():
@@ -10860,9 +10862,10 @@ while running:
         update_daylight()
         update_player()
         
-        # ENABLED: Terrain generation around player for infinite world
-        if game_state == GameState.GAME:
-            ensure_terrain_around_player()
+        # DISABLED: Terrain generation around player completely removed
+        # This was causing chunks to spawn wherever the player moves
+        # World is now truly static - no automatic terrain generation
+        pass
         
         update_world_interactions()
         update_monsters()
