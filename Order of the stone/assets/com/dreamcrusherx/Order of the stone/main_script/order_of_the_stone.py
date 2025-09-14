@@ -1664,57 +1664,42 @@ def fix_player_spawn_position():
     # Terrain generation now handled by infinite_world_generator
     print(f"🌍 Using infinite world generator for spawn terrain")
     
-    # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location
-    # Search from the correct range for new world generation system
-    for y in range(110, 125):  # Search in the new world generation range
-        # Check if this position is safe for spawning (no blocks at player position)
-        head_block = get_block(spawn_x, y)
-        feet_block = get_block(spawn_x, y + 1)
-        ground_block = get_block(spawn_x, y + 2)
+    # IMPROVED SPAWN LOGIC: Find the actual surface (grass level)
+    # Search from top to bottom to find the first grass surface
+    surface_y = None
+    for y in range(200, 0, -1):  # Search from top down
+        block = get_block(spawn_x, y)
+        if block == "grass":  # Found grass surface - this is the actual ground level
+            surface_y = y
+            break
+    
+    if surface_y is not None:
+        # Place player 1 block above the grass surface
+        player["y"] = float(surface_y - 1)
+        player["vel_y"] = 0.0
+        player["on_ground"] = True
+        print(f"✅ Player spawned on grass surface at Y={surface_y - 1} (grass at Y={surface_y})")
+        return True
+    else:
+        # Fallback: search for any solid surface (dirt, stone) if no grass found
+        for y in range(200, 0, -1):
+            block = get_block(spawn_x, y)
+            if block and block in ["dirt", "stone"]:
+                # Check if there's air above this block
+                air_above = get_block(spawn_x, y - 1)
+                if not air_above or air_above in ["", None]:  # Air above
+                    player["y"] = float(y - 1)
+                    player["vel_y"] = 0.0
+                    player["on_ground"] = True
+                    print(f"✅ Player spawned on solid surface at Y={y - 1} ({block} at Y={y})")
+                    return True
         
-        # Player needs 2 blocks of air above ground
-        if (is_non_solid_block(head_block) and 
-            is_non_solid_block(feet_block) and 
-            ground_block and ground_block not in ["water", "lava"]):
-            
-            # Found safe spawn location
-            player["y"] = float(y)  # Place player with air above and solid ground below
-            player["vel_y"] = 0.0
-            player["on_ground"] = False
-            print(f"✅ COLLISION-FREE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
-            return True
-    
-    # Fallback: search wider range and ensure collision-free spawn
-    for y in range(50, 150):
-        head_block = get_block(spawn_x, y)
-        feet_block = get_block(spawn_x, y + 1)
-        ground_block = get_block(spawn_x, y + 2)
-        
-        if (is_non_solid_block(head_block) and 
-            is_non_solid_block(feet_block) and 
-            ground_block and ground_block not in ["water", "lava"]):
-            
-            player["y"] = float(y)
-            player["vel_y"] = 0.0
-            player["on_ground"] = False
-            print(f"✅ FALLBACK SAFE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
-            return True
-    
-    # Emergency: Create a safe platform if no suitable location found
-    safe_y = 10
-    # Clear any blocks above and create a platform
-    for clear_y in range(safe_y, safe_y + 3):
-        world_data[f"{spawn_x},{clear_y}"] = None
-    
-    world_data[f"{spawn_x},{safe_y + 3}"] = "stone"  # Create ground
-    world_data[f"{spawn_x - 1},{safe_y + 3}"] = "stone"
-    world_data[f"{spawn_x + 1},{safe_y + 3}"] = "stone"
-    
-    player["y"] = float(safe_y)
-    player["vel_y"] = 0.0
-    player["on_ground"] = False
-    print(f"🛠️ EMERGENCY SAFE SPAWN: Created platform at ({player['x']:.1f}, {player['y']:.1f})")
-    return True
+        # Last resort: spawn at a safe height
+        player["y"] = 115.0  # Default safe height
+        player["vel_y"] = 0.0
+        player["on_ground"] = False
+        print(f"⚠️ No suitable surface found, spawning at default height Y=115")
+        return False
 
 def place_starter_chest():
     """Place a guaranteed starter chest near the player spawn point with essential tools"""
