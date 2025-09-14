@@ -1037,6 +1037,46 @@ FORTRESS_TYPES = {
         "materials": ["stone", "dirt", "grass"],
         "special_blocks": ["diamond", "gold", "iron"],
         "loot_tier": "frozen"
+    },
+    "cyber_fortress": {
+        "name": "Cyber Fortress",
+        "rarity": "legendary",
+        "spawn_chance": 0.01,
+        "min_size": 25,
+        "max_size": 30,
+        "materials": ["iron", "diamond", "stone"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "cyber"
+    },
+    "volcanic_citadel": {
+        "name": "Volcanic Citadel",
+        "rarity": "epic",
+        "spawn_chance": 0.03,
+        "min_size": 18,
+        "max_size": 22,
+        "materials": ["stone", "red_brick", "coal"],
+        "special_blocks": ["diamond", "gold", "iron", "coal"],
+        "loot_tier": "volcanic"
+    },
+    "crystal_palace": {
+        "name": "Crystal Palace",
+        "rarity": "legendary",
+        "spawn_chance": 0.01,
+        "min_size": 30,
+        "max_size": 35,
+        "materials": ["diamond", "gold", "stone"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "crystal"
+    },
+    "shadow_keep": {
+        "name": "Shadow Keep",
+        "rarity": "epic",
+        "spawn_chance": 0.04,
+        "min_size": 15,
+        "max_size": 20,
+        "materials": ["coal", "stone", "red_brick"],
+        "special_blocks": ["diamond", "gold", "iron", "coal"],
+        "loot_tier": "shadow"
     }
 }
 
@@ -2419,7 +2459,11 @@ def generate_infinite_world():
     
     # Generate the world
     generator = WorldGenerator()
-    world_data = generator.generate_world(world_width=2000, progress_callback=update_progress)
+    world_data = generator.generate_world(world_width=400, progress_callback=update_progress)
+    
+    # Place random chests around the world
+    update_progress("Placing treasure chests...")
+    place_random_chests_around_world()
     
     print("✅ Infinite world generation complete!")
     return world_data
@@ -3355,13 +3399,13 @@ def build_house(origin_x, ground_y, width=7, height=5):
     for dy in range(1, height + 1):
         for dx in range(width):
             x = origin_x + dx
-            y = ground_y - dy
+            y = ground_y + dy  # Build UP from ground
             edge = (dx == 0 or dx == width - 1)
             top = (dy == height)
             
             # EXTREME ENGINEERING: Create proper entrance (2 blocks tall, 1 block wide)
             door_x = origin_x + width // 2
-            if (x == door_x and (y == ground_y - 1 or y == ground_y - 2)):
+            if (x == door_x and (y == ground_y + 1 or y == ground_y + 2)):
                 # Leave doorway completely open for player to walk through
                 continue
                 
@@ -3385,20 +3429,20 @@ def build_house(origin_x, ground_y, width=7, height=5):
     for dy in range(1, height):
         # Left interior wall (bedroom area)
         if random.random() < 0.7:  # 70% chance
-            set_block(origin_x + 1, ground_y - dy, "oak_planks")
+            set_block(origin_x + 1, ground_y + dy, "oak_planks")
         # Right interior wall (living area)
         if random.random() < 0.7:  # 70% chance
-            set_block(origin_x + width - 2, ground_y - dy, "oak_planks")
+            set_block(origin_x + width - 2, ground_y + dy, "oak_planks")
     
     # EXTREME ENGINEERING: Add furniture and decorations
     # Bed (left side of house)
     bed_x = origin_x + 1
-    bed_y = ground_y - 1
+    bed_y = ground_y + 1
     set_block(bed_x, bed_y, "bed")
     
     # Chest (right side of house, away from entrance)
     chest_x = origin_x + width - 2
-    chest_y = ground_y - 1
+    chest_y = ground_y + 1
     if get_block(chest_x, chest_y) is None:
         set_block(chest_x, chest_y, "chest")
         # Generate natural chest loot for village houses
@@ -4528,18 +4572,18 @@ def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
     materials = fortress_info["materials"]
     primary_material = materials[0] if materials else "stone"
     
-    # Build fortress ABOVE ground level
-    fortress_base_y = ground_y - height
+    # Build fortress ON ground level (not above)
+    fortress_base_y = ground_y
     
     # Foundation
     for dx in range(width):
         set_block(origin_x + dx, ground_y, primary_material)
     
-    # Main walls
+    # Main walls - build UP from ground level
     for dy in range(1, height + 1):
         for dx in range(width):
             x = origin_x + dx
-            y = ground_y - dy
+            y = ground_y + dy  # Build UP from ground
             if dx == 0 or dx == width - 1 or dy == height:  # Exterior walls
                 set_block(x, y, primary_material)
             else:
@@ -4548,42 +4592,42 @@ def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
                     world_data.pop((x, y), None)
     
     # Add floors and special features based on fortress type
-    floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9]
+    floor_levels = [ground_y + 3, ground_y + 6, ground_y + 9]
     
     # Special fortress features
     if fortress_type == "dragon_keep":
         # Dragon Keep - larger, more floors, special blocks
-        floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9, ground_y - 12]
+        floor_levels = [ground_y + 3, ground_y + 6, ground_y + 9, ground_y + 12]
         # Add special blocks
         for dx in range(2, width - 2):
             if random.random() < 0.3:
-                set_block(origin_x + dx, ground_y - 1, "diamond")
+                set_block(origin_x + dx, ground_y + 1, "diamond")
     elif fortress_type == "wizard_tower":
         # Wizard Tower - tall and narrow
         height = 15
         width = 8
-        floor_levels = [ground_y - 4, ground_y - 8, ground_y - 12]
+        floor_levels = [ground_y + 4, ground_y + 8, ground_y + 12]
         # Add magical blocks
         for dx in range(2, width - 2):
             if random.random() < 0.4:
-                set_block(origin_x + dx, ground_y - 1, "gold")
+                set_block(origin_x + dx, ground_y + 1, "gold")
     elif fortress_type == "crystal_cavern":
         # Crystal Cavern - underground with crystals
         height = 20
         width = 25
-        floor_levels = [ground_y - 5, ground_y - 10, ground_y - 15, ground_y - 20]
+        floor_levels = [ground_y + 5, ground_y + 10, ground_y + 15, ground_y + 20]
         # Add crystal blocks
         for dx in range(3, width - 3):
             for dy in range(1, 5):
                 if random.random() < 0.2:
-                    set_block(origin_x + dx, ground_y - dy, "diamond")
+                    set_block(origin_x + dx, ground_y + dy, "diamond")
     elif fortress_type == "demon_castle":
         # Demon Castle - dark and menacing
-        floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9, ground_y - 12]
+        floor_levels = [ground_y + 3, ground_y + 6, ground_y + 9, ground_y + 12]
         # Add dark blocks
         for dx in range(2, width - 2):
             if random.random() < 0.3:
-                set_block(origin_x + dx, ground_y - 1, "coal")
+                set_block(origin_x + dx, ground_y + 1, "coal")
     
     # Add floors
     for floor_y in floor_levels:
@@ -4592,21 +4636,21 @@ def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
         
         # Ladder to next floor
         ladder_x = origin_x + width // 2
-        set_block(ladder_x, floor_y + 1, "ladder")
-        set_block(ladder_x, floor_y + 2, "ladder")
+        set_block(ladder_x, floor_y - 1, "ladder")
+        set_block(ladder_x, floor_y - 2, "ladder")
     
     # Add chests with fortress-specific loot using existing chest system
     for i, floor_y in enumerate(floor_levels):
         chest_x = origin_x + 2 + (i * 3) % (width - 4)
-        set_block(chest_x, floor_y + 1, "chest")
+        set_block(chest_x, floor_y - 1, "chest")
         # Use existing chest system to generate loot
-        chest_system.place_chest(world_system, chest_x, floor_y + 1, "fortress")
+        chest_system.place_chest(world_system, chest_x, floor_y - 1, "fortress")
     
     # Add enemies based on fortress type
     enemy_count = 3 if fortress_type in ["common", "uncommon"] else 5 if fortress_type in ["rare", "epic"] else 8
     for i in range(enemy_count):
         enemy_x = origin_x + random.randint(2, width - 3)
-        enemy_y = ground_y - random.randint(2, height - 2)
+        enemy_y = ground_y + random.randint(2, height - 2)
         if get_block(enemy_x, enemy_y) == "air":
             # Different enemy types for different fortresses
             if fortress_type == "demon_castle":
@@ -4662,6 +4706,40 @@ def maybe_generate_fortress_for_chunk(chunk_id, base_x):
     # Build the fortress with the selected type
     build_fortress(fortress_x, fortress_y, fortress_type)
     generated_village_chunks.add(chunk_id)  # Mark as generated
+
+def place_random_chests_around_world():
+    """Place random chests with loot around the world during generation"""
+    print("📦 Placing random chests around the world...")
+    
+    chest_count = 0
+    world_width = 400  # Match the world generation width
+    
+    for x in range(-world_width//2, world_width//2, 20):  # Every 20 blocks
+        # 15% chance to place a chest at this location
+        if random.random() < 0.15:
+            ground_y = ground_y_of_column(x)
+            if ground_y is not None:
+                # Place chest on the ground
+                chest_x = x
+                chest_y = ground_y + 1
+                
+                # Make sure there's space for the chest
+                if get_block(chest_x, chest_y) == "air":
+                    set_block(chest_x, chest_y, "chest")
+                    
+                    # Generate loot for the chest
+                    chest_system.place_chest(world_system, chest_x, chest_y, "world")
+                    chest_count += 1
+                    
+                    # Add some variety - sometimes place chests underground
+                    if random.random() < 0.3:  # 30% chance for underground chest
+                        underground_y = ground_y - random.randint(3, 8)
+                        if get_block(chest_x, underground_y) == "air":
+                            set_block(chest_x, underground_y, "chest")
+                            chest_system.place_chest(world_system, chest_x, underground_y, "underground")
+                            chest_count += 1
+    
+    print(f"📦 Placed {chest_count} random chests around the world!")
 
 def select_fortress_type(rng):
     """Select a fortress type based on rarity weights"""
@@ -8158,7 +8236,7 @@ def update_player():
                 player["x"] = new_x
             else:
                 # Prevent movement through solid blocks
-
+                pass
         if move_right:
             new_x = px + speed
             # Use improved collision detection
@@ -8167,7 +8245,7 @@ def update_player():
                 player["x"] = new_x
             else:
                 # Prevent movement through solid blocks
-
+                pass
         # Check for climbing without ladder (free climbing)
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and can_climb_without_ladder():
             # Free climbing - move up slowly
@@ -10074,10 +10152,6 @@ CRAFTING_RECIPES = {
 "materials": ["oak_planks", "oak_planks", "oak_planks", "oak_planks", "", "oak_planks", "oak_planks", "oak_planks", "oak_planks"],
 "output": {"type": "chest", "count": 1}
 },
-"door": {
-"materials": ["oak_planks", "oak_planks", "", "oak_planks", "oak_planks", "", "oak_planks", "oak_planks", ""],
-"output": {"type": "door", "count": 3}
-},
     
 # Smelting-like recipes (realistic material processing)
 "iron_ingot": {
@@ -10716,21 +10790,6 @@ while running:
                             show_message("You can only sleep at night")
                         continue
                     
-                    # Door interaction
-                    if get_block(bx, by) == "door":
-                        # Toggle door state
-                        door_pos = (bx, by)
-                        if door_pos not in door_states:
-                            door_states[door_pos] = False  # Start closed
-                        
-                        door_states[door_pos] = not door_states[door_pos]
-                        if door_states[door_pos]:
-                            show_message("🚪 Door opened!")
-                            print("🚪 Door opened at", door_pos)
-                        else:
-                            show_message("🚪 Door closed!")
-                            print("🚪 Door closed at", door_pos)
-                        continue
                     
                     # EXTREME ENGINEERING: Legend NPC interaction - initiate boss fight
                     for entity in entities:
