@@ -53,6 +53,9 @@ class WorldGenerator:
         print("⛏️ Adding ores...")
         self._generate_infinite_ores(world_data["blocks"], world_width, progress_callback)
         
+        print("📦 Adding treasure chests...")
+        self._generate_infinite_chests(world_data["blocks"], world_width, progress_callback)
+        
         # Find spawn location
         spawn_x, spawn_y = self._find_spawn_location(world_data["blocks"], world_width)
         world_data["spawn_x"] = spawn_x
@@ -537,6 +540,43 @@ class WorldGenerator:
                 ore_count += 1
         
         print(f"⛏️ Generated {ore_count} ore veins")
+    
+    def _generate_infinite_chests(self, blocks: Dict[str, str], world_width: int, progress_callback=None):
+        """Generate chests throughout the world"""
+        chest_count = 0
+        
+        for x in range(-world_width//2, world_width//2, 6):  # Every 6 blocks
+            if progress_callback and x % 200 == 0:
+                progress = (x + world_width//2) / world_width * 10  # 10% for chests
+                progress_callback(f"Adding chests... {int(progress)}%")
+            
+            # 35% chance to place a chest at this location
+            if self.rng.random() < 0.35:
+                # Find ground level
+                ground_y = None
+                for y in range(110, 125):
+                    if f"{x},{y}" in blocks and blocks[f"{x},{y}"] == "grass":
+                        ground_y = y
+                        break
+                
+                if ground_y is not None:
+                    # Place chest on the ground
+                    chest_x = x
+                    chest_y = ground_y + 1
+                    
+                    # Make sure there's space for the chest
+                    if f"{chest_x},{chest_y}" not in blocks:
+                        blocks[f"{chest_x},{chest_y}"] = "chest"
+                        chest_count += 1
+                        
+                        # Sometimes place underground chests too
+                        if self.rng.random() < 0.4:  # 40% chance for underground chest
+                            underground_y = ground_y - self.rng.randint(3, 8)
+                            if f"{chest_x},{underground_y}" not in blocks:
+                                blocks[f"{chest_x},{underground_y}"] = "chest"
+                                chest_count += 1
+        
+        print(f"📦 Generated {chest_count} treasure chests")
     
     def _find_spawn_location(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
         """Find a good spawn location in a forest area"""

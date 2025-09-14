@@ -2457,9 +2457,9 @@ def generate_infinite_world():
         elif "complete" in text.lower():
             current_progress = 100
     
-    # Generate the world
+    # Generate the world - MUCH LARGER for truly infinite feel
     generator = WorldGenerator()
-    world_data = generator.generate_world(world_width=400, progress_callback=update_progress)
+    world_data = generator.generate_world(world_width=2000, progress_callback=update_progress)
     
     # Place random chests around the world
     update_progress("Placing treasure chests...")
@@ -4712,11 +4712,11 @@ def place_random_chests_around_world():
     print("📦 Placing random chests around the world...")
     
     chest_count = 0
-    world_width = 400  # Match the world generation width
+    world_width = 2000  # Match the world generation width
     
-    for x in range(-world_width//2, world_width//2, 20):  # Every 20 blocks
-        # 15% chance to place a chest at this location
-        if random.random() < 0.15:
+    for x in range(-world_width//2, world_width//2, 8):  # Every 8 blocks for more chests
+        # 30% chance to place a chest at this location
+        if random.random() < 0.30:
             ground_y = ground_y_of_column(x)
             if ground_y is not None:
                 # Place chest on the ground
@@ -10279,6 +10279,19 @@ def ensure_terrain_around_player():
         # 25% chance for fortress in each chunk
         if random.random() < 0.25:
             maybe_generate_fortress_for_chunk(chunk_id, base_x)
+        
+        # Add chests to new chunks (30% chance per chunk)
+        if random.random() < 0.3:
+            # Place 1-3 chests in this chunk
+            chest_count = random.randint(1, 3)
+            for _ in range(chest_count):
+                chest_x = base_x + random.randint(0, chunk_size - 1)
+                ground_y = ground_y_of_column(chest_x)
+                if ground_y is not None:
+                    chest_y = ground_y + 1
+                    if get_block(chest_x, chest_y) == "air":
+                        set_block(chest_x, chest_y, "chest")
+                        chest_system.place_chest(world_system, chest_x, chest_y, "world")
     
     # Set cooldown to prevent excessive generation
     terrain_generation_cooldown = 10  # 0.17 seconds at 60 FPS - more responsive
@@ -11168,10 +11181,8 @@ while running:
         # Ensure camera doesn't go above the world (keep ground visible)
         camera_y = max(camera_y, 0)
         
-        # DISABLED: On-demand chunk generation
-        # World is now pre-generated as infinite during world creation
-        # No more chunk spawning while playing
-        pass
+        # DISABLED: No chunk spawning - world is pre-generated as infinite
+        # ensure_terrain_around_player()
         
         # DISABLED: Monster spawning to prevent issues with terrain generation
         # This was causing problems when terrain generation was disabled
