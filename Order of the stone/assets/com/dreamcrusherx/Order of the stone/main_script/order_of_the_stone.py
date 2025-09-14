@@ -2978,7 +2978,7 @@ chat_cursor_blink = 0
 last_chat_time = 0
 
 # --- FPS and Performance Settings ---
-fps_limit = 120  # Default FPS limit
+fps_limit = 100  # Default FPS limit for smooth gameplay
 show_fps = False  # F3 debug info
 fps_counter = 0  # Actual FPS counter
 last_fps_time = time.time()
@@ -4821,7 +4821,7 @@ def draw_fps_display():
     
     # Draw FPS info with timing details
     fps_text = font.render(f"FPS: {fps_counter}", True, (255, 255, 0))
-    limit_text = font.render(f"Target: 60 FPS (Locked)", True, (255, 255, 0))
+    limit_text = font.render(f"Target: 100 FPS (Locked)", True, (255, 255, 0))
     timing_text = font.render(f"Frame Time: {frame_time*1000:.1f}ms", True, (255, 255, 0))
     
     # Add movement speed info if in game
@@ -5430,7 +5430,7 @@ def draw_world():
             blocks_drawn += 1
     
     # Debug info (only show occasionally to avoid spam)
-    if frame_count % 300 == 0:  # Every 5 seconds at 60 FPS
+    if frame_count % 3000 == 0:  # Every 30 seconds at 100 FPS
         print(f"🎨 Rendered {blocks_drawn} blocks in viewport")
 
     # Draw entities
@@ -8158,7 +8158,6 @@ def update_player():
                 player["x"] = new_x
             else:
                 # Prevent movement through solid blocks
-                print(f"🚫 Collision detected: {block_type} at {collision_pos} - preventing left movement")
 
         if move_right:
             new_x = px + speed
@@ -8168,7 +8167,6 @@ def update_player():
                 player["x"] = new_x
             else:
                 # Prevent movement through solid blocks
-                print(f"🚫 Collision detected: {block_type} at {collision_pos} - preventing right movement")
 
         # Check for climbing without ladder (free climbing)
         if (keys[pygame.K_w] or keys[pygame.K_UP]) and can_climb_without_ladder():
@@ -9385,7 +9383,7 @@ def check_username_required():
             print("🔍 Username check: No valid username found")
             return True
         
-        print(f"✅ Username check: Valid username found: {current_username}")
+        # Username check passed (no debug spam)
         return False
             
     except Exception as e:
@@ -9999,7 +9997,7 @@ def update_player_animation():
             "placing": False,   # TODO: Add placing state
             "attacking": False  # TODO: Add attacking state
         }
-        player_animator.update(0.016, player_state_dict)  # 0.016 = ~60 FPS
+        player_animator.update(0.01, player_state_dict)  # 0.01 = ~100 FPS
     
     # Store current position for next frame
     player["last_x"] = player["x"]
@@ -10350,7 +10348,7 @@ while running:
     frame_count += 1
     
     # Safety check: if we've been running for more than 10 seconds without user input, allow force quit
-    if frame_count % 600 == 0:  # Check every 600 frames (about 10 seconds at 60 FPS)
+    if frame_count % 1000 == 0:  # Check every 1000 frames (about 10 seconds at 100 FPS)
         current_time = time.time()
         if current_time - start_time > 10:
             start_time = current_time  # Reset timer
@@ -10375,7 +10373,7 @@ while running:
             running = False
             break
         # Auto-save every 5 minutes (300 seconds) to prevent losing progress
-        if game_state == GameState.GAME and frame_count % 18000 == 0:  # 18000 frames = 5 minutes at 60 FPS
+        if game_state == GameState.GAME and frame_count % 30000 == 0:  # 30000 frames = 5 minutes at 100 FPS
             try:
                 save_game()
                 print("💾 Auto-save completed")
@@ -11149,13 +11147,13 @@ while running:
         
         # Update chat system
         if chat_system:
-            chat_system.update(1.0 / 60.0)  # Assume 60 FPS for delta time
+            chat_system.update(1.0 / 100.0)  # Assume 100 FPS for delta time
         
         # Auto-save world every 5 minutes
         auto_save_game()
         
-        # Validate world integrity every 10 minutes (600 frames at 60 FPS)
-        if frame_count % 36000 == 0:  # Every 10 minutes
+        # Validate world integrity every 10 minutes (60000 frames at 100 FPS)
+        if frame_count % 60000 == 0:  # Every 10 minutes
             validate_world_integrity()
 
         draw_world()
@@ -11231,7 +11229,7 @@ while running:
     pygame.display.flip()
     
     # Consistent frame-rate limiting for smooth, predictable movement
-    target_fps = 60  # Lock to 60 FPS for consistent timing
+    target_fps = 100  # Lock to 100 FPS for smooth gameplay
     clock.tick(target_fps)
     
     # Update player animation

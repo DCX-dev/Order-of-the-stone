@@ -150,9 +150,9 @@ class WorldSystem:
                 # Draw loading screen
                 self._draw_loading_screen(current_text, current_progress)
             
-            # Generate infinite world (800 blocks wide for better performance)
+            # Generate infinite world (400 blocks wide for 100 FPS performance)
             generator = WorldGenerator(seed=seed)
-            world_data = generator.generate_world(world_width=800, progress_callback=update_progress)
+            world_data = generator.generate_world(world_width=400, progress_callback=update_progress)
             
             # Add world metadata
             world_data["name"] = name
