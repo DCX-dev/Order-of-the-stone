@@ -947,6 +947,96 @@ FORTRESS_TYPES = {
         "materials": ["stone", "dirt"],
         "special_blocks": ["diamond", "gold", "iron", "coal"],
         "loot_tier": "treasure"
+    },
+    "viking_hall": {
+        "name": "Viking Hall",
+        "rarity": "uncommon",
+        "spawn_chance": 0.09,
+        "min_size": 12,
+        "max_size": 16,
+        "materials": ["log", "oak_planks", "stone"],
+        "special_blocks": ["iron", "gold", "coal"],
+        "loot_tier": "basic"
+    },
+    "elven_sanctuary": {
+        "name": "Elven Sanctuary",
+        "rarity": "rare",
+        "spawn_chance": 0.05,
+        "min_size": 10,
+        "max_size": 14,
+        "materials": ["leaves", "log", "grass"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "magic"
+    },
+    "dwarven_mine": {
+        "name": "Dwarven Mine",
+        "rarity": "common",
+        "spawn_chance": 0.13,
+        "min_size": 15,
+        "max_size": 20,
+        "materials": ["stone", "dirt", "coal"],
+        "special_blocks": ["iron", "gold", "diamond", "coal"],
+        "loot_tier": "mining"
+    },
+    "necromancer_tower": {
+        "name": "Necromancer Tower",
+        "rarity": "epic",
+        "spawn_chance": 0.04,
+        "min_size": 8,
+        "max_size": 12,
+        "materials": ["red_brick", "stone", "dirt"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "dark"
+    },
+    "pirate_cove": {
+        "name": "Pirate Cove",
+        "rarity": "uncommon",
+        "spawn_chance": 0.08,
+        "min_size": 10,
+        "max_size": 15,
+        "materials": ["log", "oak_planks", "dirt"],
+        "special_blocks": ["gold", "iron", "coal"],
+        "loot_tier": "pirate"
+    },
+    "sky_temple": {
+        "name": "Sky Temple",
+        "rarity": "legendary",
+        "spawn_chance": 0.01,
+        "min_size": 20,
+        "max_size": 25,
+        "materials": ["stone", "dirt", "grass"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "divine"
+    },
+    "orc_stronghold": {
+        "name": "Orc Stronghold",
+        "rarity": "common",
+        "spawn_chance": 0.11,
+        "min_size": 12,
+        "max_size": 18,
+        "materials": ["stone", "dirt", "red_brick"],
+        "special_blocks": ["iron", "coal"],
+        "loot_tier": "basic"
+    },
+    "mystic_grove": {
+        "name": "Mystic Grove",
+        "rarity": "rare",
+        "spawn_chance": 0.07,
+        "min_size": 8,
+        "max_size": 12,
+        "materials": ["leaves", "log", "grass"],
+        "special_blocks": ["diamond", "gold"],
+        "loot_tier": "nature"
+    },
+    "ice_citadel": {
+        "name": "Ice Citadel",
+        "rarity": "epic",
+        "spawn_chance": 0.03,
+        "min_size": 16,
+        "max_size": 20,
+        "materials": ["stone", "dirt", "grass"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "frozen"
     }
 }
 
@@ -2260,6 +2350,79 @@ def draw_mountain_silhouettes():
     for peak in peaks:
         if len(peak) >= 3:
             pygame.draw.polygon(screen, peak_color, peak)
+
+def draw_loading_screen(progress_text="Loading...", progress_percent=0):
+    """Draw a loading screen with progress bar"""
+    # Background
+    screen.fill((0, 0, 0))
+    
+    # Title
+    title_text = BIG_FONT.render("🌍 Generating Infinite World", True, (255, 255, 255))
+    screen.blit(title_text, (center_x(title_text.get_width()), 200))
+    
+    # Progress text
+    progress_surface = font.render(progress_text, True, (200, 200, 200))
+    screen.blit(progress_surface, (center_x(progress_surface.get_width()), 300))
+    
+    # Progress bar background
+    bar_width = 400
+    bar_height = 20
+    bar_x = center_x(bar_width)
+    bar_y = 350
+    
+    pygame.draw.rect(screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height), 2)
+    
+    # Progress bar fill
+    fill_width = int((progress_percent / 100) * bar_width)
+    if fill_width > 0:
+        pygame.draw.rect(screen, (0, 255, 0), (bar_x, bar_y, fill_width, bar_height))
+    
+    # Progress percentage
+    percent_text = font.render(f"{int(progress_percent)}%", True, (255, 255, 255))
+    screen.blit(percent_text, (center_x(percent_text.get_width()), 380))
+    
+    # Loading animation
+    loading_dots = "." * ((pygame.time.get_ticks() // 500) % 4)
+    loading_text = font.render(f"Please wait{loading_dots}", True, (150, 150, 150))
+    screen.blit(loading_text, (center_x(loading_text.get_width()), 420))
+    
+    # Update display
+    pygame.display.flip()
+
+def generate_infinite_world():
+    """Generate an infinite world with loading screen"""
+    print("🌍 Starting infinite world generation...")
+    
+    # Import the world generator
+    from world_generation.world_gen import WorldGenerator
+    
+    # Create progress tracking
+    current_progress = 0
+    current_text = "Initializing..."
+    
+    def update_progress(text):
+        nonlocal current_progress, current_text
+        current_text = text
+        draw_loading_screen(current_text, current_progress)
+        # Update progress based on text
+        if "terrain" in text.lower():
+            current_progress = 25
+        elif "trees" in text.lower():
+            current_progress = 50
+        elif "villages" in text.lower() or "fortresses" in text.lower():
+            current_progress = 75
+        elif "ores" in text.lower():
+            current_progress = 90
+        elif "complete" in text.lower():
+            current_progress = 100
+    
+    # Generate the world
+    generator = WorldGenerator()
+    world_data = generator.generate_world(world_width=2000, progress_callback=update_progress)
+    
+    print("✅ Infinite world generation complete!")
+    return world_data
 
 def draw_fortress_discovery():
     """Draw fortress discovery UI"""
@@ -10003,6 +10166,18 @@ def ensure_terrain_around_player():
         structures = infinite_world_generator.generate_structures_in_chunk(player_chunk_x, player_chunk_y, chunk_size)
         for pos, block_type in structures.items():
             world_data[pos] = block_type
+        
+        # Generate villages and fortresses in this chunk
+        chunk_id = player_chunk_x
+        base_x = player_chunk_x * chunk_size
+        
+        # 30% chance for village in each chunk
+        if random.random() < 0.3:
+            maybe_generate_village_for_chunk(chunk_id, base_x)
+        
+        # 25% chance for fortress in each chunk
+        if random.random() < 0.25:
+            maybe_generate_fortress_for_chunk(chunk_id, base_x)
     
     # Set cooldown to prevent excessive generation
     terrain_generation_cooldown = 10  # 0.17 seconds at 60 FPS - more responsive
@@ -10907,13 +11082,9 @@ while running:
         # Ensure camera doesn't go above the world (keep ground visible)
         camera_y = max(camera_y, 0)
         
-        # DISABLED: Old terrain generation system completely removed
-        # This was causing chunks to spawn when player moves
-        # All terrain generation now handled by infinite_world_generator
-        pass
-        # DISABLED: Duplicate infinite world generation removed
-        # This was causing big chunks to spawn due to double generation
-        # Terrain generation is now handled only in ensure_terrain_around_player()
+        # DISABLED: On-demand chunk generation
+        # World is now pre-generated as infinite during world creation
+        # No more chunk spawning while playing
         pass
         
         # DISABLED: Monster spawning to prevent issues with terrain generation

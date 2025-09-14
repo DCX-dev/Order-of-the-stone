@@ -51,23 +51,54 @@ class InfiniteWorldGenerator:
         return blocks
     
     def _generate_terrain_at(self, x: int, y: int) -> str:
-        """Generate terrain at a specific world position"""
-        # Use noise for height variation
-        height_noise = math.sin(x * 0.01) * 3 + math.sin(x * 0.05) * 2 + math.sin(x * 0.1) * 1
-        base_height = 115
-        surface_height = int(base_height + height_noise)
+        """Generate terrain at a specific world position using forest-based system"""
+        # Determine if this x position is in a forest area
+        in_forest = self._is_in_forest_area(x)
+        
+        if in_forest:
+            # Flat terrain for forests
+            height = 115
+        else:
+            # Smooth hilly terrain between forests
+            hill_wavelength = 120
+            hill_amplitude = 12
+            
+            # Use sine wave for smooth hill transitions
+            hill_phase = (x % hill_wavelength) / hill_wavelength * 2 * math.pi
+            sine_height = int(hill_amplitude * (1 + math.sin(hill_phase)) / 2)
+            
+            # Add secondary wave for natural variation
+            secondary_phase = (x % 60) / 60 * 2 * math.pi
+            secondary_height = int(3 * (1 + math.sin(secondary_phase)) / 2)
+            
+            # Combine waves for natural hills
+            height = 115 + sine_height + secondary_height
+            height = max(110, min(135, height))  # Keep within bounds
         
         # Generate terrain layers
-        if y == surface_height:
-            return "grass"
-        elif y > surface_height and y < surface_height + 4:
-            return "dirt"
-        elif y >= surface_height + 4 and y < surface_height + 204:  # 200 blocks of stone
-            return "stone"
-        elif y == surface_height + 204:
+        if y < 100:
             return "bedrock"
+        elif y < height:
+            return "stone"
+        elif y < height + 4:
+            return "dirt"
+        elif y == height:
+            return "grass"
         else:
             return None  # Air
+    
+    def _is_in_forest_area(self, x: int) -> bool:
+        """Check if x position is in a forest area"""
+        # Create forest areas every 100-150 blocks
+        forest_spacing = 120  # Average spacing between forests
+        forest_width = 80     # Average forest width
+        
+        # Calculate which forest area this x position would be in
+        forest_center = (x // forest_spacing) * forest_spacing
+        forest_start = forest_center - forest_width // 2
+        forest_end = forest_center + forest_width // 2
+        
+        return forest_start <= x <= forest_end
     
     def generate_structures_in_chunk(self, chunk_x: int, chunk_y: int, chunk_size: int = 16) -> Dict[str, str]:
         """Generate structures (trees, ores, etc.) in a chunk"""
@@ -77,30 +108,39 @@ class InfiniteWorldGenerator:
         world_start_x = chunk_x * chunk_size
         world_start_y = chunk_y * chunk_size
         
-        # Generate trees occasionally
-        if self.rng.random() < 0.1:  # 10% chance per chunk
-            tree_x = world_start_x + self.rng.randint(2, chunk_size - 3)
-            tree_y = world_start_y + self.rng.randint(2, chunk_size - 3)
+        # Generate trees in forest areas
+        for local_x in range(2, chunk_size - 2):
+            world_x = world_start_x + local_x
             
-            # Find surface height at tree position
-            height_noise = math.sin(tree_x * 0.01) * 3 + math.sin(tree_x * 0.05) * 2 + math.sin(tree_x * 0.1) * 1
-            base_height = 115
-            surface_height = int(base_height + height_noise)
-            
-            # Place tree if it's on the surface
-            if tree_y == surface_height:
-                # Tree trunk
-                structures[f"{tree_x},{tree_y - 1}"] = "log"
-                structures[f"{tree_x},{tree_y - 2}"] = "log"
+            # Only generate trees in forest areas
+            if self._is_in_forest_area(world_x) and self.rng.random() < 0.3:  # 30% chance in forests
+                # Find surface height
+                if self._is_in_forest_area(world_x):
+                    surface_height = 115  # Flat in forests
+                else:
+                    hill_wavelength = 120
+                    hill_amplitude = 12
+                    hill_phase = (world_x % hill_wavelength) / hill_wavelength * 2 * math.pi
+                    sine_height = int(hill_amplitude * (1 + math.sin(hill_phase)) / 2)
+                    secondary_phase = (world_x % 60) / 60 * 2 * math.pi
+                    secondary_height = int(3 * (1 + math.sin(secondary_phase)) / 2)
+                    surface_height = 115 + sine_height + secondary_height
+                    surface_height = max(110, min(135, surface_height))
                 
-                # Tree leaves
-                for dx in range(-1, 2):
-                    for dy in range(-1, 2):
-                        if dx == 0 and dy == 0:
-                            continue
-                        leaf_x = tree_x + dx
-                        leaf_y = tree_y - 3 + dy
-                        structures[f"{leaf_x},{leaf_y}"] = "leaves"
+                # Place tree
+                tree_height = self.rng.randint(3, 6)  # Taller trees in forests
+                for i in range(tree_height):
+                    structures[f"{world_x},{surface_height - 1 - i}"] = "log"
+                
+                # Tree leaves with larger canopy
+                leaf_radius = 2
+                for dx in range(-leaf_radius, leaf_radius + 1):
+                    for dy in range(-leaf_radius, leaf_radius + 1):
+                        if abs(dx) + abs(dy) <= leaf_radius + 1:  # Circular-ish pattern
+                            leaf_x = world_x + dx
+                            leaf_y = surface_height - tree_height - 1 + dy
+                            if leaf_x != world_x or leaf_y != surface_height - 1:  # Don't overwrite trunk
+                                structures[f"{leaf_x},{leaf_y}"] = "leaves"
         
         # Generate ores occasionally
         for _ in range(self.rng.randint(0, 3)):  # 0-3 ores per chunk
