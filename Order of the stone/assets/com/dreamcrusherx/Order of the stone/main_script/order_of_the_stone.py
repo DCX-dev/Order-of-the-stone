@@ -4612,8 +4612,15 @@ def draw_fps_display():
     if game_state == GameState.GAME:
         speed_text = font.render(f"Move Speed: {MOVE_SPEED:.3f}", True, (0, 255, 255))
         controls_text = font.render("Controls: WASD or Arrow Keys=Move+Flip, Space=Jump", True, (0, 255, 255))
+        
+        # Add facing direction info
+        facing_direction = player.get("facing_direction", 1)
+        direction_text = "RIGHT" if facing_direction == 1 else "LEFT"
+        facing_text = font.render(f"Facing: {direction_text} ({facing_direction})", True, (255, 0, 255))
+        
         screen.blit(speed_text, (10, 130))
         screen.blit(controls_text, (10, 150))
+        screen.blit(facing_text, (10, 170))
     
     screen.blit(fps_text, (10, 70))
     screen.blit(limit_text, (10, 90))
@@ -7849,12 +7856,14 @@ def update_player():
     move_left = keys[pygame.K_LEFT] or keys[pygame.K_a]  # Left arrow OR A key
     move_right = keys[pygame.K_RIGHT] or keys[pygame.K_d]  # Right arrow OR D key
     
-    # EXTREME ENGINEERING: Update facing direction based on movement intent
-    # This allows both manual flipping (A/D) and automatic flipping during movement
+    # EXTREME ENGINEERING: Update facing direction IMMEDIATELY when keys are pressed
+    # This makes the player flip instantly when pressing A/D, even if they can't move
     if move_left:
-        player["facing_direction"] = -1  # Face left when moving left
+        player["facing_direction"] = -1  # Face left when A/LEFT is pressed
+        print(f"🔄 Player flipped LEFT (A/LEFT pressed)")
     elif move_right:
-        player["facing_direction"] = 1   # Face right when moving right
+        player["facing_direction"] = 1   # Face right when D/RIGHT is pressed
+        print(f"🔄 Player flipped RIGHT (D/RIGHT pressed)")
     
     # Store current position for next frame comparison
     player["last_x"] = player["x"]
