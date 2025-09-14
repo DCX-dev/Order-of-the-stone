@@ -2208,6 +2208,59 @@ def add_chat_message(username, message):
     
     print(f"💬 {username}: {message}")
 
+def draw_mountain_silhouettes():
+    """Draw mountain silhouettes in the sky background"""
+    # Mountain silhouette color (darker blue-gray)
+    mountain_color = (50, 80, 120)
+    
+    # Get screen dimensions
+    screen_width = SCREEN_WIDTH
+    screen_height = SCREEN_HEIGHT
+    
+    # Draw multiple mountain ranges at different distances
+    # Far mountains (smaller, lighter)
+    far_mountains = [
+        # Left mountain range
+        [(0, screen_height - 100), (50, screen_height - 150), (100, screen_height - 120), (150, screen_height - 100)],
+        # Center mountain range  
+        [(200, screen_height - 100), (300, screen_height - 180), (400, screen_height - 140), (500, screen_height - 100)],
+        # Right mountain range
+        [(600, screen_height - 100), (700, screen_height - 160), (800, screen_height - 130), (900, screen_height - 100)],
+    ]
+    
+    # Draw far mountains
+    for mountain in far_mountains:
+        if len(mountain) >= 3:
+            pygame.draw.polygon(screen, mountain_color, mountain)
+    
+    # Near mountains (larger, darker)
+    near_mountain_color = (40, 70, 110)
+    near_mountains = [
+        # Left near mountain
+        [(0, screen_height - 80), (80, screen_height - 200), (160, screen_height - 120), (240, screen_height - 80)],
+        # Right near mountain
+        [(400, screen_height - 80), (520, screen_height - 220), (640, screen_height - 140), (760, screen_height - 80)],
+    ]
+    
+    # Draw near mountains
+    for mountain in near_mountains:
+        if len(mountain) >= 3:
+            pygame.draw.polygon(screen, near_mountain_color, mountain)
+    
+    # Add some smaller peaks for variety
+    peak_color = (60, 90, 130)
+    peaks = [
+        # Small peaks
+        [(300, screen_height - 80), (320, screen_height - 120), (340, screen_height - 80)],
+        [(500, screen_height - 80), (520, screen_height - 110), (540, screen_height - 80)],
+        [(700, screen_height - 80), (720, screen_height - 130), (740, screen_height - 80)],
+    ]
+    
+    # Draw peaks
+    for peak in peaks:
+        if len(peak) >= 3:
+            pygame.draw.polygon(screen, peak_color, peak)
+
 def draw_fortress_discovery():
     """Draw fortress discovery UI"""
     global discovery_timer, current_fortress_discovery
@@ -10097,7 +10150,13 @@ while running:
         current_time = time.time()
         if current_time - start_time > 10:
             start_time = current_time  # Reset timer
-    screen.fill((0, 191, 255) if is_day else (0, 0, 0))
+    # Draw sky background
+    sky_color = (0, 191, 255) if is_day else (0, 0, 0)
+    screen.fill(sky_color)
+    
+    # Draw mountain silhouettes in the background (only during day)
+    if is_day:
+        draw_mountain_silhouettes()
 
 
 
