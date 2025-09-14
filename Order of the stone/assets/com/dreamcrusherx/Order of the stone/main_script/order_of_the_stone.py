@@ -9936,7 +9936,7 @@ def ensure_terrain_around_player():
     
     # Only check for terrain generation if player has moved significantly
     if (last_terrain_check_x is not None and last_terrain_check_y is not None and 
-        abs(px - last_terrain_check_x) < 8 and abs(py - last_terrain_check_y) < 8):
+        abs(px - last_terrain_check_x) < 4 and abs(py - last_terrain_check_y) < 4):
         return
     
     # Update last check position
@@ -9947,25 +9947,21 @@ def ensure_terrain_around_player():
     chunk_size = 16
     player_chunk_x, player_chunk_y = infinite_world_generator.get_chunk_coordinates(px, py, chunk_size)
     
-    # Generate a 3x3 area of chunks around the player
-    for dx in range(-1, 2):
-        for dy in range(-1, 2):
-            check_chunk_x = player_chunk_x + dx
-            check_chunk_y = player_chunk_y + dy
-            
-            if not infinite_world_generator.is_chunk_generated(check_chunk_x, check_chunk_y):
-                # Generate terrain for this chunk
-                chunk_blocks = infinite_world_generator.generate_chunk(check_chunk_x, check_chunk_y, chunk_size)
-                for pos, block_type in chunk_blocks.items():
-                    world_data[pos] = block_type
-                
-                # Generate structures for this chunk
-                structures = infinite_world_generator.generate_structures_in_chunk(check_chunk_x, check_chunk_y, chunk_size)
-                for pos, block_type in structures.items():
-                    world_data[pos] = block_type
+    # Generate only 1 chunk at a time to prevent big chunks spawning
+    # Only generate the chunk the player is currently in
+    if not infinite_world_generator.is_chunk_generated(player_chunk_x, player_chunk_y):
+        # Generate terrain for this chunk
+        chunk_blocks = infinite_world_generator.generate_chunk(player_chunk_x, player_chunk_y, chunk_size)
+        for pos, block_type in chunk_blocks.items():
+            world_data[pos] = block_type
+        
+        # Generate structures for this chunk
+        structures = infinite_world_generator.generate_structures_in_chunk(player_chunk_x, player_chunk_y, chunk_size)
+        for pos, block_type in structures.items():
+            world_data[pos] = block_type
     
     # Set cooldown to prevent excessive generation
-    terrain_generation_cooldown = 30  # 0.5 seconds at 60 FPS
+    terrain_generation_cooldown = 10  # 0.17 seconds at 60 FPS - more responsive
 
 def load_game():
     """Load game using the world system - preserves player builds"""
@@ -10872,31 +10868,10 @@ while running:
             # Generate structures for chunk
             maybe_generate_village_for_chunk(ch, base_x)
             maybe_generate_fortress_for_chunk(ch, base_x)
-        # INFINITE WORLD: Generate terrain on-demand using the world generator
-        if player:
-            player_x = int(player["x"])
-            player_y = int(player["y"])
-            
-            # Generate chunks around the player
-            chunk_size = 16
-            player_chunk_x, player_chunk_y = infinite_world_generator.get_chunk_coordinates(player_x, player_y, chunk_size)
-            
-            # Generate a 3x3 area of chunks around the player
-            for dx in range(-1, 2):
-                for dy in range(-1, 2):
-                    check_chunk_x = player_chunk_x + dx
-                    check_chunk_y = player_chunk_y + dy
-                    
-                    if not infinite_world_generator.is_chunk_generated(check_chunk_x, check_chunk_y):
-                        # Generate terrain for this chunk
-                        chunk_blocks = infinite_world_generator.generate_chunk(check_chunk_x, check_chunk_y, chunk_size)
-                        for pos, block_type in chunk_blocks.items():
-                            world_data[pos] = block_type
-                        
-                        # Generate structures for this chunk
-                        structures = infinite_world_generator.generate_structures_in_chunk(check_chunk_x, check_chunk_y, chunk_size)
-                        for pos, block_type in structures.items():
-                            world_data[pos] = block_type
+        # DISABLED: Duplicate infinite world generation removed
+        # This was causing big chunks to spawn due to double generation
+        # Terrain generation is now handled only in ensure_terrain_around_player()
+        pass
         
         # DISABLED: Monster spawning to prevent issues with terrain generation
         # This was causing problems when terrain generation was disabled
