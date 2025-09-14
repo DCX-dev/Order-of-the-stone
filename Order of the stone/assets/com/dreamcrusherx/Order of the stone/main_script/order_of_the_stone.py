@@ -4879,7 +4879,7 @@ def draw_options():
 # Name tag function removed - no more floating name above player
 
 def draw_fps_display():
-    """Display actual FPS counter and FPS limit info"""
+    """NASA-Grade Performance Display with advanced statistics"""
     global fps_counter, last_fps_time
     
     if not show_fps:
@@ -4897,10 +4897,46 @@ def draw_fps_display():
     
     last_fps_time = current_time
     
+    # Get NASA-Grade Performance Statistics
+    perf_stats = {}
+    if performance_system:
+        perf_stats = performance_system.get_performance_stats()
+    
     # Draw FPS info with timing details
     fps_text = font.render(f"FPS: {fps_counter}", True, (255, 255, 0))
-    limit_text = font.render(f"Target: 100 FPS (Locked)", True, (255, 255, 0))
+    limit_text = font.render(f"Target: 100 FPS (NASA-Grade)", True, (255, 255, 0))
     timing_text = font.render(f"Frame Time: {frame_time*1000:.1f}ms", True, (255, 255, 0))
+    
+    # NASA-Grade Performance Statistics
+    if perf_stats:
+        # Performance mode
+        mode_text = font.render(f"Mode: {perf_stats.get('mode', 'UNKNOWN')}", True, (0, 255, 0))
+        
+        # Memory usage
+        memory_mb = perf_stats.get('memory', {}).get('current_mb', 0)
+        memory_text = font.render(f"Memory: {memory_mb:.1f}MB", True, (0, 255, 0))
+        
+        # CPU usage
+        cpu_percent = perf_stats.get('cpu', {}).get('percent', 0)
+        cpu_text = font.render(f"CPU: {cpu_percent:.1f}%", True, (0, 255, 0))
+        
+        # Rendering statistics
+        blocks_rendered = perf_stats.get('rendering', {}).get('blocks_rendered', 0)
+        blocks_culled = perf_stats.get('rendering', {}).get('blocks_culled', 0)
+        culling_efficiency = perf_stats.get('rendering', {}).get('culling_efficiency', 0)
+        
+        render_text = font.render(f"Blocks: {blocks_rendered} rendered, {blocks_culled} culled", True, (0, 255, 0))
+        efficiency_text = font.render(f"Culling: {culling_efficiency:.1f}% efficient", True, (0, 255, 0))
+        
+        # Optimization status
+        optimizations = perf_stats.get('system', {})
+        viewport_status = "ON" if optimizations.get('viewport_culling', False) else "OFF"
+        lod_status = "ON" if optimizations.get('lod_system', False) else "OFF"
+        memory_status = "ON" if optimizations.get('memory_management', False) else "OFF"
+        threading_status = "ON" if optimizations.get('threading', False) else "OFF"
+        
+        opt_text = font.render(f"Optimizations: Viewport={viewport_status}, LOD={lod_status}", True, (0, 255, 0))
+        opt2_text = font.render(f"Memory={memory_status}, Threading={threading_status}", True, (0, 255, 0))
     
     # Add movement speed info if in game
     if game_state == GameState.GAME:
@@ -4916,9 +4952,27 @@ def draw_fps_display():
         screen.blit(controls_text, (10, 150))
         screen.blit(facing_text, (10, 170))
     
+    # Render basic FPS info
     screen.blit(fps_text, (10, 70))
     screen.blit(limit_text, (10, 90))
     screen.blit(timing_text, (10, 110))
+    
+    # Render NASA-Grade Performance Statistics
+    if perf_stats:
+        y_offset = 190
+        screen.blit(mode_text, (10, y_offset))
+        y_offset += 20
+        screen.blit(memory_text, (10, y_offset))
+        y_offset += 20
+        screen.blit(cpu_text, (10, y_offset))
+        y_offset += 20
+        screen.blit(render_text, (10, y_offset))
+        y_offset += 20
+        screen.blit(efficiency_text, (10, y_offset))
+        y_offset += 20
+        screen.blit(opt_text, (10, y_offset))
+        y_offset += 20
+        screen.blit(opt2_text, (10, y_offset))
 
 # --- Part Three ---
 def delete_save_data():
@@ -5459,53 +5513,91 @@ def calculate_armor_damage_reduction(base_damage):
         return base_damage
 
 def draw_world():
-    """Optimized world rendering with viewport culling"""
-    # Calculate viewport bounds for efficient culling
-    viewport_left = camera_x // TILE_SIZE - 1
-    viewport_right = (camera_x + SCREEN_WIDTH) // TILE_SIZE + 1
-    viewport_top = camera_y // TILE_SIZE - 1
-    viewport_bottom = (camera_y + SCREEN_HEIGHT) // TILE_SIZE + 1
+    """NASA-Grade Optimized world rendering with advanced performance system"""
+    global blocks_drawn
     
-    # Only iterate through blocks in viewport
-    blocks_drawn = 0
-    for key, block in world_data.items():
-        if not block or block == "air":
-            continue
+    # Use NASA-Grade Performance System for optimized rendering
+    if performance_system:
+        # Get optimized blocks from performance system
+        optimized_blocks = performance_system.get_optimized_blocks(world_data, camera_x, camera_y)
+        blocks_drawn = len(optimized_blocks)
         
-        # Parse the "x,y" string key format
-        try:
-            x, y = map(int, key.split(','))
-        except (ValueError, AttributeError):
-            continue
+        # Render optimized blocks
+        for x, y, block in optimized_blocks:
+            if not block or block == "air":
+                continue
+            
+            img = textures.get(block)
+            if img is None:
+                continue
+            
+            # Check if this is a GIF texture that should be animated
+            gif_path = None
+            if block == "carrot":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")
+            elif block == "wheat":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+            
+            # Use GIF animation if available, otherwise use static texture
+            if gif_path and gif_path in gif_animations:
+                animated_frame = gif_animations[gif_path].get_current_frame()
+                if animated_frame:
+                    img = animated_frame
+            
+            screen_x = x * TILE_SIZE - camera_x
+            screen_y = y * TILE_SIZE - camera_y
+            
+            # Final viewport check (should always pass due to early culling)
+            if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+                screen.blit(img, (screen_x, screen_y))
+    else:
+        # Fallback to original rendering if performance system not available
+        # Calculate viewport bounds for efficient culling
+        viewport_left = camera_x // TILE_SIZE - 1
+        viewport_right = (camera_x + SCREEN_WIDTH) // TILE_SIZE + 1
+        viewport_top = camera_y // TILE_SIZE - 1
+        viewport_bottom = (camera_y + SCREEN_HEIGHT) // TILE_SIZE + 1
         
-        # Early viewport culling - skip blocks outside viewport
-        if x < viewport_left or x > viewport_right or y < viewport_top or y > viewport_bottom:
-            continue
-        
-        img = textures.get(block)
-        if img is None:
-            continue
-        
-        # Check if this is a GIF texture that should be animated
-        gif_path = None
-        if block == "carrot":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")
-        elif block == "wheat":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
-        
-        # Use GIF animation if available, otherwise use static texture
-        if gif_path and gif_path in gif_animations:
-            animated_frame = gif_animations[gif_path].get_current_frame()
-            if animated_frame:
-                img = animated_frame
-        
-        screen_x = x * TILE_SIZE - camera_x
-        screen_y = y * TILE_SIZE - camera_y
-        
-        # Final viewport check (should always pass due to early culling)
-        if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
-            screen.blit(img, (screen_x, screen_y))
-            blocks_drawn += 1
+        # Only iterate through blocks in viewport
+        blocks_drawn = 0
+        for key, block in world_data.items():
+            if not block or block == "air":
+                continue
+            
+            # Parse the "x,y" string key format
+            try:
+                x, y = map(int, key.split(','))
+            except (ValueError, AttributeError):
+                continue
+            
+            # Early viewport culling - skip blocks outside viewport
+            if x < viewport_left or x > viewport_right or y < viewport_top or y > viewport_bottom:
+                continue
+            
+            img = textures.get(block)
+            if img is None:
+                continue
+            
+            # Check if this is a GIF texture that should be animated
+            gif_path = None
+            if block == "carrot":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")
+            elif block == "wheat":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+            
+            # Use GIF animation if available, otherwise use static texture
+            if gif_path and gif_path in gif_animations:
+                animated_frame = gif_animations[gif_path].get_current_frame()
+                if animated_frame:
+                    img = animated_frame
+            
+            screen_x = x * TILE_SIZE - camera_x
+            screen_y = y * TILE_SIZE - camera_y
+            
+            # Final viewport check (should always pass due to early culling)
+            if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+                screen.blit(img, (screen_x, screen_y))
+                blocks_drawn += 1
     
     # Debug info (only show occasionally to avoid spam)
     if frame_count % 3000 == 0:  # Every 30 seconds at 100 FPS
@@ -10377,6 +10469,7 @@ else:
 try:
     from system.world_system import WorldSystem
     from ui.world_ui import WorldUI
+    from system.performance_system import initialize_performance_system, get_performance_system
 except ImportError:
     print("⚠️ Warning: World system/UI not available")
     WorldSystem = None
@@ -10387,6 +10480,14 @@ if WorldSystem and WorldUI:
 else:
     world_system = None
     world_ui = None
+
+# Initialize NASA-grade performance system
+try:
+    performance_system = initialize_performance_system(SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE)
+    print("🚀 NASA-Grade Performance System initialized!")
+except Exception as e:
+    print(f"⚠️ Performance system initialization failed: {e}")
+    performance_system = None
 
 # Game state variables
 game_state = GameState.SPLASH
@@ -10433,6 +10534,13 @@ def auto_save_game():
 # Main game loop
 while running:
     frame_count += 1
+    
+    # Calculate delta time for smooth animations
+    dt = clock.tick(100) / 1000.0  # Convert to seconds
+    
+    # NASA-Grade Performance System Integration
+    if performance_system:
+        performance_system.update_frame(dt, camera_x, camera_y)
     
     # Safety check: if we've been running for more than 10 seconds without user input, allow force quit
     if frame_count % 1000 == 0:  # Check every 1000 frames (about 10 seconds at 100 FPS)
@@ -11422,6 +11530,15 @@ except Exception as e:
     print(f"⚠️ Error during cleanup: {e}")
 
 print("🔄 Quitting pygame...")
+
+# Stop NASA-Grade Performance System
+if performance_system:
+    try:
+        performance_system.stop()
+        print("🛑 NASA-Grade Performance System stopped")
+    except Exception as e:
+        print(f"⚠️ Error stopping performance system: {e}")
+
 try:
     pygame.quit()
     print("✅ Pygame quit successfully")
