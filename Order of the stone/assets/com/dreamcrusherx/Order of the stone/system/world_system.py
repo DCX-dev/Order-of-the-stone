@@ -122,12 +122,37 @@ class WorldSystem:
             return False
     
     def _generate_world_data(self, name: str, seed: Optional[str] = None) -> Dict[str, Any]:
-        """Generate initial world data using the world_gen module."""
+        """Generate infinite world data using the world_gen module."""
         try:
-            from world_generation.world_gen import generate_world
+            from world_generation.world_gen import WorldGenerator
             
-            print(f"🌍 Generating new world: {name}")
-            world_data = generate_world(seed=seed, world_width=200)
+            print(f"🌍 Generating infinite world: {name}")
+            
+            # Create progress tracking for loading screen
+            current_progress = 0
+            current_text = "Initializing..."
+            
+            def update_progress(text):
+                nonlocal current_progress, current_text
+                current_text = text
+                # Update progress based on text
+                if "terrain" in text.lower():
+                    current_progress = 25
+                elif "trees" in text.lower():
+                    current_progress = 50
+                elif "villages" in text.lower() or "fortresses" in text.lower():
+                    current_progress = 75
+                elif "ores" in text.lower():
+                    current_progress = 90
+                elif "complete" in text.lower():
+                    current_progress = 100
+                
+                # Draw loading screen
+                self._draw_loading_screen(current_text, current_progress)
+            
+            # Generate infinite world (2000 blocks wide for truly infinite feel)
+            generator = WorldGenerator(seed=seed)
+            world_data = generator.generate_world(world_width=2000, progress_callback=update_progress)
             
             # Add world metadata
             world_data["name"] = name
@@ -151,14 +176,20 @@ class WorldSystem:
                     "weather": "clear"
                 }
             
-            print(f"✅ World '{name}' generated successfully with {len(world_data.get('blocks', {}))} blocks")
+            print(f"✅ Infinite world '{name}' generated successfully with {len(world_data.get('blocks', {}))} blocks")
             return world_data
             
         except Exception as e:
-            print(f"❌ Error generating world data: {e}")
+            print(f"❌ Error generating infinite world data: {e}")
             import traceback
             traceback.print_exc()
             return None
+    
+    def _draw_loading_screen(self, progress_text="Loading...", progress_percent=0):
+        """Draw a loading screen with progress bar"""
+        # This will be called from the main game loop
+        # For now, just print progress
+        print(f"🔄 {progress_text} ({int(progress_percent)}%)")
     
     def load_world(self, name: str) -> bool:
         """Load a world by name"""
