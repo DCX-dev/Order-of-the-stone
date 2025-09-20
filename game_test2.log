@@ -1,0 +1,79 @@
+/Users/xavierlahens/Library/Python/3.12/lib/python/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_stream, resource_exists
+2025-09-14 12:16:34,510 - INFO - Performance monitor initialized
+2025-09-14 12:16:34,510 - INFO - Core systems initialized successfully
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.10)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+🎵 Background music loaded and playing: ../../../../music/an_adventure.wav
+🎯 Found game root directory: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone
+🔍 Verifying all game directories:
+✅ TILE_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles
+✅ ITEM_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/items
+✅ MOB_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/mobs
+✅ PLAYER_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/player
+✅ HP_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/HP
+✅ SOUND_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../damage
+✅ SAVE_DIR: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../save_data
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_pawn_white.png
+🎨 Generated fallback texture for: chess_pawn_white.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_pawn_black.png
+🎨 Generated fallback texture for: chess_pawn_black.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_rook_white.png
+🎨 Generated fallback texture for: chess_rook_white.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_rook_black.png
+🎨 Generated fallback texture for: chess_rook_black.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_knight_white.png
+🎨 Generated fallback texture for: chess_knight_white.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_knight_black.png
+🎨 Generated fallback texture for: chess_knight_black.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_bishop_white.png
+🎨 Generated fallback texture for: chess_bishop_white.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_bishop_black.png
+🎨 Generated fallback texture for: chess_bishop_black.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_queen_white.png
+🎨 Generated fallback texture for: chess_queen_white.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_queen_black.png
+🎨 Generated fallback texture for: chess_queen_black.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_king_white.png
+🎨 Generated fallback texture for: chess_king_white.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/chess_king_black.png
+🎨 Generated fallback texture for: chess_king_black.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/mobs/villager.png
+🎨 Generated fallback texture for: villager.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/mobs/zombie.png
+🎨 Generated fallback texture for: zombie.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/items/iron_helmet.png
+🎨 Generated fallback texture for: iron_helmet.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/items/iron_chestplate.png
+🎨 Generated fallback texture for: iron_chestplate.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/items/iron_leggings.png
+🎨 Generated fallback texture for: iron_leggings.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/items/iron_boots.png
+🎨 Generated fallback texture for: iron_boots.png
+⚠️ Texture not found: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../assets/tiles/ladder.png
+🎨 Generated fallback texture for: ladder.png
+🔊 Loaded damage sound: /Users/xavierlahens/Team Banana labs work/Order-of-the-stone/Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/../../../../../damage/damage_sound.wav
+🎭 Loading character textures...
+✅ Loaded default character texture from player.gif
+✅ Loaded character texture: warrior
+⏳ Waiting for miner texture (you'll create this)
+⏳ Waiting for explorer texture (you'll create this)
+✅ Loaded character texture: mage
+⏳ Waiting for ninja texture (you'll create this)
+⏳ Waiting for knight texture (you'll create this)
+✅ Loaded character texture: hacker
+🎭 Character textures loaded: ['default', 'warrior', 'miner', 'explorer', 'mage', 'ninja', 'knight', 'hacker']
+🎭 Character manager initialized
+🎭 Available characters: ['default', 'warrior', 'miner', 'explorer', 'mage', 'ninja', 'knight', 'hacker']
+🎭 Current selected character: default
+🎬 Loaded GIF: ../../../../mobs/monster.gif with 1 frames
+🎬 Auto-loaded GIF animation: ../../../../mobs/monster.gif
+🎬 Loaded GIF: ../../../../tiles/carrot.gif with 1 frames
+🎬 Auto-loaded GIF animation: ../../../../tiles/carrot.gif
+🎬 Loaded GIF: ../../../../player/player.gif with 1 frames
+🎬 Auto-loaded GIF animation: ../../../../player/player.gif
+🎬 Loaded GIF: ../../../../player/animations/walking.gif with 1 frames
+🎬 Auto-loaded GIF animation: ../../../../player/animations/walking.gif
+🎬 Loaded GIF: ../../../../player/animations/jumping.gif with 1 frames
+🎬 Auto-loaded GIF animation: ../../../../player/animations/jumping.gif
+🎬 Loaded GIF: ../../../../player/animations/fighting.gif with 1 frames

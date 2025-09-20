@@ -317,6 +317,7 @@ class ResourceManager:
 
 class GameState(Enum):
     """Enumeration of all possible game states"""
+    STUDIO_LOADING = "studio_loading"  # New state for studio loading screen
     TITLE = "title"
     WORLD_SELECTION = "world_selection"  # New state for world selection
     USERNAME_REQUIRED = "username_required"  # New state for username required
@@ -1758,110 +1759,182 @@ textures["iron_boots"] = generate_iron_boots_texture()
 # AUTOMATIC GIF ANIMATION SYSTEM
 # =============================================================================
 
-# Global GIF animation manager
-gif_animations = {}
-gif_frame_timers = {}
+# Player Animation System
+player_animations = {}
 
-class GIFAnimator:
-    """Automatic GIF animation system for any GIF files in the game"""
+class PlayerAnimator:
+    """Player animation system with proper GIF frame cycling"""
     
-    def __init__(self, gif_path, frame_duration=100):
-        self.gif_path = gif_path
-        self.frame_duration = frame_duration  # milliseconds per frame
-        self.frames = []
-        self.current_frame = 0
-        self.last_frame_time = 0
-        self.load_gif()
+    def __init__(self):
+        self.animations = {}  # Store animation data for each animation
+        self.current_animation = "standing"
+        self.frame_timers = {}  # Track frame timing for each animation
+        self.load_animations()
     
-    def load_gif(self):
-        """Load GIF and extract frames using PIL"""
+    def load_animations(self):
+        """Load all player animations from the animations folder and extract frames"""
+        # Use the full path since PLAYER_DIR might not be defined yet
+        animations_dir = os.path.join("../../../../player", "animations")
+        
+        if not os.path.exists(animations_dir):
+            print(f"⚠️ Animations directory not found: {animations_dir}")
+            return
+        
+        animation_files = ["standing.gif", "walking.gif", "falling.gif"]
+        
+        for anim_file in animation_files:
+            anim_path = os.path.join(animations_dir, anim_file)
+            if os.path.exists(anim_path):
+                try:
+                    # Load the GIF and extract frames
+                    frames = self.extract_gif_frames(anim_path)
+                    if frames:
+                        animation_name = anim_file.replace(".gif", "")
+                        
+                        # Set different frame rates for each animation
+                        if animation_name == "walking":
+                            frame_duration = 200  # 5 frames per second (1000ms / 5fps = 200ms)
+                        elif animation_name == "standing":
+                            frame_duration = 1000  # 1 frame per second (1000ms / 1fps = 1000ms)
+                        elif animation_name == "falling":
+                            frame_duration = 500   # 2 frames per second (1000ms / 2fps = 500ms)
+                        else:
+                            frame_duration = 100   # Default fallback
+                        
+                        self.animations[animation_name] = {
+                            'frames': frames,
+                            'current_frame': 0,
+                            'frame_duration': frame_duration,
+                            'last_frame_time': 0
+                        }
+                        self.frame_timers[animation_name] = 0
+                        print(f"🎬 Loaded animation: {animation_name} with {len(frames)} frames at {1000//frame_duration}fps")
+                    else:
+                        print(f"⚠️ No frames extracted from {anim_file}")
+                except Exception as e:
+                    print(f"❌ Failed to load {anim_file}: {e}")
+            else:
+                print(f"⚠️ Animation file not found: {anim_path}")
+        
+        print(f"🎬 Animation system ready with {len(self.animations)} animations")
+    
+    def extract_gif_frames(self, gif_path):
+        """Extract frames from a GIF file"""
         try:
-            with Image.open(self.gif_path) as img:
-                # Convert to RGBA if needed
-                if img.mode != 'RGBA':
-                    img = img.convert('RGBA')
+            # Try to use PIL for proper GIF frame extraction
+            try:
+                from PIL import Image
+                frames = []
                 
-                # Extract frames
-                frame_count = 0
-                while True:
+                with Image.open(gif_path) as img:
+                    # Check if it's animated by trying to seek to frame 1
+                    is_animated = False
                     try:
-                        # Convert PIL image to pygame surface
+                        img.seek(1)
+                        is_animated = True
+                        img.seek(0)  # Reset to first frame
+                    except EOFError:
+                        is_animated = False
+                    
+                    print(f"🎬 Processing {os.path.basename(gif_path)}: {'animated' if is_animated else 'static'}")
+                    
+                    # Convert to RGBA if needed
+                    if img.mode != 'RGBA':
+                        img = img.convert('RGBA')
+                    
+                    frame_count = 0
+                    if is_animated:
+                        # Extract all frames by reopening the image for each frame
+                        frame_index = 0
+                        while True:
+                            try:
+                                # Reopen the image for each frame to avoid corruption
+                                with Image.open(gif_path) as frame_img:
+                                    frame_img.seek(frame_index)
+                                    
+                                    # Convert to RGBA if needed
+                                    if frame_img.mode != 'RGBA':
+                                        frame_img = frame_img.convert('RGBA')
+                                    
+                                    # Convert PIL image to pygame surface
+                                    frame_data = frame_img.convert('RGBA')
+                                    frame_surface = pygame.image.fromstring(
+                                        frame_data.tobytes(), frame_data.size, frame_data.mode
+                                    )
+                                    
+                                    # Scale to player size
+                                    scaled_frame = pygame.transform.scale(frame_surface, (TILE_SIZE, TILE_SIZE))
+                                    frames.append(scaled_frame)
+                                    frame_count += 1
+                                    frame_index += 1
+                                
+                            except EOFError:
+                                break
+                            except Exception as e:
+                                print(f"  Error extracting frame {frame_index}: {e}")
+                                break
+                    else:
+                        # Single frame - just load it
                         frame_data = img.convert('RGBA')
                         frame_surface = pygame.image.fromstring(
                             frame_data.tobytes(), frame_data.size, frame_data.mode
                         )
-                        self.frames.append(frame_surface)
-                        frame_count += 1
-                        
-                        # Move to next frame
-                        img.seek(img.tell() + 1)
-                    except EOFError:
-                        break
+                        scaled_frame = pygame.transform.scale(frame_surface, (TILE_SIZE, TILE_SIZE))
+                        frames.append(scaled_frame)
+                        frame_count = 1
                 
-                print(f"🎬 Loaded GIF: {self.gif_path} with {frame_count} frames")
+                print(f"🎬 Extracted {frame_count} frames from {os.path.basename(gif_path)}")
+                return frames
+                
+            except ImportError:
+                # PIL not available, use pygame fallback
+                print("⚠️ PIL not available, using single frame fallback")
+                image = pygame.image.load(gif_path).convert_alpha()
+                scaled_image = pygame.transform.scale(image, (TILE_SIZE, TILE_SIZE))
+                return [scaled_image]
                 
         except Exception as e:
-            print(f"⚠️ Failed to load GIF {self.gif_path}: {e}")
-            # Fallback to single frame
-            try:
-                fallback_surface = pygame.image.load(self.gif_path)
-                self.frames = [fallback_surface]
-            except:
-                print(f"❌ Complete failure loading {self.gif_path}")
-                self.frames = []
+            print(f"❌ Error extracting frames from {gif_path}: {e}")
+            return []
     
-    def get_current_frame(self):
-        """Get current frame based on timing"""
-        if not self.frames:
+    def get_animation(self, animation_name):
+        """Get current frame of animation by name"""
+        if animation_name not in self.animations:
             return None
         
+        animation_data = self.animations[animation_name]
+        frames = animation_data['frames']
+        
+        if not frames:
+            return None
+        
+        # For single frame animations, just return the frame
+        if len(frames) == 1:
+            return frames[0]
+        
+        # For multi-frame animations, cycle through frames
         current_time = pygame.time.get_ticks()
+        frame_duration = animation_data['frame_duration']
         
-        # Check if it's time for next frame
-        if current_time - self.last_frame_time >= self.frame_duration:
-            self.current_frame = (self.current_frame + 1) % len(self.frames)
-            self.last_frame_time = current_time
+        # Check if it's time to advance to next frame
+        if current_time - animation_data['last_frame_time'] >= frame_duration:
+            old_frame = animation_data['current_frame']
+            animation_data['current_frame'] = (animation_data['current_frame'] + 1) % len(frames)
+            animation_data['last_frame_time'] = current_time
         
-        return self.frames[self.current_frame]
+        return frames[animation_data['current_frame']]
     
-    def get_frame_count(self):
-        """Get total number of frames"""
-        return len(self.frames)
+    def set_animation(self, animation_name):
+        """Set current animation"""
+        if animation_name in self.animations:
+            self.current_animation = animation_name
+    
+    def get_current_animation(self):
+        """Get current animation frame"""
+        return self.get_animation(self.current_animation)
 
-def load_all_gif_animations():
-    """Automatically detect and load all GIF files in the game"""
-    global gif_animations
-    
-    # Clear existing animations
-    gif_animations.clear()
-    gif_frame_timers.clear()
-    
-    # Search for GIF files in assets directory
-    assets_dir = "../../../.."
-    if os.path.exists(assets_dir):
-        for root, dirs, files in os.walk(assets_dir):
-            for file in files:
-                if file.lower().endswith('.gif'):
-                    gif_path = os.path.join(root, file)
-                    try:
-                        # Create animator for this GIF
-                        animator = GIFAnimator(gif_path)
-                        if animator.frames:
-                            gif_animations[gif_path] = animator
-                            print(f"🎬 Auto-loaded GIF animation: {gif_path}")
-                    except Exception as e:
-                        print(f"⚠️ Failed to auto-load GIF {gif_path}: {e}")
-    
-    print(f"🎬 Total GIF animations loaded: {len(gif_animations)}")
-
-def get_gif_animation(gif_path):
-    """Get GIF animation for a specific path"""
-    return gif_animations.get(gif_path)
-
-def update_gif_animations():
-    """Update all GIF animations (call this in game loop)"""
-    for animator in gif_animations.values():
-        animator.get_current_frame()  # This updates the frame timing
+# Initialize player animator
+player_animator = PlayerAnimator()
 
 # --- Ladder texture (tries file, falls back to procedural ladder texture) ---
 try:
@@ -5078,11 +5151,10 @@ def draw_world():
         elif block == "wheat":
             gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
         
-        # Use GIF animation if available, otherwise use static texture
-        if gif_path and gif_path in gif_animations:
-            animated_frame = gif_animations[gif_path].get_current_frame()
-            if animated_frame:
-                img = animated_frame
+        # Use static texture for now
+        animated_frame = None
+        if animated_frame:
+            img = animated_frame
         
         screen_x = x * TILE_SIZE - camera_x
         screen_y = y * TILE_SIZE - camera_y
@@ -5097,14 +5169,8 @@ def draw_world():
             
             # Check if monster should use GIF animation
             monster_gif_path = os.path.join(MOB_DIR, "monster.gif")
-            if monster_gif_path in gif_animations:
-                monster_frame = gif_animations[monster_gif_path].get_current_frame()
-                if monster_frame:
-                    screen.blit(monster_frame, (ex, ey))
-                else:
-                    screen.blit(entity["image"], (ex, ey))
-            else:
-                screen.blit(entity["image"], (ex, ey))
+            # Use static monster image
+            screen.blit(entity["image"], (ex, ey))
         elif entity["type"] == "projectile":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
@@ -5163,6 +5229,7 @@ def draw_world():
 
     # Draw thrown sword projectile
     draw_thrown_sword()
+    draw_thrown_sword_entities()
 
     # Draw player with animation system
     px = int(player["x"] * TILE_SIZE) - camera_x
@@ -5171,34 +5238,8 @@ def draw_world():
     # EXTREME ENGINEERING: Draw player with proper facing direction and flipping
     facing_direction = player.get("facing_direction", 1)
     
-    # Use animation system if available
-    if player_animator and hasattr(player_animator, 'get_current_frame'):
-        try:
-            # Get current animation frame
-            current_frame = player_animator.get_current_frame()
-            if current_frame:
-                # Flip frame based on facing direction
-                if facing_direction == -1:  # Facing left
-                    flipped_frame = pygame.transform.flip(current_frame, True, False)
-                    screen.blit(flipped_frame, (px, py))
-                else:  # Facing right (default)
-                    screen.blit(current_frame, (px, py))
-                
-                # Debug: Show animation info
-                if show_fps:
-                    current_anim = getattr(player_animator, 'current_animation_name', 'unknown')
-                    debug_text = font.render(f"Anim: {current_anim} | Facing: {'LEFT' if facing_direction == -1 else 'RIGHT'}", True, (255, 255, 0))
-                    screen.blit(debug_text, (px, py - 30))
-            else:
-                # Fallback to character texture
-                _draw_player_fallback(px, py, facing_direction)
-        except Exception as e:
-            print(f"⚠️ Animation drawing failed: {e}")
-            # Fallback to character texture
-            _draw_player_fallback(px, py, facing_direction)
-    else:
-        # Fallback to character texture
-        _draw_player_fallback(px, py, facing_direction)
+    # Always use fallback system for now to ensure flipping works
+    _draw_player_fallback(px, py, facing_direction)
     
     # Draw armor on player if equipped
     draw_player_armor(px, py)
@@ -5220,89 +5261,56 @@ def draw_world():
 
 
 def _draw_player_fallback(px, py, facing_direction):
-    """Fallback function to draw player when animation system is unavailable"""
-    # Use character manager to get the current character texture
-    if character_manager:
-        player_texture = character_manager.get_character_texture()
-        current_char_name = character_manager.get_current_character_name()
-        if player_texture:
-            # EXTREME ENGINEERING: Flip player texture based on facing direction
-            # Check if this is a GIF texture that should be animated
-            current_char_name = character_manager.get_current_character_name()
-            char_gif_path = os.path.join(PLAYER_DIR, f"{current_char_name}.gif")
-            
-            # Use GIF animation if available, otherwise use static texture
-            if char_gif_path in gif_animations:
-                char_frame = gif_animations[char_gif_path].get_current_frame()
-                if char_frame:
-                    if facing_direction == -1:  # Facing left
-                        flipped_frame = pygame.transform.flip(char_frame, True, False)
-                        screen.blit(flipped_frame, (px, py))
-                    else:  # Facing right (default)
-                        screen.blit(char_frame, (px, py))
-                else:
-                    # Fallback to static texture
-                    if facing_direction == -1:  # Facing left
-                        flipped_texture = pygame.transform.flip(player_texture, True, False)
-                        screen.blit(flipped_texture, (px, py))
-                    else:  # Facing right (default)
-                        screen.blit(player_texture, (px, py))
-            else:
-                # Use static texture
-                if facing_direction == -1:  # Facing left
-                    flipped_texture = pygame.transform.flip(player_texture, True, False)
-                    screen.blit(flipped_texture, (px, py))
-                else:  # Facing right (default)
-                    screen.blit(player_texture, (px, py))
-            
-            # Debug: Show current character name and facing direction
-            if show_fps:  # Only show when F3 is pressed
-                direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
-                debug_text = font.render(f"Char: {current_char_name} | Facing: {direction_text}", True, (255, 255, 0))
-                screen.blit(debug_text, (px, py - 30))
-        else:
-            # Fallback to original player image with flipping
+    """Draw player with new animation system"""
+    # Determine animation based on player state
+    animation_name = "standing"  # Default to standing
+    
+    # Check if player is moving horizontally
+    if "last_x" in player and "last_y" in player:
+        dx = abs(player["x"] - player["last_x"])
+        dy = abs(player["y"] - player["last_y"])
+        
+        if dx > 0.01:  # Player is moving horizontally
+            animation_name = "walking"
+        elif dy > 0.01 and player.get("vel_y", 0) > 0:  # Player is falling
+            animation_name = "falling"
+    
+    # Get animation from the new system
+    try:
+        animation_image = player_animator.get_animation(animation_name)
+        
+        if animation_image:
+            # Use the animation image
             if facing_direction == -1:  # Facing left
-                flipped_image = pygame.transform.flip(player_image, True, False)
+                flipped_image = pygame.transform.flip(animation_image, True, False)
                 screen.blit(flipped_image, (px, py))
             else:  # Facing right (default)
-                screen.blit(player_image, (px, py))
+                screen.blit(animation_image, (px, py))
             
+            # Debug info
             if show_fps:
                 direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
-                debug_text = font.render(f"No texture! | Facing: {direction_text}", True, (255, 0, 0))
+                debug_text = font.render(f"{animation_name.title()} | Facing: {direction_text}", True, (255, 255, 0))
                 screen.blit(debug_text, (px, py - 30))
-    else:
-        # Fallback to original player image if character manager not initialized
-        # Check if player.gif should be animated
-        player_gif_path = os.path.join(PLAYER_DIR, "player.gif")
-        if player_gif_path in gif_animations:
-            player_frame = gif_animations[player_gif_path].get_current_frame()
-            if player_frame:
-                if facing_direction == -1:  # Facing left
-                    flipped_frame = pygame.transform.flip(player_frame, True, False)
-                    screen.blit(flipped_frame, (px, py))
-                else:  # Facing right (default)
-                    screen.blit(player_frame, (px, py))
-            else:
-                # Fallback to static image
-                if facing_direction == -1:  # Facing left
-                    flipped_image = pygame.transform.flip(player_image, True, False)
-                    screen.blit(flipped_image, (px, py))
-                else:  # Facing right (default)
-                    screen.blit(player_image, (px, py))
+            return
         else:
-            # Use static image
-            if facing_direction == -1:  # Facing left
-                flipped_image = pygame.transform.flip(player_image, True, False)
-                screen.blit(flipped_image, (px, py))
-            else:  # Facing right (default)
-                screen.blit(player_image, (px, py))
-        
-        if show_fps:
-            direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
-            debug_text = font.render(f"No char manager! | Facing: {direction_text}", True, (255, 0, 0))
-            screen.blit(debug_text, (px, py - 30))
+            print(f"⚠️ No animation image for {animation_name}")
+            
+    except Exception as e:
+        print(f"❌ Error getting animation {animation_name}: {e}")
+    
+    # Fallback to static player image if animation not found
+    if facing_direction == -1:  # Facing left
+        flipped_image = pygame.transform.flip(player_image, True, False)
+        screen.blit(flipped_image, (px, py))
+    else:  # Facing right (default)
+        screen.blit(player_image, (px, py))
+    
+    # Debug info
+    if show_fps:
+        direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
+        debug_text = font.render(f"Static | Facing: {direction_text}", True, (255, 0, 0))
+        screen.blit(debug_text, (px, py - 30))
 
 
 def draw_inventory():
@@ -5323,10 +5331,10 @@ def draw_inventory():
                     # Check for GIF animations for specific items
                     if item_type == "carrot":
                         carrot_gif_path = os.path.join(TILE_DIR, "carrot.gif")
-                        if carrot_gif_path in gif_animations:
-                            animated_frame = gif_animations[carrot_gif_path].get_current_frame()
-                            if animated_frame:
-                                item_texture = animated_frame
+                        # Use static carrot image
+                        animated_frame = None
+                        if animated_frame:
+                            item_texture = animated_frame
                     
                     screen.blit(item_texture, (15 + i * 50, SCREEN_HEIGHT - 55))
                 cnt = item.get("count", 1)
@@ -5980,7 +5988,7 @@ def update_thrown_sword():
     if not sword["returning"]:
         # Check for monster hits along the sword's path BEFORE moving
         hit_monster = False
-    for mob in entities[:]:
+        for mob in entities[:]:
             if mob["type"] in ["monster", "zombie"]:
                 mob_x, mob_y = mob["x"], mob["y"]
                 # Check if sword is close enough to hit the monster
@@ -6055,6 +6063,97 @@ def update_thrown_sword():
             sword["x"] += move_x
             sword["y"] += move_y
 
+def update_thrown_sword_entities():
+    """Update thrown sword entities in the entities list"""
+    global entities, player
+    
+    entities_to_remove = []
+    
+    for entity in entities[:]:
+        if entity["type"] == "thrown_sword":
+            sword = entity
+            px, py = player["x"], player["y"]
+            
+            if not sword["returning"]:
+                # Check for monster hits
+                hit_monster = False
+                for mob in entities[:]:
+                    if mob["type"] in ["monster", "zombie", "boss"] and mob != sword:
+                        # Check if sword is close to monster
+                        if abs(sword["x"] - mob["x"]) < 1.0 and abs(sword["y"] - mob["y"]) < 1.0:
+                            # Hit the monster
+                            damage = 3  # Sword damage
+                            mob["health"] = mob.get("health", 4) - damage
+                            print(f"⚔️ Sword hit {mob['type']} for {damage} damage!")
+                            
+                            # Add blood particle effect
+                            add_blood_particle(sword["x"], sword["y"])
+                            
+                            # Remove monster if health is 0
+                            if mob["health"] <= 0:
+                                entities.remove(mob)
+                                print(f"💀 {mob['type']} defeated by thrown sword!")
+                            
+                            hit_monster = True
+                            break
+                
+                if hit_monster:
+                    # Sword hit something, start returning
+                    sword["returning"] = True
+                    continue
+                
+                # Move towards target monster
+                if sword["target"] and sword["target"] in entities:
+                    target = sword["target"]
+                    dx = target["x"] - sword["x"]
+                    dy = target["y"] - sword["y"]
+                    distance = math.sqrt(dx*dx + dy*dy)
+                    
+                    if distance < 0.1:
+                        # Reached target, start returning
+                        sword["returning"] = True
+                    else:
+                        # Move towards target
+                        move_x = (dx / distance) * sword["speed"]
+                        move_y = (dy / distance) * sword["speed"]
+                        sword["x"] += move_x
+                        sword["y"] += move_y
+                else:
+                    # Target lost, start returning
+                    sword["returning"] = True
+            else:
+                # Sword is returning to player
+                dx = px - sword["x"]
+                dy = py - sword["y"]
+                distance = math.sqrt(dx*dx + dy*dy)
+                
+                if distance < 0.5:
+                    # Sword returned to player
+                    # Put sword back in inventory
+                    if sword["original_slot"] < len(player["inventory"]):
+                        player["inventory"][sword["original_slot"]] = sword["sword_item"]
+                    else:
+                        # Add to first available slot
+                        for i, slot in enumerate(player["inventory"]):
+                            if slot is None:
+                                player["inventory"][i] = sword["sword_item"]
+                                break
+                    
+                    normalize_inventory()
+                    print(f"🗡️ {sword['sword_type']} returned to inventory!")
+                    entities_to_remove.append(sword)
+                else:
+                    # Move towards player
+                    move_x = (dx / distance) * sword["speed"]
+                    move_y = (dy / distance) * sword["speed"]
+                    sword["x"] += move_x
+                    sword["y"] += move_y
+    
+    # Remove returned swords
+    for entity in entities_to_remove:
+        if entity in entities:
+            entities.remove(entity)
+
 def draw_thrown_sword():
     """Draw the thrown sword projectile with visual effects"""
     if not thrown_sword:
@@ -6090,6 +6189,47 @@ def draw_thrown_sword():
             # Fallback: draw a simple sword shape
             pygame.draw.rect(screen, (200, 200, 200), (screen_x + 12, screen_y + 8, 8, 16))
             pygame.draw.rect(screen, (139, 69, 19), (screen_x + 14, screen_y + 20, 4, 8))  # Handle
+
+def draw_thrown_sword_entities():
+    """Draw thrown sword entities in the entities list"""
+    for entity in entities:
+        if entity["type"] == "thrown_sword":
+            sword = entity
+            screen_x = (sword["x"] * TILE_SIZE) - camera_x
+            screen_y = (sword["y"] * TILE_SIZE) - camera_y
+            
+            # Only draw if sword is on screen
+            if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+                # Draw sword image
+                sword_image = pygame.image.load("../../../../items/sword.png").convert_alpha()
+                sword_image = pygame.transform.scale(sword_image, (TILE_SIZE, TILE_SIZE))
+                
+                # Rotate sword based on direction
+                if sword["returning"]:
+                    # Point towards player
+                    dx = player["x"] - sword["x"]
+                    dy = player["y"] - sword["y"]
+                    if dx != 0 or dy != 0:
+                        angle = math.degrees(math.atan2(dy, dx))
+                        sword_image = pygame.transform.rotate(sword_image, -angle)
+                else:
+                    # Point towards target
+                    if sword["target"] and sword["target"] in entities:
+                        target = sword["target"]
+                        dx = target["x"] - sword["x"]
+                        dy = target["y"] - sword["y"]
+                        if dx != 0 or dy != 0:
+                            angle = math.degrees(math.atan2(dy, dx))
+                            sword_image = pygame.transform.rotate(sword_image, -angle)
+                
+                screen.blit(sword_image, (screen_x, screen_y))
+                
+                # Draw sword trail effect
+                trail_alpha = 100
+                trail_color = (255, 255, 100, trail_alpha)
+                trail_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+                pygame.draw.circle(trail_surface, trail_color, (TILE_SIZE//2, TILE_SIZE//2), TILE_SIZE//3)
+                screen.blit(trail_surface, (screen_x, screen_y))
 
 def attack_monsters(mx, my):
     """Attack monsters with sword - distance-based combat"""
@@ -6141,12 +6281,12 @@ def attack_monsters(mx, my):
             # Monster defeated - chance to drop coins
             if random.random() < 0.15 and coins_manager:
                 coin_amount = random.randint(1, 2)
-                            coins_manager.add_coins(coin_amount)
+                coins_manager.add_coins(coin_amount)
                         
             entities.remove(closest_monster)
     else:
-        # Long range - throw sword
-        throw_sword_at_target(target_x, target_y)
+        # Long range - throw sword at monster
+        throw_sword_at_monster(closest_monster)
 
 def handle_chess_piece_interaction(mx, my):
     """Handle clicking on chess pieces to collect loot"""
@@ -7748,12 +7888,12 @@ def update_player():
     move_left = keys[pygame.K_LEFT] or keys[pygame.K_a]  # Left arrow OR A key
     move_right = keys[pygame.K_RIGHT] or keys[pygame.K_d]  # Right arrow OR D key
     
-    # EXTREME ENGINEERING: Update facing direction based on movement intent
+    # EXTREME ENGINEERING: Update facing direction immediately when keys are pressed
     # This allows both manual flipping (A/D) and automatic flipping during movement
     if move_left:
-        player["facing_direction"] = -1  # Face left when moving left
-    elif move_right:
-        player["facing_direction"] = 1   # Face right when moving right
+        player["facing_direction"] = -1  # Face left when A or left arrow is pressed
+    if move_right:
+        player["facing_direction"] = 1   # Face right when D or right arrow is pressed
     
     # Store current position for next frame comparison
     player["last_x"] = player["x"]
@@ -7955,6 +8095,49 @@ def load_world_data():
         print(f"❌ Error loading world data: {e}")
         return False
 
+def throw_sword_at_monster(monster):
+    """Throw sword at a specific monster"""
+    global player, entities
+    
+    # Find sword in inventory
+    sword_slot = None
+    for i, item in enumerate(player["inventory"]):
+        if item and item["type"] == "sword" and not item.get("throwing", False):
+            sword_slot = i
+            break
+    
+    if sword_slot is None:
+        return False
+    
+    # Create thrown sword entity
+    sword_item = player["inventory"][sword_slot].copy()
+    sword_item["throwing"] = True
+    sword_item["throw_target"] = monster
+    sword_item["throw_distance"] = 0
+    sword_item["max_throw_distance"] = 8.0  # Maximum throw distance
+    
+    # Create sword projectile
+    thrown_sword = {
+        "type": "thrown_sword",
+        "x": player["x"],
+        "y": player["y"],
+        "target": monster,
+        "sword_item": sword_item,
+        "original_slot": sword_slot,
+        "sword_type": "Iron Sword",
+        "returning": False,
+        "speed": 0.3
+    }
+    
+    entities.append(thrown_sword)
+    
+    # Remove sword from inventory temporarily
+    player["inventory"][sword_slot] = None
+    normalize_inventory()
+    
+    print(f"🗡️ Sword thrown at monster!")
+    return True
+
 def update_monsters():
     global entities
     
@@ -8039,11 +8222,24 @@ def update_monsters():
 
             # Contact damage (3 hearts) but do NOT remove the monster
             if abs(player["x"] - mob["x"]) < 0.5 and abs(player["y"] - mob["y"]) < 1:
-                damage = calculate_armor_damage_reduction(3)
-                player["health"] -= damage
-                play_damage_sound()
-                if player["health"] <= 0:
-                    show_death_screen()
+                # Check cooldown - monsters can only attack every 5 seconds
+                current_time = pygame.time.get_ticks()
+                if "last_attack_time" not in mob:
+                    mob["last_attack_time"] = 0
+                
+                if current_time - mob["last_attack_time"] >= 5000:  # 5 seconds = 5000ms
+                    damage = calculate_armor_damage_reduction(3)
+                    player["health"] -= damage
+                    play_damage_sound()
+                    mob["last_attack_time"] = current_time  # Update attack time
+                    print(f"👹 Monster attacked player! Cooldown: 5 seconds")
+                    if player["health"] <= 0:
+                        show_death_screen()
+                else:
+                    # Monster is on cooldown, no damage
+                    remaining_cooldown = (5000 - (current_time - mob["last_attack_time"])) / 1000
+                    if remaining_cooldown > 0:
+                        print(f"👹 Monster on cooldown: {remaining_cooldown:.1f}s remaining")
         
         elif mob["type"] == "zombie":
             # Ensure each zombie has health
@@ -8079,13 +8275,28 @@ def update_monsters():
                 
                 # Contact damage (2 hearts) when close
                 if abs(player["x"] - mob["x"]) < 0.8 and abs(player["y"] - mob["y"]) < 1:
-                    damage = calculate_armor_damage_reduction(2)
-                    player["health"] -= damage
-                    play_damage_sound()
-                if player["health"] <= 0:
-                    show_death_screen()
+                    # Check cooldown - zombies can only attack every 5 seconds
+                    current_time = pygame.time.get_ticks()
+                    if "last_attack_time" not in mob:
+                        mob["last_attack_time"] = 0
+                    
+                    if current_time - mob["last_attack_time"] >= 5000:  # 5 seconds = 5000ms
+                        damage = calculate_armor_damage_reduction(2)
+                        player["health"] -= damage
+                        play_damage_sound()
+                        mob["last_attack_time"] = current_time  # Update attack time
+                        print(f"🧟 Zombie attacked player! Cooldown: 5 seconds")
+                        if player["health"] <= 0:
+                            show_death_screen()
+                    else:
+                        # Zombie is on cooldown, no damage
+                        remaining_cooldown = (5000 - (current_time - mob["last_attack_time"])) / 1000
+                        if remaining_cooldown > 0:
+                            print(f"🧟 Zombie on cooldown: {remaining_cooldown:.1f}s remaining")
 
     # Projectiles step and collision
+    entities_to_remove = []
+    
     for proj in entities[:]:
         if proj["type"] == "projectile":
             proj["x"] += proj["dx"]
@@ -8095,11 +8306,11 @@ def update_monsters():
                 damage = calculate_armor_damage_reduction(base_damage)
                 player["health"] -= damage
                 play_damage_sound()
-                entities.remove(proj)
+                entities_to_remove.append(proj)
                 if player["health"] <= 0:
                     show_death_screen()
             elif proj["x"] < -100 or proj["x"] > 100 or proj["y"] > 100:
-                entities.remove(proj)
+                entities_to_remove.append(proj)
         
         # Rock projectile update and collision
         elif proj["type"] == "rock_projectile":
@@ -8113,7 +8324,7 @@ def update_monsters():
                 damage = calculate_armor_damage_reduction(base_damage)
                 player["health"] -= damage
                 play_damage_sound()
-                entities.remove(proj)
+                entities_to_remove.append(proj)
                 print(f"💥 Rock projectile hit player! Damage: {damage}")
                 if player["health"] <= 0:
                     show_death_screen()
@@ -8123,7 +8334,12 @@ def update_monsters():
             if (proj["lifetime"] <= 0 or 
                 proj["x"] < -100 or proj["x"] > 100 or 
                 proj["y"] > 100):
-                entities.remove(proj)
+                entities_to_remove.append(proj)
+    
+    # Remove entities after iteration
+    for entity in entities_to_remove:
+        if entity in entities:
+            entities.remove(entity)
 
 
 # --- Chess piece spawning system ---
@@ -8178,7 +8394,7 @@ def generate_chess_loot(piece_type):
     loot = []
     
     # Always include sword and pickaxe
-    loot.append({"type": "sword", "count": 1})
+    loot.append({"type": "sword", "count": 1, "throwing": False, "throw_distance": 0, "throw_target": None, "throw_speed": 0.3})
     loot.append({"type": "pickaxe", "count": 1})
     
     # Add random items based on piece type
@@ -9030,7 +9246,7 @@ def check_username_required():
             return True
         
         print(f"✅ Username check: Valid username found: {current_username}")
-            return False
+        return False
             
     except Exception as e:
         print(f"⚠️ Username check: Error checking username: {e}")
@@ -9074,6 +9290,110 @@ def handle_virtual_keyboard_click(mouse_pos):
     return "typing"
 
 # --- Title Screen Drawing Function ---
+def draw_studio_loading_screen():
+    """Draw the Team Banana Labs Studios loading screen with progress bar"""
+    global loading_progress, loading_stage, studio_logo, loading_start_time
+    
+    # Load studio logo if not already loaded
+    if studio_logo is None:
+        try:
+            logo_path = os.path.join(assets_root, "studio logo", "Banana labs logo copy.png")
+            if os.path.exists(logo_path):
+                studio_logo = pygame.image.load(logo_path).convert_alpha()
+                # Scale logo to appropriate size
+                studio_logo = pygame.transform.scale(studio_logo, (200, 200))
+                print("✅ Studio logo loaded successfully")
+            else:
+                print("⚠️ Studio logo not found, using fallback")
+                # Create a simple fallback logo
+                studio_logo = pygame.Surface((200, 200), pygame.SRCALPHA)
+                pygame.draw.circle(studio_logo, (255, 255, 0), (100, 100), 80)
+                pygame.draw.circle(studio_logo, (0, 0, 0), (100, 100), 80, 5)
+        except Exception as e:
+            print(f"❌ Error loading studio logo: {e}")
+            # Create a simple fallback logo
+            studio_logo = pygame.Surface((200, 200), pygame.SRCALPHA)
+            pygame.draw.circle(studio_logo, (255, 255, 0), (100, 100), 80)
+            pygame.draw.circle(studio_logo, (0, 0, 0), (100, 100), 80, 5)
+    
+    # Clear screen with dark background
+    screen.fill((20, 20, 40))
+    
+    # Draw studio logo (positioned to avoid text collision)
+    if studio_logo:
+        logo_x = SCREEN_WIDTH // 2 - studio_logo.get_width() // 2
+        logo_y = SCREEN_HEIGHT // 2 - studio_logo.get_height() // 2 - 100  # Move up to avoid text
+        screen.blit(studio_logo, (logo_x, logo_y))
+    
+    # Draw "Team Banana Labs Studios" text
+    studio_text = title_font.render("Team Banana Labs Studios", True, (255, 255, 255))
+    studio_rect = studio_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+    screen.blit(studio_text, studio_rect)
+    
+    # Draw current loading stage
+    current_stage_text = font.render(loading_stages[loading_stage], True, (200, 200, 200))
+    stage_rect = current_stage_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
+    screen.blit(current_stage_text, stage_rect)
+    
+    # Draw progress bar background
+    bar_width = 400
+    bar_height = 20
+    bar_x = SCREEN_WIDTH // 2 - bar_width // 2
+    bar_y = SCREEN_HEIGHT // 2 + 130
+    
+    # Background
+    pygame.draw.rect(screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height), 2)
+    
+    # Progress fill
+    progress_width = int(bar_width * (loading_progress / 100))
+    pygame.draw.rect(screen, (0, 255, 0), (bar_x, bar_y, progress_width, bar_height))
+    
+    # Progress percentage text
+    progress_text = font.render(f"{int(loading_progress)}%", True, (255, 255, 255))
+    progress_rect = progress_text.get_rect(center=(SCREEN_WIDTH // 2, bar_y + bar_height + 20))
+    screen.blit(progress_text, progress_rect)
+
+def update_loading_progress():
+    """Update the loading progress and handle stage transitions"""
+    global loading_progress, loading_stage, game_state, loading_start_time
+    
+    current_time = pygame.time.get_ticks()
+    
+    # Initialize start time
+    if loading_start_time == 0:
+        loading_start_time = current_time
+    
+    # Calculate progress based on time elapsed
+    elapsed_time = current_time - loading_start_time
+    
+    # Each stage takes 2 seconds (2000ms)
+    stage_duration = 2000
+    total_duration = len(loading_stages) * stage_duration
+    
+    # Calculate overall progress
+    overall_progress = min(100, (elapsed_time / total_duration) * 100)
+    
+    # Calculate current stage
+    current_stage = min(len(loading_stages) - 1, int(elapsed_time / stage_duration))
+    
+    # Update stage if changed
+    if current_stage != loading_stage:
+        loading_stage = current_stage
+        print(f"🔄 Loading stage: {loading_stages[loading_stage]}")
+    
+    # Calculate progress within current stage
+    stage_elapsed = elapsed_time % stage_duration
+    stage_progress = min(100, (stage_elapsed / stage_duration) * 100)
+    
+    # Update loading progress
+    loading_progress = overall_progress
+    
+    # Check if loading is complete
+    if elapsed_time >= total_duration:
+        print("✅ Loading complete! Moving to title screen")
+        game_state = GameState.TITLE
+
 def draw_title_screen():
     global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, shop_btn, credits_btn
     
@@ -9197,24 +9517,15 @@ crafting_materials = [None] * 9  # 3x3 grid
 initialize_character_manager()
 
 # Initialize GIF animation system
-load_all_gif_animations()
+# Player animations are loaded automatically by PlayerAnimator
 
 # Initialize animation system
 def initialize_animation_system():
     """Initialize the proper animation system"""
     global player_animator
     
-    try:
-        # Import the proper animation classes
-        from templates_clean.temp_clean import ProperPlayerAnimator
-        
-        print("🎬 Setting up PROPER animation system...")
-        player_animator = ProperPlayerAnimator()
-        print("🎬 Animation system initialized with proper player animator")
-        
-    except Exception as e:
-        print(f"⚠️ Animation system initialization failed: {e}")
-        player_animator = None
+    # PlayerAnimator is already initialized globally
+    print("🎬 Animation system using new PlayerAnimator")
 
 initialize_animation_system()
 
@@ -9668,7 +9979,14 @@ else:
     world_ui = None
 
 # Game state variables
-game_state = GameState.TITLE
+game_state = GameState.STUDIO_LOADING  # Start with studio loading screen
+
+# Studio loading screen variables
+loading_progress = 0
+loading_stage = 0  # 0 = assets, 1 = sounds, 2 = logic
+loading_stages = ["Loading Assets...", "Loading Sounds...", "Loading Logic..."]
+studio_logo = None
+loading_start_time = 0
 # World creation variables removed - game goes directly to play
 world_deletion_state = None  # None or world name to delete
 
@@ -10555,6 +10873,7 @@ while running:
         update_boss()  # EXTREME ENGINEERING: Legendary boss AI and attacks
         update_hunger()  # Update hunger system
         update_thrown_sword()  # Update sword throwing system
+        update_thrown_sword_entities()  # Update thrown sword entities
         update_blood_particles()  # Update blood particle effects
         
         # Check for underground fortress trigger
@@ -10612,6 +10931,9 @@ while running:
 
         if player["health"] <= 0:
             show_death_screen()
+    elif game_state == GameState.STUDIO_LOADING:
+        update_loading_progress()
+        draw_studio_loading_screen()
     elif game_state == GameState.TITLE:
         draw_title_screen()
     elif game_state == GameState.WORLD_SELECTION:
@@ -10650,7 +10972,7 @@ while running:
         update_player_animation()
     
     # Update all GIF animations
-    update_gif_animations()
+    # Player animations are handled by PlayerAnimator automatically
     
     # Auto-save every 5 minutes (300 seconds) when in game
     if game_state == GameState.GAME and time.time() - last_auto_save > 300:
