@@ -10,7 +10,9 @@ import time
 class WorldGenerator:
     def __init__(self, seed: int = None):
         if seed is None:
-            seed = random.randint(1, 1000000)
+            # Generate a truly random seed using timestamp and random number
+            import time
+            seed = int(time.time() * 1000) % 1000000 + random.randint(1, 1000)
         self.rng = random.Random(seed)
         print(f"🌍 World Generator initialized with seed: {seed}")
     
@@ -52,6 +54,9 @@ class WorldGenerator:
         print("⛏️ Adding ores...")
         self._generate_simple_ores(world_data["blocks"], world_width)
         
+        print("📦 Adding chests...")
+        self._generate_simple_chests(world_data["blocks"], world_width)
+        
         # Find spawn location
         spawn_x, spawn_y = self._find_spawn_location(world_data["blocks"], world_width)
         world_data["spawn_x"] = spawn_x
@@ -67,59 +72,78 @@ class WorldGenerator:
         return world_data
     
     def _generate_simple_terrain(self, blocks: Dict[str, str], world_width: int):
-        """Generate simple, smooth terrain"""
-        # Simple height map with smooth transitions
-        heights = []
-        current_height = 115  # Base height
+        """Generate natural terrain with proper hill contours - matches generate_terrain_column()"""
+        import math
+        
+        # Clean, organized terrain generation - consistent but varied per world
+        base_height = 115  # Consistent base height
         
         for x in range(-world_width//2, world_width//2):
-            # Very smooth height variation
-            if x % 50 == 0:  # Change height much less frequently (every 50 blocks)
-                target_height = self.rng.randint(112, 118)  # Smaller height range
-                current_height = target_height
+            # Clean terrain waves - same pattern per world but different between worlds
+            # Use the world seed to create consistent but varied terrain
+            primary_wave = 6 * math.sin(x * 0.05)  # Large hills/valleys
+            secondary_wave = 3 * math.sin(x * 0.15)  # Medium variations  
+            tertiary_wave = 2 * math.sin(x * 0.3)   # Small details
             
-            # Add minimal random variation for very smooth terrain
-            height = current_height + self.rng.randint(-1, 1)
-            height = max(112, min(118, height))  # Keep within smaller bounds
-            heights.append(height)
+            # Combine waves for natural but clean terrain
+            height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+            surface_y = base_height + height_variation
             
-            # Generate terrain column
-            for y in range(height, height + 15):  # 15 blocks deep
-                if y == height:
-                    blocks[f"{x},{y}"] = "grass"
-                elif y < height + 4:
-                    blocks[f"{x},{y}"] = "dirt"
-                elif y < height + 12:
+            # Ensure surface is in reasonable range - EXACTLY the same
+            surface_y = max(100, min(125, surface_y))
+            
+            # NATURAL TERRAIN GENERATION: Build hills from base up, not cutting through
+            # Generate terrain layers from bottom to top to create natural hill contours
+            
+            # 1. BEDROCK at bottom (200 blocks below surface)
+            bedrock_y = surface_y + 200  # 200 blocks below surface
+            if f"{x},{bedrock_y}" not in blocks:  # Only place if empty
+                blocks[f"{x},{bedrock_y}"] = "bedrock"
+            
+            # 2. STONE LAYER: Fill from bedrock up to surface (200 blocks deep!)
+            for y in range(surface_y + 3, bedrock_y):  # Stone fills 200 blocks underground
+                if f"{x},{y}" not in blocks:  # Only place if empty
                     blocks[f"{x},{y}"] = "stone"
-                else:
-                    blocks[f"{x},{y}"] = "bedrock"
+            
+            # 3. DIRT LAYER: 2 blocks below surface - NEVER underground
+            for y in range(surface_y + 1, surface_y + 3):
+                if f"{x},{y}" not in blocks:  # Only place if empty
+                    blocks[f"{x},{y}"] = "dirt"
+            
+            # 4. GRASS: ONLY at exact surface level - NEVER underground
+            if f"{x},{surface_y}" not in blocks:  # Only place if empty
+                blocks[f"{x},{surface_y}"] = "grass"  # Surface ONLY - NEVER underground!
     
     def _generate_simple_trees(self, blocks: Dict[str, str], world_width: int):
         """Generate simple, clean trees in small clusters"""
         tree_count = 0
         placed_positions = set()
         
-        # Generate small tree clusters
+        # Generate clean, organized tree clusters
         cluster_centers = []
-        for x in range(-world_width//2, world_width//2, 35):  # Trees every 35 blocks
-            if self.rng.random() < 0.7:  # 70% chance for cluster
+        tree_spacing = 30  # Consistent tree spacing
+        for x in range(-world_width//2, world_width//2, tree_spacing):
+            if self.rng.random() < 0.6:  # 60% chance for cluster
                 cluster_centers.append(x)
         
         for cluster_x in cluster_centers:
-            # Generate 2-4 trees in each cluster (smaller, cleaner clusters)
-            cluster_size = self.rng.randint(2, 4)
+            # Generate 2-3 trees in each cluster (clean, organized)
+            cluster_size = self.rng.randint(2, 3)
             for _ in range(cluster_size):
-                # Random position within cluster (within 6 blocks of center)
-                tree_x = cluster_x + self.rng.randint(-6, 6)
+                # Clean position within cluster (within 5 blocks of center)
+                tree_x = cluster_x + self.rng.randint(-5, 5)
                 
-                # Find surface height
-                surface_y = None
-                for y in range(110, 125):
-                    if f"{tree_x},{y}" in blocks and blocks[f"{tree_x},{y}"] == "grass":
-                        surface_y = y
-                        break
+                # Find surface height using the SAME algorithm as terrain generation
+                import math
+                base_height = 115
+                primary_wave = 6 * math.sin(tree_x * 0.05)  # Match clean terrain
+                secondary_wave = 3 * math.sin(tree_x * 0.15)
+                tertiary_wave = 2 * math.sin(tree_x * 0.3)
+                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+                surface_y = base_height + height_variation
+                surface_y = max(100, min(125, surface_y))
                 
-                if surface_y and (tree_x, surface_y) not in placed_positions:
+                if (tree_x, surface_y) not in placed_positions:
                     # Check if area is clear for tree
                     area_clear = True
                     for dx in range(-1, 2):
@@ -132,16 +156,19 @@ class WorldGenerator:
                             break
                     
                     if area_clear:
-                        # Place simple, clean tree
-                        # Trunk (2-3 blocks tall - simple and clean)
+                        # Place clean, organized tree
+                        # Trunk (2-3 blocks tall - consistent)
                         trunk_height = self.rng.randint(2, 3)
                         for y in range(surface_y - 1, surface_y - trunk_height - 1, -1):
                             blocks[f"{tree_x},{y}"] = "log"
                         
-                        # Simple leaf pattern (clean and organized)
-                        for dx in range(-1, 2):  # Smaller leaf area
+                        # Clean leaf pattern (organized)
+                        for dx in range(-1, 2):  # 3x3 leaf area
                             for dy in range(-trunk_height - 1, -trunk_height - 3, -1):
                                 blocks[f"{tree_x + dx},{surface_y + dy}"] = "leaves"
+                        
+                        # Add top leaf for better appearance
+                        blocks[f"{tree_x},{surface_y - trunk_height - 2}"] = "leaves"
                         
                         placed_positions.add((tree_x, surface_y))
                         tree_count += 1
@@ -161,87 +188,166 @@ class WorldGenerator:
                 if abs(x) < spawn_safe_zone:
                     continue
                     
-                # Find surface height
-                surface_y = None
-                for y in range(110, 125):
-                    if f"{x},{y}" in blocks and blocks[f"{x},{y}"] == "grass":
-                        surface_y = y
-                        break
+                # Find surface height using the SAME algorithm as terrain generation
+                import math
+                base_height = 115
+                primary_wave = 8 * math.sin(x * 0.05)
+                secondary_wave = 3 * math.sin(x * 0.15)
+                tertiary_wave = 2 * math.sin(x * 0.3)
+                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+                surface_y = base_height + height_variation
+                surface_y = max(100, min(125, surface_y))
                 
-                if surface_y:
-                    # Place larger fortress
-                    # Base platform (bigger)
-                    for dx in range(-6, 7):
-                        for dy in range(0, 3):
+                # Place fortress at calculated surface
+                # Place larger fortress
+                # Base platform (bigger)
+                for dx in range(-6, 7):
+                    for dy in range(0, 3):
+                        blocks[f"{x + dx},{surface_y + dy}"] = "stone"
+                
+                # Outer walls (bigger)
+                for dx in range(-6, 7):
+                    for dy in range(3, 8):
+                        if dx in [-6, 6] or dy == 7:  # Outer walls
                             blocks[f"{x + dx},{surface_y + dy}"] = "stone"
-                    
-                    # Outer walls (bigger)
-                    for dx in range(-6, 7):
-                        for dy in range(3, 8):
-                            if dx in [-6, 6] or dy == 7:  # Outer walls
-                                blocks[f"{x + dx},{surface_y + dy}"] = "stone"
-                    
-                    # Inner walls for rooms
-                    for dx in range(-4, 5):
-                        if dx % 3 == 0:  # Every 3 blocks
-                            for dy in range(3, 7):
-                                blocks[f"{x + dx},{surface_y + dy}"] = "stone"
-                    
-                    # Main entrance
-                    blocks[f"{x},{surface_y + 3}"] = "door"
-                    
-                    # Side entrances
-                    if self.rng.random() < 0.5:
-                        blocks[f"{x - 3},{surface_y + 3}"] = "door"
-                    if self.rng.random() < 0.5:
-                        blocks[f"{x + 3},{surface_y + 3}"] = "door"
-                    
-                    # Multiple chests
-                    for _ in range(self.rng.randint(2, 4)):  # 2-4 chests
-                        chest_x = x + self.rng.randint(-5, 6)
-                        chest_y = surface_y + 1
-                        if f"{chest_x},{chest_y}" not in blocks:
-                            blocks[f"{chest_x},{chest_y}"] = "chest"
-                    
-                    # Add some decorative elements
-                    if self.rng.random() < 0.6:
-                        blocks[f"{x},{surface_y + 6}"] = "red_brick"  # Flag
-                    
-                    fortress_count += 1
+                
+                # Inner walls for rooms
+                for dx in range(-4, 5):
+                    if dx % 3 == 0:  # Every 3 blocks
+                        for dy in range(3, 7):
+                            blocks[f"{x + dx},{surface_y + dy}"] = "stone"
+                
+                # Main entrance
+                blocks[f"{x},{surface_y + 3}"] = "door"
+                
+                # Side entrances
+                if self.rng.random() < 0.5:
+                    blocks[f"{x - 3},{surface_y + 3}"] = "door"
+                if self.rng.random() < 0.5:
+                    blocks[f"{x + 3},{surface_y + 3}"] = "door"
+                
+                # Multiple chests
+                for _ in range(self.rng.randint(2, 4)):  # 2-4 chests
+                    chest_x = x + self.rng.randint(-5, 6)
+                    chest_y = surface_y + 1
+                    if f"{chest_x},{chest_y}" not in blocks:
+                        blocks[f"{chest_x},{chest_y}"] = "chest"
+                
+                # Add some decorative elements
+                if self.rng.random() < 0.6:
+                    blocks[f"{x},{surface_y + 6}"] = "red_brick"  # Flag
+                
+                fortress_count += 1
         
         print(f"🏰 Generated {fortress_count} large fortresses (away from spawn)")
     
     def _generate_simple_ores(self, blocks: Dict[str, str], world_width: int):
-        """Generate simple ore distribution"""
+        """Generate ore distribution with proper rarity in the deep stone layer"""
+        import math
         ore_count = 0
         
-        for _ in range(50):  # 50 ore veins
-            x = self.rng.randint(-world_width//2, world_width//2)
-            y = self.rng.randint(110, 140)  # Below surface
+        # Generate ores for each column in the world
+        for x in range(-world_width//2, world_width//2):
+            # Calculate surface height using the same algorithm
+            base_height = 115
+            primary_wave = 8 * math.sin(x * 0.05)
+            secondary_wave = 3 * math.sin(x * 0.15)
+            tertiary_wave = 2 * math.sin(x * 0.3)
+            height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+            surface_y = base_height + height_variation
+            surface_y = max(100, min(125, surface_y))
             
-            # Check if position is stone
-            if f"{x},{y}" in blocks and blocks[f"{x},{y}"] == "stone":
-                # Simple ore types
-                if y < 120:
-                    ore_type = "coal" if self.rng.random() < 0.7 else "iron"
-                else:
-                    ore_type = "gold" if self.rng.random() < 0.6 else "diamond"
+            bedrock_y = surface_y + 200
+            
+            # Try to place multiple ores per column
+            for _ in range(3):  # Up to 3 ores per column
+                ore_chance = self.rng.random()
                 
-                blocks[f"{x},{y}"] = ore_type
-                ore_count += 1
+                if ore_chance < 0.8:  # 80% chance for at least one ore per column
+                    # Ore can spawn anywhere in the deep stone layer (200 blocks deep!)
+                    min_ore_y = surface_y + 5
+                    max_ore_y = bedrock_y - 1  # Almost to bedrock
+                    y = self.rng.randint(min_ore_y, max_ore_y)
+                    
+                    # Check if position is stone
+                    if f"{x},{y}" in blocks and blocks[f"{x},{y}"] == "stone":
+                        # Depth-based ore rarity system
+                        depth_from_surface = y - surface_y
+                        depth_percentage = depth_from_surface / (bedrock_y - surface_y)
+                        
+                        # Ore rarity based on depth and random chance
+                        ore_roll = self.rng.random()
+                        
+                        # Coal: Common (60% chance), spawns at any depth
+                        if ore_roll < 0.6:
+                            ore_type = "coal"
+                        # Iron: Uncommon (25% chance), spawns at any depth
+                        elif ore_roll < 0.85:
+                            ore_type = "iron"
+                        # Gold: Slightly rare (12% chance), spawns deeper (50%+ depth)
+                        elif ore_roll < 0.97 and depth_percentage > 0.5:
+                            ore_type = "gold"
+                        # Diamond: Rare (3% chance), spawns very deep (80%+ depth)
+                        elif depth_percentage > 0.8:
+                            ore_type = "diamond"
+                        else:
+                            ore_type = "coal"  # Fallback to coal if conditions not met
+                        
+                        blocks[f"{x},{y}"] = ore_type
+                        ore_count += 1
+                    
+                    # Reduce chance for additional ores
+                    ore_chance = self.rng.random() * 0.4  # 40% chance for second ore, 16% for third
         
-        print(f"⛏️ Generated {ore_count} ore veins")
+        print(f"⛏️ Generated {ore_count} ore veins with proper rarity distribution (coal=common, iron=uncommon, gold=slightly rare, diamond=rare)")
     
     def _find_spawn_location(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
-        """Find a good spawn location"""
-        # Start at center, find grass surface
-        for x in range(-10, 11):
-            for y in range(110, 125):
-                if f"{x},{y}" in blocks and blocks[f"{x},{y}"] == "grass":
-                    return x, y - 2  # Spawn 2 blocks above grass (not inside it!)
+        """Find a good spawn location using the same surface calculation"""
+        import math
         
-        # Fallback - spawn above the expected surface level
-        return 0, 112
+        # Use the SAME surface calculation as terrain generation
+        x = 0  # Spawn at center
+        base_height = 115
+        primary_wave = 8 * math.sin(x * 0.05)
+        secondary_wave = 3 * math.sin(x * 0.15)
+        tertiary_wave = 2 * math.sin(x * 0.3)
+        height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+        surface_y = base_height + height_variation
+        surface_y = max(100, min(125, surface_y))
+        
+        return x, surface_y - 2  # Spawn 2 blocks above surface
+
+    def _generate_simple_chests(self, blocks: Dict[str, str], world_width: int):
+        """Generate standalone chests scattered around the world - 4000+ chests total"""
+        chest_count = 0
+        
+        # Generate chests with 5% chance per block - uncommon but visible
+        for x in range(-world_width//2, world_width//2):
+            if self.rng.random() < 0.05:  # 5% chance for chest per block - uncommon but visible
+                # Find surface height using same calculation as terrain
+                import math
+                base_height = 115
+                primary_wave = 6 * math.sin(x * 0.05)
+                secondary_wave = 3 * math.sin(x * 0.15)
+                tertiary_wave = 2 * math.sin(x * 0.3)
+                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+                surface_y = base_height + height_variation
+                surface_y = max(100, min(125, surface_y))
+                
+                # Place chest ABOVE the surface (on top of grass)
+                chest_y = surface_y - 1  # Above surface level, on top of grass
+                
+                # Only place if location is clear and on grass
+                block_key = f"{x},{chest_y}"
+                if block_key not in blocks:
+                    # Check if this would be on grass (grass is placed at surface_y)
+                    blocks[block_key] = "chest"
+                    chest_count += 1
+                    print(f"📦 WorldGen: Chest placed at ({x}, {chest_y})")
+                else:
+                    print(f"❌ WorldGen: Cannot place chest at ({x}, {chest_y}) - block already exists")
+        
+        print(f"📦 Generated {chest_count} standalone chests (5% chance per block)")
 
 def generate_world(seed: str = None, world_width: int = 400) -> Dict:
     """

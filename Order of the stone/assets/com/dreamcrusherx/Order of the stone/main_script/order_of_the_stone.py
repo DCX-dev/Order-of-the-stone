@@ -845,6 +845,9 @@ head_bump_effect = False
 # Blood particle system
 blood_particles = []
 
+# Shift key state tracking for reliable movement detection
+shift_key_pressed = False
+
 
 def apply_display_mode():
     """Apply windowed or fullscreen mode and keep SCREEN_WIDTH/HEIGHT in sync."""
@@ -1370,59 +1373,6 @@ def make_stone_sword_texture(size):
     
     return surf
 
-def make_villager_texture(size=32):
-    """Generate a Python-themed villager texture"""
-    surf = pygame.Surface((size, size), pygame.SRCALPHA)
-    
-    # Python colors
-    python_blue = (53, 114, 165)
-    python_yellow = (255, 212, 59)
-    skin_color = (222, 184, 135)
-    white = (255, 255, 255)
-    black = (0, 0, 0)
-    brown = (101, 67, 33)
-    
-    # Head (skin color)
-    head_size = size // 3
-    pygame.draw.rect(surf, skin_color, (size//2 - head_size//2, 2, head_size, head_size))
-    
-    # Python logo on shirt (simplified)
-    body_y = head_size + 4
-    body_height = size - body_y - 4
-    
-    # Blue shirt background
-    pygame.draw.rect(surf, python_blue, (size//2 - head_size//2, body_y, head_size, body_height))
-    
-    # Yellow Python accent (simplified snake shape)
-    accent_size = head_size // 3
-    pygame.draw.circle(surf, python_yellow, (size//2 - accent_size//2, body_y + accent_size), accent_size//2)
-    pygame.draw.circle(surf, python_yellow, (size//2 + accent_size//2, body_y + accent_size*2), accent_size//2)
-    
-    # Eyes
-    eye_size = 2
-    pygame.draw.circle(surf, black, (size//2 - 4, 8), eye_size)
-    pygame.draw.circle(surf, black, (size//2 + 4, 8), eye_size)
-    
-    # Hair/hat (brown)
-    pygame.draw.rect(surf, brown, (size//2 - head_size//2, 2, head_size, 4))
-    
-    # Arms (skin color)
-    arm_width = 3
-    pygame.draw.rect(surf, skin_color, (size//2 - head_size//2 - arm_width, body_y + 2, arm_width, body_height//2))
-    pygame.draw.rect(surf, skin_color, (size//2 + head_size//2, body_y + 2, arm_width, body_height//2))
-    
-    # Legs (blue pants)
-    leg_width = head_size // 3
-    leg_y = body_y + body_height//2
-    pygame.draw.rect(surf, python_blue, (size//2 - leg_width, leg_y, leg_width//2, body_height//2))
-    pygame.draw.rect(surf, python_blue, (size//2 + leg_width//2, leg_y, leg_width//2, body_height//2))
-    
-    # Shoes (black)
-    shoe_height = 3
-    pygame.draw.rect(surf, black, (size//2 - leg_width, size - shoe_height, leg_width//2, shoe_height))
-    pygame.draw.rect(surf, black, (size//2 + leg_width//2, size - shoe_height, leg_width//2, shoe_height))
-    
-    return surf
 
 
 def generate_carbine_field(center_x: int, ground_y: int, world_rng):
@@ -1450,15 +1400,16 @@ def generate_terrain_column(x):
     """Generate realistic terrain for a specific column if it hasn't been generated yet"""
     global generated_terrain_columns
     
-    # Skip if already generated
+    # Skip if already generated - CRITICAL: This prevents terrain overlap!
     if x in generated_terrain_columns:
+        print(f"⏭️ Skipping terrain generation for column {x} - already generated")
         return
     
     print(f"🌍 Generating terrain for NEW column {x}")
     
-    # IMPROVED TERRAIN GENERATION: Create varied, realistic terrain
+    # NATURAL HILL GENERATION: Create terrain that follows natural contours
     # Use multiple noise functions for more natural terrain
-    base_height = 115  # Surface around Y=115 (matches world generation system)
+    base_height = 115  # Base surface level
     
     # Primary terrain variation
     primary_wave = 8 * math.sin(x * 0.05)  # Large hills/valleys
@@ -1467,70 +1418,160 @@ def generate_terrain_column(x):
     
     # Combine waves for natural terrain
     height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-    ground_y = base_height + height_variation
+    surface_y = base_height + height_variation
     
-    # Ensure ground is in reasonable range
-    ground_y = max(100, min(125, ground_y))
+    # Ensure surface is in reasonable range
+    surface_y = max(100, min(125, surface_y))
     
-    # Generate terrain layers from top to bottom
-    set_block(x, ground_y, "grass")  # Surface
+    # NATURAL TERRAIN GENERATION: Build hills from base up, not cutting through
+    # Generate terrain layers from bottom to top to create natural hill contours
     
-    # Dirt layer (2-4 blocks deep)
-    dirt_depth = random.randint(2, 4)
-    for y in range(ground_y + 1, ground_y + 1 + dirt_depth):
-        set_block(x, y, "dirt")
+    # 1. BEDROCK at bottom - CHECK FOR EXISTING BLOCKS
+    bedrock_y = 327  # 200 blocks below surface (surface_y + 200)
+    if get_block(x, bedrock_y) is None:
+        set_block(x, bedrock_y, "bedrock")
     
-    # Stone layer (fills to deep underground)
-    for y in range(ground_y + 1 + dirt_depth, 127):
-        set_block(x, y, "stone")
+    # 2. STONE LAYER: Fill from bedrock up to surface (200 blocks deep!)
+    for y in range(surface_y + 3, bedrock_y):  # Stone fills 200 blocks underground
+        if get_block(x, y) is None:
+            set_block(x, y, "stone")
     
-    # Bedrock at bottom
-    set_block(x, 127, "bedrock")
+    # 3. DIRT LAYER: 2 blocks below surface - NEVER underground
+    for y in range(surface_y + 1, surface_y + 3):
+        if get_block(x, y) is None:
+            set_block(x, y, "dirt")
+            set_block(x, y, "dirt")
     
-    # Add occasional surface features
-    if random.random() < 0.1:  # 10% chance
-        # Add a perfect tree with 2 stacked logs and 6 leaves in block formation
-        if random.random() < 0.5:
-            # Tree trunk: 2 stacked logs
-            set_block(x, ground_y - 1, "log")  # Bottom log
-            set_block(x, ground_y - 2, "log")  # Top log
+    # 4. GRASS: ONLY at exact surface level - NEVER underground
+    if get_block(x, surface_y) is None:
+        set_block(x, surface_y, "grass")  # Surface ONLY - NEVER underground!
+    
+    # BIOME-BASED TREE GENERATION: Forests have lots of trees, fields have few
+    biome_type = get_biome_type(x)
+    if should_generate_tree(x, surface_y, biome_type):
+        # ABSOLUTE RULE: Trees can ONLY spawn ABOVE surface (y < surface_y) - NEVER underground!
+        # Tree trunk: 2 stacked logs - CHECK FOR EXISTING BLOCKS
+        # CRITICAL: Trees can NEVER EVER spawn underground or at ground level
+        if get_block(x, surface_y - 1) is None and (surface_y - 1) < surface_y:
+            set_block(x, surface_y - 1, "log")  # Bottom log (ABOVE surface only)
+            if get_block(x, surface_y - 2) is None and (surface_y - 2) < surface_y:
+                set_block(x, surface_y - 2, "log")  # Top log (ABOVE surface only)
             
-            # Perfect 6-leaf formation in a block pattern
-            # Top row (3 leaves)
-            set_block(x - 1, ground_y - 3, "leaves")  # Left
-            set_block(x, ground_y - 3, "leaves")      # Center
-            set_block(x + 1, ground_y - 3, "leaves")  # Right
+            # Perfect 6-leaf formation in a block pattern - CHECK FOR EXISTING BLOCKS
+            # Top row (3 leaves) - ONLY ABOVE SURFACE - NEVER underground!
+            if get_block(x - 1, surface_y - 3) is None and (surface_y - 3) < surface_y:
+                set_block(x - 1, surface_y - 3, "leaves")  # Left
+            if get_block(x, surface_y - 3) is None and (surface_y - 3) < surface_y:
+                set_block(x, surface_y - 3, "leaves")      # Center
+            if get_block(x + 1, surface_y - 3) is None and (surface_y - 3) < surface_y:
+                set_block(x + 1, surface_y - 3, "leaves")  # Right
             
-            # Bottom row (3 leaves)
-            set_block(x - 1, ground_y - 2, "leaves")  # Left (at log level)
-            set_block(x + 1, ground_y - 2, "leaves")  # Right (at log level)
-            set_block(x, ground_y - 4, "leaves")      # Top center (above the 3-leaf row)
+            # Bottom row (3 leaves) - ONLY ABOVE SURFACE - NEVER underground!
+            if get_block(x - 1, surface_y - 2) is None and (surface_y - 2) < surface_y:
+                set_block(x - 1, surface_y - 2, "leaves")  # Left (at log level)
+            if get_block(x + 1, surface_y - 2) is None and (surface_y - 2) < surface_y:
+                set_block(x + 1, surface_y - 2, "leaves")  # Right (at log level)
+            if get_block(x, surface_y - 4) is None and (surface_y - 4) < surface_y:
+                set_block(x, surface_y - 4, "leaves")      # Top center (above the 3-leaf row)
     
-    # Add underground ores (rare)
-    if random.random() < 0.3:  # 30% chance for ore
-        # Ensure valid range for ore placement
-        min_ore_y = ground_y + 5
-        max_ore_y = 120
-        if min_ore_y <= max_ore_y:  # Only place ore if range is valid
-            ore_y = random.randint(min_ore_y, max_ore_y)
-            ore_type = random.choice(["coal", "iron", "gold", "diamond"])
-            set_block(x, ore_y, ore_type)
+    # Add underground ores with proper rarity distribution - CHECK FOR EXISTING BLOCKS
+    ore_chance = random.random()
     
-    # Add surface items (carrots and chests)
-    if can_place_surface_item(x, ground_y):
+    # Ensure valid range for ore placement in the deep stone layer
+    min_ore_y = surface_y + 5
+    max_ore_y = bedrock_y - 1  # Ore can go almost to bedrock
+    
+    # Multiple ore chances per column for more ores underground
+    for _ in range(3):  # Try to place up to 3 ores per column
+        if ore_chance < 0.8:  # 80% chance for at least one ore per column
+            if min_ore_y <= max_ore_y:  # Only place ore if range is valid
+                ore_y = random.randint(min_ore_y, max_ore_y)
+
+                # Depth-based ore rarity system
+                depth_from_surface = ore_y - surface_y
+                depth_percentage = depth_from_surface / (bedrock_y - surface_y)
+
+                # Ore rarity based on depth and random chance
+                ore_roll = random.random()
+
+                # Coal: Common (60% chance), spawns at any depth
+                if ore_roll < 0.6:
+                    ore_type = "coal"
+                # Iron: Uncommon (25% chance), spawns at any depth
+                elif ore_roll < 0.85:
+                    ore_type = "iron"
+                # Gold: Slightly rare (12% chance), spawns deeper (50%+ depth)
+                elif ore_roll < 0.97 and depth_percentage > 0.5:
+                    ore_type = "gold"
+                # Diamond: Rare (3% chance), spawns very deep (80%+ depth)
+                elif depth_percentage > 0.8:
+                    ore_type = "diamond"
+                else:
+                    ore_type = "coal"  # Fallback to coal if conditions not met
+                
+                # Only place ore if the location is empty
+                if get_block(x, ore_y) is None:
+                    set_block(x, ore_y, ore_type)
+    
+        # Reduce chance for additional ores
+        ore_chance = random.random() * 0.4  # 40% chance for second ore, 16% for third
+    
+    # Add surface items (carrots and chests) - CHECK FOR EXISTING BLOCKS
+    if can_place_surface_item(x, surface_y):
         # Carrots - 15% chance
         if random.random() < 0.15:
-            set_block(x, ground_y - 1, "carrot")
+            # Only place carrot if the location is empty
+            if get_block(x, surface_y - 1) is None:
+                set_block(x, surface_y - 1, "carrot")
         
-        # Chests - 2% chance (rare but not too rare)
-        if random.random() < 0.02:
-            set_block(x, ground_y - 1, "chest")
-            chest_system.generate_chest_loot("village")
+        # Chests - 5% chance (uncommon but visible)
+        # GRASS RULE: Chests can only be placed on grass blocks during world generation
+        if random.random() < 0.05:
+            # Check if we can place a chest according to the grass rule
+            # Place chest ABOVE the grass block (surface_y - 1)
+            chest_y = surface_y - 1
+            if can_place_chest_on_grass(x, chest_y) and get_block(x, chest_y) is None:
+                set_block(x, chest_y, "chest")
+                if chest_system:
+                    chest_system.generate_chest_loot("village")
+                print(f"📦 Chest placed on grass at ({x}, {chest_y})")
+            else:
+                print(f"❌ Cannot place chest at ({x}, {chest_y}) - grass rule: {can_place_chest_on_grass(x, chest_y)}, block exists: {get_block(x, chest_y) is not None}")
     
     # Mark as generated
     generated_terrain_columns.add(x)
     
-    print(f"✅ Generated terrain column {x}: surface at Y={ground_y}")
+    print(f"✅ Generated terrain column {x}: surface at Y={surface_y}")
+
+def place_starter_chest(spawn_x, surface_y):
+    """Place a starter chest next to the player with basic materials"""
+    # Find a good spot for the starter chest (2-3 blocks to the right of spawn)
+    chest_x = spawn_x + 3
+    chest_y = surface_y
+    
+    # Check if we can place chest according to grass rule and position is clear
+    if can_place_chest_on_grass(chest_x, chest_y) and get_block(chest_x, chest_y) is None:
+        set_block(chest_x, chest_y, "chest")
+        
+        # Generate starter loot for the chest
+        if hasattr(chest_system, 'generate_chest_loot'):
+            chest_system.generate_chest_loot("starter")
+        
+        print(f"🎁 Starter chest placed on grass at ({chest_x}, {chest_y})")
+        return True
+    else:
+        # Try alternative positions if first spot doesn't work
+        for offset in [2, 4, -2, -3]:
+            alt_chest_x = spawn_x + offset
+            if can_place_chest_on_grass(alt_chest_x, chest_y) and get_block(alt_chest_x, chest_y) is None:
+                set_block(alt_chest_x, chest_y, "chest")
+                if hasattr(chest_system, 'generate_chest_loot'):
+                    chest_system.generate_chest_loot("starter")
+                print(f"🎁 Starter chest placed on grass at alternative position ({alt_chest_x}, {chest_y})")
+                return True
+    
+    print("⚠️ Could not find suitable grass position for starter chest")
+    return False
 
 def fix_player_spawn_position():
     """Ensure player spawns on the surface, not underground"""
@@ -1569,6 +1610,10 @@ def fix_player_spawn_position():
             player["vel_y"] = 0.0
             player["on_ground"] = False
             print(f"✅ COLLISION-FREE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
+            
+            # Place starter chest next to player
+            place_starter_chest(spawn_x, y)
+            
             return True
     
     # Fallback: search wider range and ensure collision-free spawn
@@ -1585,6 +1630,10 @@ def fix_player_spawn_position():
             player["vel_y"] = 0.0
             player["on_ground"] = False
             print(f"✅ FALLBACK SAFE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
+            
+            # Place starter chest next to player
+            place_starter_chest(spawn_x, y)
+            
             return True
     
     # Emergency: Create a safe platform if no suitable location found
@@ -1603,44 +1652,6 @@ def fix_player_spawn_position():
     print(f"🛠️ EMERGENCY SAFE SPAWN: Created platform at ({player['x']:.1f}, {player['y']:.1f})")
     return True
 
-def place_starter_chest():
-    """Place a guaranteed starter chest near the player spawn point with essential tools"""
-    global player
-    
-    spawn_x = int(player["x"])
-    spawn_y = int(player["y"])
-    
-    # Try to place chest 2-6 blocks to the right of spawn
-    for offset in range(2, 7):
-        chest_x = spawn_x + offset
-        chest_y = spawn_y + 2  # Place on ground level
-        
-        # Check if position is suitable for chest
-        if can_place_surface_item(chest_x, chest_y):
-            set_block(chest_x, chest_y - 1, "chest")
-            # Create a special starter chest with guaranteed tools
-            chest_system.place_chest(world_system, chest_x, chest_y, "starter")
-            print(f"🎁 Placed starter chest at ({chest_x}, {chest_y}) with essential tools!")
-            return True
-    
-    # If right side doesn't work, try left side
-    for offset in range(2, 7):
-        chest_x = spawn_x - offset
-        chest_y = spawn_y + 2
-        
-        if can_place_surface_item(chest_x, chest_y):
-            set_block(chest_x, chest_y - 1, "chest")
-            chest_system.place_chest(world_system, chest_x, chest_y, "starter")
-            print(f"🎁 Placed starter chest at ({chest_x}, {chest_y}) with essential tools!")
-            return True
-    
-    # If still no luck, try placing directly at spawn (force placement)
-    chest_x = spawn_x + 1
-    chest_y = spawn_y + 2
-    set_block(chest_x, chest_y - 1, "chest")
-    chest_system.place_chest(world_system, chest_x, chest_y, "starter")
-    print(f"🎁 Placed starter chest at ({chest_x}, {chest_y}) with essential tools!")
-    return True
 
 # Load textures
 textures = {
@@ -1685,11 +1696,7 @@ textures = {
     "chess_king_black": load_texture(os.path.join(TILE_DIR, "chess_king_black.png")),
 }
 
-# --- Villager texture (tries file, falls back to procedural) ---
-try:
-    textures["villager"] = load_texture(os.path.join(MOB_DIR, "villager.png"))
-except Exception:
-    textures["villager"] = make_villager_texture(TILE_SIZE)
+# Villager texture removed
 
 # --- Zombie texture (tries file, falls back to procedural) ---
 try:
@@ -1793,7 +1800,7 @@ class PlayerAnimator:
                         
                         # Set different frame rates for each animation
                         if animation_name == "walking":
-                            frame_duration = 200  # 5 frames per second (1000ms / 5fps = 200ms)
+                            frame_duration = 125  # 8 frames per second (1000ms / 8fps = 125ms)
                         elif animation_name == "standing":
                             frame_duration = 1000  # 1 frame per second (1000ms / 1fps = 1000ms)
                         elif animation_name == "falling":
@@ -1972,6 +1979,7 @@ def play_damage_sound():
     except Exception as e:
         print(f"⚠️ Could not play damage sound: {e}")
 
+
 # Fonts
 font = pygame.font.SysFont("Arial", 24)
 small_font = pygame.font.SysFont("Arial", 16)
@@ -2018,7 +2026,9 @@ player = {
     "max_stamina": 100,  # Maximum stamina capacity
             "facing_direction": 1,  # 1 = right, -1 = left
         "last_x": 10,  # Initialize last position for movement detection
-        "last_y": 0
+        "last_y": 0,
+    "fall_start_y": None,  # Track where fall started for damage calculation
+    "fall_height": 0.0  # Current fall height
 }
 
 # Username will be loaded from username.json file
@@ -2029,6 +2039,10 @@ JUMP_STRENGTH = -12  # Increased from -8 to -12 for higher jumping to clear bloc
 # Movement speeds - frame-rate independent for consistent gameplay across devices
 MOVE_SPEED = 0.15  # Fast, responsive movement
 SLOW_SPEED = 0.08  # Slower when holding shift
+
+# Fall damage system
+FALL_DAMAGE_THRESHOLD = 4.0  # Take damage when falling from 4+ blocks
+FALL_DAMAGE_MULTIPLIER = 1.5  # Damage per block above threshold
 
 # Stamina system
 STAMINA_DRAIN_RATE = 0.8  # Reduced from 2.0 - stamina lost per frame while climbing without ladder
@@ -2041,17 +2055,15 @@ entities = []
 camera_x = 0
 camera_y = 0  # Vertical camera position
 fall_start_y = None
-# Village generation tracking
-generated_village_chunks = set()
+# Village generation removed
 generated_terrain_columns = set()  # Track which columns have had terrain generated
+broken_grass_locations = set()  # Track grass blocks that have been broken by the player
 
 # --- Message HUD (temporary notifications) ---
 message_text = ""
 message_until = 0  # pygame.time.get_ticks() deadline
 
-# --- Villager Dialogue System ---
-villager_dialogue_text = ""
-villager_dialogue_until = 0
+# Villager dialogue system removed
 
 # --- Door System ---
 door_states = {}  # Track which doors are open/closed
@@ -2327,6 +2339,26 @@ def draw_head_bump_effect(px, py):
     text_y = effect_y - 15
     screen.blit(ouch_text, (text_x, text_y))
 
+def add_blood_particle(x, y):
+    """Add a single blood particle at the specified location"""
+    global blood_particles
+    
+    # Random direction and speed for the particle
+    angle = random.uniform(0, 2 * math.pi)
+    speed = random.uniform(2, 6)
+    life = random.randint(20, 40)  # Frames to live
+    
+    particle = {
+        'x': x,
+        'y': y,
+        'vel_x': math.cos(angle) * speed,
+        'vel_y': math.sin(angle) * speed,
+        'life': life,
+        'max_life': life,
+        'size': random.randint(2, 4)
+    }
+    blood_particles.append(particle)
+
 def create_blood_particles(x, y, count=8):
     """Create blood particles at the specified location"""
     global blood_particles
@@ -2347,6 +2379,39 @@ def create_blood_particles(x, y, count=8):
             'size': random.randint(2, 4)
         }
         blood_particles.append(particle)
+
+def create_monster_death_blood_spray(x, y):
+    """Create dramatic blood squirting effect when monster dies"""
+    global blood_particles
+    
+    # Create multiple bursts of blood over a few seconds
+    for burst in range(3):  # 3 bursts of blood
+        for _ in range(12):  # 12 particles per burst
+            # Create spray pattern - more particles in random directions
+            angle = random.uniform(0, 2 * math.pi)
+            
+            # Vary speed - some fast, some slow for realistic effect
+            speed = random.uniform(3, 10)  # Faster than normal particles
+            
+            # Longer life for more dramatic effect
+            life = random.randint(40, 80)  # Longer lasting
+            
+            # Slightly larger particles for visibility
+            size = random.randint(3, 6)
+            
+            particle = {
+                'x': x + random.uniform(-5, 5),  # Slight spread in starting position
+                'y': y + random.uniform(-5, 5),
+                'vel_x': math.cos(angle) * speed,
+                'vel_y': math.sin(angle) * speed - random.uniform(0, 3),  # Slight upward bias
+                'life': life,
+                'max_life': life,
+                'size': size
+            }
+            blood_particles.append(particle)
+        
+        # Small delay between bursts (simulated by varying particle life)
+        # The delay is handled by the update timing
 
 def update_blood_particles():
     """Update all blood particles"""
@@ -2369,7 +2434,7 @@ def update_blood_particles():
             blood_particles.remove(particle)
 
 def draw_blood_particles():
-    """Draw all blood particles"""
+    """Draw all blood particles with enhanced visibility"""
     for particle in blood_particles:
         # Calculate alpha based on remaining life
         alpha = int(255 * (particle['life'] / particle['max_life']))
@@ -2377,9 +2442,19 @@ def draw_blood_particles():
         # Create surface with alpha
         particle_surface = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
         
-        # Draw blood particle as red circle
-        color = (255, 0, 0, alpha)  # Red with alpha
+        # Enhanced blood colors - more vibrant red with slight variation
+        base_red = 255
+        green = random.randint(0, 30)  # Slight green variation for more realistic blood
+        blue = random.randint(0, 20)   # Slight blue variation
+        
+        # Draw blood particle as red circle with slight color variation
+        color = (base_red, green, blue, alpha)
         pygame.draw.circle(particle_surface, color, (particle['size'], particle['size']), particle['size'])
+        
+        # Add a slight highlight for more dramatic effect
+        if alpha > 128:  # Only add highlight when particle is bright enough
+            highlight_color = (255, min(255, green + 50), min(255, blue + 30), alpha // 2)
+            pygame.draw.circle(particle_surface, highlight_color, (particle['size'], particle['size']), particle['size'] // 2)
         
         # Blit to screen
         screen.blit(particle_surface, (particle['x'] - particle['size'], particle['y'] - particle['size']))
@@ -2615,11 +2690,9 @@ achievements = {
     "first_gold": False,     # First gold found (3 coins)
     "first_iron": False,     # First iron found (2 coins)
     "first_coal": False,     # First coal found (1 coin)
-    "first_village": False,  # First village discovered (50 coins)
     "first_monster_kill": False,  # First monster defeated (25 coins)
     "first_carrot": False,   # First carrot eaten (10 coins)
     "first_sleep": False,    # First time sleeping in bed (20 coins)
-    "first_villager_talk": False,  # First time talking to a villager (15 coins)
     "ultimate_achievement": False  # Most special achievement (1,000,000 coins)
 }
 
@@ -2919,425 +2992,12 @@ def ground_y_of_column(x: int):
             return y
     return None
 
-# --- Villager Dialogue System ---
-villager_dialogues = [
-    "Hello there, traveler! How are you today?",
-    "Welcome to our village! Feel free to explore.",
-    "The weather is lovely today, isn't it?",
-    "Have you found any interesting resources lately?",
-    "We're so glad you came to visit!",
-    "The crops are growing well this season.",
-    "Did you know there are diamonds deep underground?",
-    "We love having visitors in our village!",
-    "The stars are beautiful at night.",
-    "Have you tried sleeping in a bed? It's very restful!",
-    "We've been building new houses for everyone.",
-    "The village is growing bigger every day!",
-    "We hope you're enjoying your stay!",
-    "There's always something new to discover.",
-    "We're grateful for peaceful times like these.",
-    "The children love playing in the village square.",
-    "We share everything we have with visitors.",
-    "The village has a rich history of friendship.",
-    "We believe in helping each other out.",
-    "Welcome to our little corner of the world!",
-    "Have you seen our beautiful village gardens?",
-    "The villagers are very friendly here!",
-    "We love sharing stories with travelers.",
-    "The village is a safe place for everyone.",
-    "We hope you find many treasures on your journey!",
-    "The village has been here for generations.",
-    "We welcome all peaceful visitors.",
-    "The village square is the heart of our community.",
-    "We're proud of our peaceful village.",
-    "The villagers work together to help each other.",
-    "We believe in kindness and friendship.",
-    "The village is a place of harmony and joy."
-]
+# Villager dialogue system removed
 
-def get_random_villager_dialogue(villager=None):
-    """EXTREME ENGINEERING: Get personality-based villager dialogue with context awareness"""
-    if villager and isinstance(villager, dict):
-        personality = villager.get("personality", "friendly")
-        name = villager.get("name", "Villager")
-        mood = villager.get("mood", "neutral")
-        
-        # EXTREME ENGINEERING: Personality and mood-based dialogue
-        dialogue_pools = {
-            "friendly": {
-                "happy": [
-                    f"Hi there! I'm {name}! 👋",
-                    f"Welcome to our village! I'm {name}! 🏘️",
-                    f"Nice to meet you! I'm {name}! 😊",
-                    f"Hello friend! I'm {name}! 🌟"
-                ],
-                "neutral": [
-                    f"Hey, I'm {name}. How are you? 🤔",
-                    f"Hi, {name} here. Nice weather today! ☀️",
-                    f"Hello! I'm {name}. Need anything? 🛠️"
-                ],
-                "slightly_annoyed": [
-                    f"*sigh* I'm {name}. What do you want? 😤",
-                    f"Ugh, {name} here. Make it quick. ⏰",
-                    f"Fine, I'm {name}. What is it? 😒"
-                ]
-            },
-            "grumpy": {
-                "happy": [
-                    f"*grumbles* I'm {name}. Don't bother me much. 😠",
-                    f"Fine, I'm {name}. What do you want? 😤",
-                    f"*sigh* {name} here. Make it quick. ⏰"
-                ],
-                "neutral": [
-                    f"*grumpy noise* I'm {name}. Leave me alone. 😒",
-                    f"Ugh, {name} here. What now? 😤",
-                    f"*annoyed* I'm {name}. This better be important. 😠"
-                ],
-                "slightly_annoyed": [
-                    f"*very grumpy* I'm {name}. GO AWAY! 😡",
-                    f"*extremely annoyed* {name} here. I HATE EVERYTHING! 😤",
-                    f"*grumpy grumble* I'm {name}. Why are you still here? 😒"
-                ]
-            },
-            "wise": {
-                "happy": [
-                    f"Greetings, young one. I am {name}. 🧙‍♂️",
-                    f"Welcome, traveler. I am {name}, keeper of wisdom. 📚",
-                    f"Ah, a new face! I am {name}. What knowledge do you seek? 🔮"
-                ],
-                "neutral": [
-                    f"I am {name}. The path of wisdom is long and winding. 🛤️",
-                    f"Greetings. I am {name}. Every day brings new lessons. 📖",
-                    f"Hello there. I am {name}. What mysteries shall we explore? 🔍"
-                ],
-                "slightly_annoyed": [
-                    f"I am {name}. Your questions test my patience. 😤",
-                    f"*sigh* I am {name}. Must you disturb my meditation? 🧘‍♂️",
-                    f"Greetings, I am {name}. Your presence disrupts my studies. 📚"
-                ]
-            },
-            "curious": {
-                "happy": [
-                    f"Hi! I'm {name}! Tell me everything about your adventures! 🗺️",
-                    f"Hello! I'm {name}! What's the most exciting thing you've seen? 🌟",
-                    f"Hi there! I'm {name}! Can I come with you on your next journey? 🚀"
-                ],
-                "neutral": [
-                    f"Hey! I'm {name}! What's new in the world? 🌍",
-                    f"Hello! I'm {name}! Have you discovered any new places? 🏔️",
-                    f"Hi! I'm {name}! What's the most interesting thing you've found? 💎"
-                ],
-                "slightly_annoyed": [
-                    f"*impatient* I'm {name}! Tell me something interesting already! 😤",
-                    f"*bouncing* I'm {name}! I need adventure stories NOW! ⚡",
-                    f"*restless* I'm {name}! When are we going exploring? 🗺️"
-                ]
-            },
-            "shy": {
-                "happy": [
-                    f"*whispers* Hi... I'm {name}... 👋",
-                    f"*quietly* Hello... I'm {name}... 😊",
-                    f"*softly* Hi there... I'm {name}... 🌸"
-                ],
-                "neutral": [
-                    f"*whispers* Hey... I'm {name}... 🤫",
-                    f"*quietly* Hello... I'm {name}... 🤔",
-                    f"*softly* Hi... I'm {name}... 🌿"
-                ],
-                "slightly_annoyed": [
-                    f"*very quiet* I'm {name}... please don't stare... 😰",
-                    f"*whispers* Hi... I'm {name}... can you go away now? 😅",
-                    f"*softly* Hello... I'm {name}... I'm not good at talking... 😓"
-                ]
-            },
-            "energetic": {
-                "happy": [
-                    f"HELLO! I'M {name}! ARE YOU READY FOR ADVENTURE? 🚀",
-                    f"HI THERE! I'M {name}! LET'S GO EXPLORING! 🗺️",
-                    f"HELLO! I'M {name}! I'M SO EXCITED TO MEET YOU! ⚡"
-                ],
-                "neutral": [
-                    f"HI! I'M {name}! WHAT ARE WE DOING TODAY? 🎯",
-                    f"HELLO! I'M {name}! I'M FULL OF ENERGY! ⚡",
-                    f"HI THERE! I'M {name}! READY FOR SOME ACTION? 🏃‍♂️"
-                ],
-                "slightly_annoyed": [
-                    f"*bouncing* I'M {name}! WHY ARE YOU SO SLOW? 🐌",
-                    f"*jumping* HI! I'M {name}! CAN WE GO FASTER? ⚡",
-                    f"*running in place* HELLO! I'M {name}! I NEED TO MOVE! 🏃‍♂️"
-                ]
-            }
-        }
-        
-        # Get dialogue based on personality and mood
-        if personality in dialogue_pools and mood in dialogue_pools[personality]:
-            return random.choice(dialogue_pools[personality][mood])
-    
-    # Fallback to generic dialogue
-    return random.choice([
-        "Hello there! 👋",
-        "Welcome to our village! 🏘️",
-        "Nice to meet you! 😊",
-        "How are you today? 🤔",
-        "Greetings, traveler! 🌟"
-    ])
 
-def show_villager_dialogue(dialogue, villager=None):
-    """EXTREME ENGINEERING: Display enhanced villager dialogue with personality context"""
-    global villager_dialogue_text, villager_dialogue_until
-    
-    # EXTREME ENGINEERING: Add villager name and personality to dialogue
-    if villager and isinstance(villager, dict):
-        name = villager.get("name", "Villager")
-        personality = villager.get("personality", "friendly")
-        mood = villager.get("mood", "neutral")
-        
-        # Enhanced dialogue display
-        enhanced_dialogue = f"{dialogue}"
-        villager_dialogue_text = enhanced_dialogue
-    else:
-        villager_dialogue_text = dialogue
-    
-    villager_dialogue_until = time.time() + 6  # Show for 6 seconds (longer for enhanced dialogue)
 
-# --- Village and House helpers ---
-def build_house(origin_x, ground_y, width=7, height=5):
-    """EXTREME ENGINEERING: Build realistic village houses with interiors, entrances, and proper spacing"""
-    # Floor - stone foundation
-    for dx in range(width):
-        set_block(origin_x + dx, ground_y, "stone")
-    
-    # Walls - use oak planks for main structure, logs for corners
-    for dy in range(1, height + 1):
-        for dx in range(width):
-            x = origin_x + dx
-            y = ground_y - dy
-            edge = (dx == 0 or dx == width - 1)
-            top = (dy == height)
-            
-            # EXTREME ENGINEERING: Create proper entrance (2 blocks tall, 1 block wide)
-            door_x = origin_x + width // 2
-            if (x == door_x and (y == ground_y - 1 or y == ground_y - 2)):
-                # Leave doorway completely open for player to walk through
-                continue
-                
-            if edge or top:
-                # Use logs for corners and top, oak planks for main walls
-                if (dx == 0 or dx == width - 1) and (dy == 1 or dy == height):
-                    set_block(x, y, "log")  # Corner logs
-                else:
-                    set_block(x, y, "oak_planks")  # Main walls
-            else:
-                # Interior air - clear any obstacles
-                if get_block(x, y) not in (None, "air"):
-                    world_data.pop((x, y), None)
-    
-    # EXTREME ENGINEERING: Add interior details
-    # Interior floor (wooden planks)
-    for dx in range(1, width - 1):
-        set_block(origin_x + dx, ground_y, "oak_planks")
-    
-    # Interior walls for room separation
-    for dy in range(1, height):
-        # Left interior wall (bedroom area)
-        if random.random() < 0.7:  # 70% chance
-            set_block(origin_x + 1, ground_y - dy, "oak_planks")
-        # Right interior wall (living area)
-        if random.random() < 0.7:  # 70% chance
-            set_block(origin_x + width - 2, ground_y - dy, "oak_planks")
-    
-    # EXTREME ENGINEERING: Add furniture and decorations
-    # Bed (left side of house)
-    bed_x = origin_x + 1
-    bed_y = ground_y - 1
-    set_block(bed_x, bed_y, "bed")
-    
-    # Chest (right side of house, away from entrance)
-    chest_x = origin_x + width - 2
-    chest_y = ground_y - 1
-    if get_block(chest_x, chest_y) is None:
-        set_block(chest_x, chest_y, "chest")
-        # Generate natural chest loot for village houses
-        chest_system.generate_chest_loot("village")
-    
-    # EXTREME ENGINEERING: Add windows (small openings in walls)
-    window_y = ground_y - 2
-    if random.random() < 0.6:  # 60% chance for left window
-        set_block(origin_x, window_y, "air")  # Window opening
-    if random.random() < 0.6:  # 60% chance for right window
-        set_block(origin_x + width - 1, window_y, "air")  # Window opening
-    
-    # EXTREME ENGINEERING: Add entrance path (stone path leading to door)
-    path_x = origin_x + width // 2
-    for py in range(ground_y + 1, ground_y + 4):  # Path extends 3 blocks from house
-        set_block(path_x, py, "stone")
-    
-    print(f"🏠 Built realistic village house at ({origin_x}, {ground_y}) with interior and entrance!")
-    
-# EXTREME ENGINEERING: Spawn villagers ON SOLID GROUND next to houses
-# Spawn 1-3 villagers outside the house on solid ground
-    num_villagers = random.randint(1, 3)
-    for i in range(num_villagers):
-        # Place villagers outside the house on solid ground
-        if i == 0:  # First villager to the left of house
-            villager_x = origin_x - 2
-            villager_y = ground_y - 1
-        elif i == 1:  # Second villager to the right of house
-            villager_x = origin_x + width + 1
-            villager_y = ground_y - 1
-        else:  # Third villager in front of house
-            villager_x = origin_x + width // 2
-            villager_y = ground_y - 1
-        
-        # Check for solid ground and air space above
-        ground_block = get_block(villager_x, villager_y + 1)
-        air_space = get_block(villager_x, villager_y)
-        
-        # Only spawn if there's solid ground below and air space above
-        if (ground_block and ground_block not in ["water", "lava"] and 
-            air_space is None):
-            spawn_villager(villager_x, villager_y)
-            print(f"👤 Spawned house villager at ({villager_x}, {villager_y}) on solid ground!")
-    
-    # EXTREME ENGINEERING: Generate farm near the house (2 blocks away)
-    farm_x = origin_x + random.choice([-8, 8])  # Left or right of house
-    farm_y = ground_y
-    generate_village_farm(farm_x, farm_y)
+# Village and house building functions removed
 
-def spawn_villager(x, y):
-    """EXTREME ENGINEERING: Create intelligent villagers with personalities, movement, and dialogue"""
-    # EXTREME ENGINEERING: Villager personality system
-    personalities = ["friendly", "grumpy", "wise", "curious", "shy", "energetic"]
-    personality = random.choice(personalities)
-    
-    # EXTREME ENGINEERING: Villager names based on personality
-    name_pools = {
-        "friendly": ["Alex", "Sam", "Jordan", "Taylor", "Casey"],
-        "grumpy": ["Grumpus", "Cranky", "Sour", "Grouch", "Grumpy"],
-        "wise": ["Sage", "Elder", "Wise", "Oracle", "Mentor"],
-        "curious": ["Explorer", "Seeker", "Wanderer", "Discoverer", "Adventurer"],
-        "shy": ["Whisper", "Quiet", "Silent", "Hush", "Mute"],
-        "energetic": ["Bouncy", "Zippy", "Fast", "Quick", "Swift"]
-    }
-    
-    villager_name = random.choice(name_pools.get(personality, ["Villager"]))
-    
-    entities.append({
-        "type": "villager",
-        "x": float(x),
-        "y": float(y),
-        "dir": random.choice([-1, 1]),
-        "step": 0,
-        "dialogue_cooldown": 0,  # Prevent spam clicking
-        "last_dialogue": None,
-        "personality": personality,
-        "name": villager_name,
-        "movement_timer": 0,
-        "movement_target": None,
-        "home_x": x,  # Remember where they spawned
-        "home_y": y,
-        "wander_radius": random.randint(3, 8),  # How far they wander from home
-        "dialogue_history": [],  # Remember what they've said
-        "mood": random.choice(["happy", "neutral", "slightly_annoyed"]),
-        "last_interaction": 0
-    })
-    
-    print(f"👤 Spawned {personality} villager '{villager_name}' at ({x}, {y})")
-
-def build_village_center(center_x, center_y):
-    """Build a special village center building (town hall or meeting place)"""
-    # Village center is larger and more impressive than regular houses
-    width = 11
-    height = 7
-    
-    # Foundation
-    for dx in range(width):
-        set_block(center_x + dx, center_y, "oak_planks")
-    
-    # Walls (red brick for special building)
-    for dy in range(1, height + 1):
-        for dx in range(width):
-            x = center_x + dx
-            y = center_y - dy
-            if dx == 0 or dx == width - 1 or dy == height:  # Exterior walls
-                set_block(x, y, "red_brick")
-            else:
-                # Interior air
-                if get_block(x, y) not in (None, "air"):
-                    world_data.pop((x, y), None)
-    
-    # Floor levels
-    for floor_y in [center_y - 2, center_y - 4, center_y - 6]:
-        for dx in range(1, width - 1):
-            set_block(center_x + dx, floor_y, "oak_planks")
-    
-    # Main entrance (3 blocks wide)
-    for dy in range(1, 4):
-        set_block(center_x + width//2 - 1, center_y - dy, "air")
-        set_block(center_x + width//2, center_y - dy, "air")
-        set_block(center_x + width//2 + 1, center_y - dy, "air")
-    
-    # Windows on sides
-    for dy in range(2, 5):
-        set_block(center_x, center_y - dy, "air")  # Left window
-        set_block(center_x + width - 1, center_y - dy, "air")  # Right window
-    
-    # Roof (stairs effect)
-    for dy in range(height + 1, height + 3):
-        for dx in range(1, width - 1):
-            if dx < width - 2:  # Create stair effect
-                set_block(center_x + dx, center_y - dy, "oak_planks")
-    
-    # Add a chest in the center building
-    chest_x = center_x + width//2
-    chest_y = center_y - 1
-    set_block(chest_x, chest_y, "chest")
-    chest_system.place_chest(world_system, chest_x, chest_y, "village")
-    
-    print(f"🏛️ Built village center at ({center_x}, {center_y}) with {width}x{height} dimensions!")
-
-def generate_village_farm(farm_x, farm_y):
-    """EXTREME ENGINEERING: Generate realistic village farms with dirt blocks at ground level and planted carrots"""
-    # Farm platform (4x4 dirt area at ground level)
-    farm_size = 4
-    for dx in range(farm_size):
-        for dy in range(farm_size):
-            x = farm_x + dx
-            y = farm_y + dy
-            # Create dirt platform at ground level (not floating)
-            set_block(x, y, "dirt")
-    
-    # EXTREME ENGINEERING: Plant carrots directly in the dirt (not floating above)
-    for dx in range(farm_size):
-        carrot_x = farm_x + dx
-        carrot_y = farm_y - 1  # Plant carrots in the dirt blocks
-        # Only plant if there's dirt below (not floating)
-        if get_block(carrot_x, farm_y) == "dirt":
-            set_block(carrot_x, carrot_y, "carrot")
-    
-    # EXTREME ENGINEERING: Add farm decorations
-    # Fence around the farm
-    for dx in range(farm_size + 2):  # +2 for fence posts
-        fence_x = farm_x + dx - 1
-        # Front fence
-        set_block(fence_x, farm_y - 2, "log")
-        # Back fence
-        set_block(fence_x, farm_y + farm_size, "log")
-    
-    # Side fences
-    for dy in range(farm_size + 2):
-        fence_y = farm_y + dy - 1
-        # Left fence
-        set_block(farm_x - 1, fence_y, "log")
-        # Right fence
-        set_block(farm_x + farm_size, fence_y, "log")
-    
-    # EXTREME ENGINEERING: Add water source near farm
-    water_x = farm_x + random.randint(0, farm_size - 1)
-    water_y = farm_y + farm_size + 2
-    set_block(water_x, water_y, "water")
-    
-    print(f"🌾 Generated village farm at ({farm_x}, {farm_y}) with 4 carrots and fencing!")
 
 def spawn_legend_npc():
     """EXTREME ENGINEERING: Spawn the Legend NPC at the boss location"""
@@ -4178,97 +3838,6 @@ def damage_boss(damage):
         else:
             show_message("🏆 FINAL BOSS PHASE DEFEATED! Victory!", 2000)
 
-def maybe_generate_village_for_chunk(chunk_id, base_x):
-    """25% chance to create a larger village (3-6 houses) in this 50-wide chunk.
-    Allow spawning even when a world is loaded (we now route through set_block).
-    """
-    
-    # Don't generate if chunk already exists
-    if chunk_id in generated_village_chunks:
-        return
-        
-    rng = random.Random(f"village-{chunk_id}")
-    if rng.random() < 0.25:  # 25% chance for village
-        # choose number of houses and spacing - INCREASED for larger villages
-        house_count = rng.randint(3, 6)  # Increased from 1-2 to 3-6 houses
-        spacing = rng.randint(8, 12)  # Reduced spacing for more clustered villages
-        start_x = base_x + rng.randint(5, 15)
-        last_house_ground_y = None
-        # Create village center with special building
-        village_center_x = start_x + (house_count * spacing) // 2
-        village_center_gy = ground_y_of_column(village_center_x)
-        if village_center_gy is None:
-            village_center_gy = 0 + int(2 * math.sin(village_center_x * 0.2))
-            set_block(village_center_x, village_center_gy, "grass")
-            for y in range(village_center_gy + 1, village_center_gy + 7):
-                set_block(village_center_x, y, "dirt" if y < village_center_gy + 4 else "stone")
-            set_block(village_center_x, village_center_gy + 7, "bedrock")
-        
-        # Build village center (larger building)
-        build_village_center(village_center_x, village_center_gy)
-        
-        # Spawn more villagers at the center
-        for _ in range(3):
-            spawn_villager(village_center_x + rng.randint(-2, 2), village_center_gy + 1)
-        
-        for i in range(house_count):
-            hx = start_x + i * spacing
-            gy = ground_y_of_column(hx)
-            if gy is None:
-                # fallback to sine terrain estimate - y=0 is surface now
-                gy = 0 + int(2 * math.sin(hx * 0.2))
-                # ensure terrain exists under house
-                set_block(hx, gy, "grass")
-                for y in range(gy + 1, gy + 7):
-                    set_block(hx, y, "dirt" if y < gy + 4 else "stone")
-                set_block(hx, gy + 7, "bedrock")
-            
-            # Place village houses ON the ground (not floating)
-            village_y = gy  # At ground level
-            
-            # Ensure terrain exists under the house foundation
-            for dx in range(7):  # House width
-                # Don't create new terrain - use existing ground
-                # Just ensure the foundation blocks are solid
-                if get_block(hx + dx, gy) is None:
-                    set_block(hx + dx, gy, "grass")  # Surface if missing
-                if get_block(hx + dx, gy + 1) is None:
-                    set_block(hx + dx, gy + 1, "dirt")  # Dirt layer if missing
-            
-            # Fill any holes under the house foundation with clean layering
-            house_width = 7  # Same width as used in build_house
-            for dx in range(house_width):
-                # Ensure clean layer hierarchy under houses - stone layer is now 8 blocks deep
-                for y in range(gy + 1, 13):
-                    if get_block(hx + dx, y) is None:
-                        if y < gy + 4:
-                            set_block(hx + dx, y, "dirt")
-                        elif y < 13:
-                            set_block(hx + dx, y, "stone")
-                        else:
-                            set_block(hx + dx, y, "bedrock")
-            
-            # Build different types of houses for variety
-            if i == 0:  # First house - regular house
-                build_house(hx, village_y, width=7, height=5)
-            elif i == 1:  # Second house - larger house
-                build_house(hx, village_y, width=9, height=6)
-            elif i == 2:  # Third house - farm house
-                build_house(hx, village_y, width=7, height=5)
-                # Add farm next to farm house
-                generate_village_farm(hx + 8, village_y)
-            else:  # Other houses - regular houses
-                build_house(hx, village_y, width=7, height=5)
-            
-            # spawn 2-3 villagers near the doorway on the ground
-            spawn_villager(hx + 3, village_y + 1)
-            spawn_villager(hx + 2, village_y + 1)
-            if rng.random() < 0.6:  # 60% chance for third villager
-                spawn_villager(hx + 4, village_y + 1)
-        generated_village_chunks.add(chunk_id)
-        
-        # Check for first village discovery achievement
-        check_achievement("first_village", 50, "Discovered first village!")
 
 def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
     """Build a fortress of the specified type with unique characteristics"""
@@ -4392,9 +3961,8 @@ def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
 def maybe_generate_fortress_for_chunk(chunk_id, base_x):
     """Generate a random fortress type in this chunk based on rarity."""
     
-    # Don't generate if chunk already exists
-    if chunk_id in generated_village_chunks:
-        return
+    # Don't generate if chunk already exists (village system removed)
+    return
     
     rng = random.Random(f"fortress-{chunk_id}")
     
@@ -4417,7 +3985,7 @@ def maybe_generate_fortress_for_chunk(chunk_id, base_x):
     
     # Build the fortress with the selected type
     build_fortress(fortress_x, fortress_y, fortress_type)
-    generated_village_chunks.add(chunk_id)  # Mark as generated
+    # Village generation removed
 
 def select_fortress_type(rng):
     """Select a fortress type based on rarity weights"""
@@ -4460,6 +4028,74 @@ def can_place_surface_item(x: int, ground_y: int) -> bool:
             return False
 
     return True
+
+def get_biome_type(x):
+    """Determine biome type based on position - creates forest vs field biomes"""
+    # Use sine waves to create natural biome boundaries
+    import math
+    
+    # Large-scale biome variation
+    forest_noise = math.sin(x * 0.02) + math.sin(x * 0.05) * 0.5
+    field_noise = math.sin(x * 0.03) + math.sin(x * 0.07) * 0.3
+    
+    # Add some randomness for natural variation
+    forest_noise += random.uniform(-0.3, 0.3)
+    field_noise += random.uniform(-0.2, 0.2)
+    
+    # Determine biome based on noise values
+    if forest_noise > 0.3:
+        return "forest"
+    elif field_noise > 0.2:
+        return "field"
+    else:
+        # Mixed biome - sparse trees
+        return "mixed"
+
+def should_generate_tree(x, surface_y, biome_type):
+    """Determine if a tree should be generated based on biome and conditions"""
+    # Check if there's already a tree nearby
+    for check_x in range(x - 5, x + 6):
+        for check_y in range(surface_y - 4, surface_y):
+            if get_block(check_x, check_y) in ["log", "leaves"]:
+                return False
+    
+    # Biome-based tree generation
+    if biome_type == "forest":
+        # Forests: High tree density (30% chance)
+        return random.random() < 0.3
+    elif biome_type == "field":
+        # Fields: Very few trees (2% chance)
+        return random.random() < 0.02
+    else:  # mixed
+        # Mixed: Moderate tree density (8% chance)
+        return random.random() < 0.08
+
+def can_place_chest_on_grass(x, y):
+    """Check if a chest can be placed according to the grass rule"""
+    global broken_grass_locations
+    
+    # Create location key for tracking
+    location_key = f"{x},{y}"
+    
+    # If the grass at this location was broken by the player, allow chest placement
+    if location_key in broken_grass_locations:
+        return True
+    
+    # During world generation, chests can only be placed on grass blocks
+    grass_block = get_block(x, y)
+    if grass_block == "grass":
+        return True
+    
+    # If there's no grass block, chest cannot be placed (rule is active)
+    return False
+
+def mark_grass_broken(x, y):
+    """Mark that the grass at this location was broken by the player"""
+    global broken_grass_locations
+    location_key = f"{x},{y}"
+    broken_grass_locations.add(location_key)
+    print(f"🌱 Grass at ({x}, {y}) marked as broken - chest placement rule disabled for this location")
+
 
 # --- Carrot biome helper (10% chance per 50-wide chunk) ---
 def in_carrot_biome(x):
@@ -5175,16 +4811,6 @@ def draw_world():
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
             pygame.draw.rect(screen, (200, 50, 50), (ex + 12, ey + 12, 8, 8))
-        elif entity["type"] == "villager":
-            ex = int(entity["x"] * TILE_SIZE) - camera_x
-            ey = int(entity["y"] * TILE_SIZE) - camera_y
-            screen.blit(textures["villager"], (ex, ey))
-
-            # Draw interaction indicator above villager
-            indicator_text = font.render("💬", True, (255, 255, 255))
-            indicator_x = ex + (TILE_SIZE - indicator_text.get_width()) // 2
-            indicator_y = ey - 25
-            screen.blit(indicator_text, (indicator_x, indicator_y))
         elif entity["type"] == "zombie":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
@@ -5622,6 +5248,10 @@ def break_block(mx, my):
         # Successfully break with pickaxe
         add_to_inventory(block)
         
+        # Track grass blocks that have been broken by the player
+        if block == "grass":
+            mark_grass_broken(bx, by)
+        
         # EXTREME ENGINEERING: Multi-layer block removal with force verification
         print(f"\n🔨 PHASE 1: Primary Block Removal")
         print(f"   🔍 Block key '{block_key}' in world_data: {block_key in world_data}")
@@ -5824,6 +5454,10 @@ def break_block(mx, my):
     else:
         add_to_inventory(block)
         
+        # Track grass blocks that have been broken by the player
+        if block == "grass":
+            mark_grass_broken(bx, by)
+        
         # EXTREME ENGINEERING: Multi-layer general block removal
         print(f"\n🔨 EXTREME ENGINEERING GENERAL BLOCK REMOVAL")
         print(f"   🔍 Block key '{block_key}' in world_data: {block_key in world_data}")
@@ -6004,10 +5638,10 @@ def update_thrown_sword():
                     create_blood_particles(hit_x, hit_y, 8)
                     
                     if mob["hp"] <= 0:
-                        # Create more blood particles for death
+                        # Create dramatic blood spray for death
                         death_x = (mob["x"] * TILE_SIZE) - camera_x
                         death_y = (mob["y"] * TILE_SIZE) - camera_y
-                        create_blood_particles(death_x, death_y, 15)
+                        create_monster_death_blood_spray(death_x, death_y)
                         
                         # Monster defeated - chance to drop coins
                         if random.random() < 0.15 and coins_manager:
@@ -6091,6 +5725,11 @@ def update_thrown_sword_entities():
                             
                             # Remove monster if health is 0
                             if mob["health"] <= 0:
+                                # Create dramatic blood spray for death
+                                death_x = (mob["x"] * TILE_SIZE) - camera_x
+                                death_y = (mob["y"] * TILE_SIZE) - camera_y
+                                create_monster_death_blood_spray(death_x, death_y)
+                                
                                 entities.remove(mob)
                                 print(f"💀 {mob['type']} defeated by thrown sword!")
                             
@@ -6273,10 +5912,10 @@ def attack_monsters(mx, my):
         # Deal damage immediately for close combat
         closest_monster["hp"] = closest_monster.get("hp", 4) - 1
         if closest_monster["hp"] <= 0:
-            # Create blood particles
+            # Create dramatic blood spray for death
             death_x = (closest_monster["x"] * TILE_SIZE) - camera_x
             death_y = (closest_monster["y"] * TILE_SIZE) - camera_y
-            create_blood_particles(death_x, death_y, 12)
+            create_monster_death_blood_spray(death_x, death_y)
             
             # Monster defeated - chance to drop coins
             if random.random() < 0.15 and coins_manager:
@@ -7874,8 +7513,12 @@ def sleep_in_bed():
 def update_player():
     keys = pygame.key.get_pressed()
     
+    # Use reliable event-based shift key tracking instead of pygame.key.get_pressed()
+    # This prevents the shift key from getting "stuck" in the pressed state
+    global shift_key_pressed
+    
     # Movement speed - now properly balanced for responsive gameplay
-    base_speed = MOVE_SPEED if not (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]) else SLOW_SPEED
+    base_speed = MOVE_SPEED if not shift_key_pressed else SLOW_SPEED
     speed = base_speed  # Use the speed directly without frame-rate complications
     
     # Clamp speed to reasonable bounds
@@ -7904,19 +7547,15 @@ def update_player():
                  get_block(int(px), int(py + 0.9)) == "ladder")
 
     if on_ladder:
-        # Gentle horizontal while on ladder
+        # Normal horizontal movement while on ladder
         if move_left:
-            # Controlled horizontal step when exiting a ladder (use tile-based speed like ground)
-            step = max(0.05, speed)  # ensure not too tiny when shift-slowed
-            new_x = px - step * 0.9
+            new_x = px - speed
             # Use improved collision detection for ladder movement too
             has_collision, block_type, collision_pos = check_collision_at_position(new_x, player["y"], 1.0, 1.0)
             if not has_collision:
                 player["x"] = new_x
         if move_right:
-            # Controlled horizontal step when exiting a ladder (use tile-based speed like ground)
-            step = max(0.05, speed)
-            new_x = px + step * 0.9
+            new_x = px + speed
             # Use improved collision detection for ladder movement too
             has_collision, block_type, collision_pos = check_collision_at_position(new_x, player["y"], 1.0, 1.0)
             if not has_collision:
@@ -8014,11 +7653,39 @@ def update_player():
             has_ground_collision, ground_block, ground_pos = check_collision_at_position(player["x"], target_y, 1.0, 1.0)
             if has_ground_collision:
                 # Ground collision - stop falling and place player on top
+                
+                # Calculate fall damage before landing
+                if player["fall_start_y"] is not None:
+                    fall_height = player["fall_start_y"] - player["y"]
+                    if fall_height >= FALL_DAMAGE_THRESHOLD:
+                        # Calculate damage: 1 damage per block above threshold
+                        damage = max(1, int((fall_height - FALL_DAMAGE_THRESHOLD) * FALL_DAMAGE_MULTIPLIER))
+                        player["health"] = max(0, player["health"] - damage)
+                        print(f"💥 FALL DAMAGE: Fell {fall_height:.1f} blocks, took {damage} damage! Health: {player['health']}")
+                        
+                        # Add damage particles
+                        add_blood_particle(player["x"], player["y"])
+                        
+                        # Check if player died from fall damage
+                        if player["health"] <= 0:
+                            print("💀 Player died from fall damage!")
+                            # Trigger death sequence
+                            player["health"] = 0
+                    
+                    # Reset fall tracking
+                    player["fall_start_y"] = None
+                    player["fall_height"] = 0.0
+                
                 player["vel_y"] = 0
                 player["on_ground"] = True
                 player["y"] = target_y - 1  # Position player on top of the block
             else:
                 # No ground collision - continue falling
+                # Track fall height
+                if player["fall_start_y"] is None:
+                    player["fall_start_y"] = player["y"]
+                player["fall_height"] = player["fall_start_y"] - player["y"]
+                
                 player["on_ground"] = False
                 player["y"] = next_y
 
@@ -8032,6 +7699,9 @@ def update_player():
         if not has_head_collision:
             # Strong, responsive jump
             player["vel_y"] = JUMP_STRENGTH
+            # Reset fall tracking when jumping
+            player["fall_start_y"] = None
+            player["fall_height"] = 0.0
         else:
             print(f"🚫 Can't jump - blocked by {head_block} above!")
 
@@ -8463,109 +8133,24 @@ def update_pause_state():
     else:
         pause_game_time()
 
-def update_villagers():
-    """EXTREME ENGINEERING: Advanced villager AI with personality-based behavior, movement, and interaction"""
-    for v in entities:
-        if v.get("type") != "villager":
-            continue
-            
-        # EXTREME ENGINEERING: Personality-based movement patterns
-        personality = v.get("personality", "friendly")
-        movement_speed = 0.03  # Base movement speed
-        
-        # Adjust movement based on personality
-        if personality == "energetic":
-            movement_speed = 0.06  # Fast movement
-        elif personality == "shy":
-            movement_speed = 0.015  # Slow, cautious movement
-        elif personality == "grumpy":
-            movement_speed = 0.02  # Slow, reluctant movement
-        
-        # EXTREME ENGINEERING: Smart movement AI
-        v["step"] = v.get("step", 0) + 1
-        v["movement_timer"] = v.get("movement_timer", 0) + 1
-        
-        # Change direction based on personality and environment
-        if v["step"] % 180 == 0 and random.random() < 0.5:
-            # Personality affects direction change frequency
-            if personality == "energetic" and random.random() < 0.7:
-                v["dir"] = -v.get("dir", 1)  # Energetic villagers change direction more
-            elif personality == "shy" and random.random() < 0.3:
-                v["dir"] = -v.get("dir", 1)  # Shy villagers change direction less
-            else:
-                v["dir"] = -v.get("dir", 1)
-        
-        dirn = v.get("dir", 1)
-        
-        # EXTREME ENGINEERING: Home-based wandering (villagers stay near their homes)
-        home_x = v.get("home_x", v["x"])
-        home_y = v.get("home_y", v["y"])
-        wander_radius = v.get("wander_radius", 5)
-        
-        # Check if villager is too far from home
-        distance_from_home = abs(v["x"] - home_x)
-        if distance_from_home > wander_radius:
-            # Turn back toward home
-            if v["x"] > home_x:
-                v["dir"] = -1
-            else:
-                v["dir"] = 1
-        
-        # desired next position
-        nx = v["x"] + movement_speed * dirn
-        
-        # EXTREME ENGINEERING: Advanced collision detection
-        # tiles at head/feet
-        head = get_block(int(nx + (0.9 if dirn > 0 else 0.0)), int(v["y"]))
-        feet = get_block(int(nx + (0.9 if dirn > 0 else 0.0)), int(v["y"] + 0.9))
-        ground_ahead = get_block(int(nx + (0.9 if dirn > 0 else 0.0)), int(v["y"] + 1))
-        
-        # avoid solid walls and cliffs
-        if is_non_solid_block(head) and is_non_solid_block(feet):
-            # avoid stepping into gaps (no ground ahead)
-            if ground_ahead is None:
-                v["dir"] = -dirn
-            else:
-                v["x"] = nx
-        else:
-            v["dir"] = -dirn
-        
-        # EXTREME ENGINEERING: Gravity system (very light so they stay on ground)
-        below = get_block(int(v["x"]), int(v["y"] + 1))
-        if below is None:
-            v["y"] += 0.10
-        else:
-            v["y"] = float(int(v["y"]))
-        
-        # EXTREME ENGINEERING: Villager mood changes over time
-        if v["movement_timer"] % 600 == 0:  # Every 10 seconds
-            mood_changes = {
-                "friendly": ["happy", "neutral", "happy"],
-                "grumpy": ["slightly_annoyed", "neutral", "slightly_annoyed"],
-                "wise": ["neutral", "happy", "neutral"],
-                "curious": ["happy", "curious", "happy"],
-                "shy": ["neutral", "slightly_annoyed", "neutral"],
-                "energetic": ["happy", "happy", "energetic"]
-            }
-            v["mood"] = random.choice(mood_changes.get(personality, ["neutral"]))
-        
-        # EXTREME ENGINEERING: Villager interaction cooldown
-        if v.get("dialogue_cooldown", 0) > 0:
-            v["dialogue_cooldown"] -= 1
 
 
 # --- World Generation Function ---
 def generate_initial_world(world_seed=None):
     """Generate a clean, organized world with proper layer hierarchy"""
     if world_seed is None:
-        world_seed = random.randint(1, 999999)
+        # Generate a truly random seed using timestamp and random number
+        import time
+        world_seed = int(time.time() * 1000) % 1000000 + random.randint(1, 1000)
+        print(f"🎲 Generated random world seed: {world_seed}")
     
     # Set random seed for this world generation
     world_rng = random.Random(world_seed)
+    print(f"🌍 Using world seed: {world_seed}")
     
-    # Generate a random starting area for the player
+    # Generate a clean starting area for the player
     start_x = world_rng.randint(-100, 100)  # Random starting X position
-    world_width = world_rng.randint(80, 150)  # Random world width
+    world_width = world_rng.randint(150, 250)  # Consistent world width
     
     # Generate COMPLETELY FLAT terrain (no mountains, no variation)
     print("🌍 Generating completely flat world...")
@@ -8577,38 +8162,46 @@ def generate_initial_world(world_seed=None):
         # EVERYTHING is completely flat at Y=10
         ground_y = 10  # Fixed height for entire world
         
+        # ABSOLUTE SURFACE RULE: Grass and dirt NEVER underground, trees NEVER underground
         # CLEAN LAYER GENERATION - Stone closer to surface for building
         # Surface: Y=10 (grass)
-        # Dirt: Y=11-12 (2 blocks deep)
+        # Dirt: Y=11-12 (2 blocks deep) - NEVER deeper
         # Stone: Y=13-21 (9 blocks deep, starts at Y=13)
         # Bedrock: Y=22
         
-        # 1. GRASS LAYER (Surface) - CRITICAL: This MUST work!
-        set_block(x, ground_y, "grass")
-        print(f"🌱 Placed grass at ({x}, {ground_y})")
+        # 1. GRASS LAYER (Surface ONLY - NEVER underground!) - CHECK FOR EXISTING BLOCKS
+        if get_block(x, ground_y) is None:
+            set_block(x, ground_y, "grass")
+            print(f"🌱 Placed grass at ({x}, {ground_y})")
         
-        # 2. DIRT LAYER (Below grass, always 2 blocks deep)
-        for y in range(ground_y + 1, ground_y + 3):
-            set_block(x, y, "dirt")
+        # 2. DIRT LAYER (Below grass, 2 blocks deep) - NEVER underground
+        # STRICT RULE: Dirt can NEVER go deeper than 2 blocks below surface
+        for y in range(ground_y + 1, ground_y + 3):  # Surface dirt layer only
+            # CRITICAL: Only place dirt if it's DIRECTLY below surface grass
+            # This ensures dirt NEVER spawns deep underground
+            if y <= ground_y + 2 and get_block(x, y) is None:
+                set_block(x, y, "dirt")
         
-        # 3. STONE LAYER (Below dirt, starts closer to surface)
+        # 3. STONE LAYER (Below dirt, starts closer to surface) - CHECK FOR EXISTING BLOCKS
         for y in range(ground_y + 3, ground_y + 12):
-            # Clean ore generation within stone layer (REDUCED spawn rates)
-            ore_chance = world_rng.random()
-            if ore_chance < 0.02:  # Reduced from 0.05 to 0.02
-                set_block(x, y, "coal")
-            elif ore_chance < 0.03:  # Reduced from 0.08 to 0.03
-                set_block(x, y, "iron")
-            elif ore_chance < 0.035:  # Reduced from 0.10 to 0.035
-                set_block(x, y, "gold")
-            elif ore_chance < 0.036:  # Reduced from 0.11 to 0.036
-                set_block(x, y, "diamond")
-            else:
-                set_block(x, y, "stone")
+            if get_block(x, y) is None:  # Only place if empty
+                # Clean ore generation within stone layer (REDUCED spawn rates)
+                ore_chance = world_rng.random()
+                if ore_chance < 0.02:  # Reduced from 0.05 to 0.02
+                    set_block(x, y, "coal")
+                elif ore_chance < 0.03:  # Reduced from 0.08 to 0.03
+                    set_block(x, y, "iron")
+                elif ore_chance < 0.035:  # Reduced from 0.10 to 0.035
+                    set_block(x, y, "gold")
+                elif ore_chance < 0.036:  # Reduced from 0.11 to 0.036
+                    set_block(x, y, "diamond")
+                else:
+                    set_block(x, y, "stone")
         
-        # 4. BEDROCK LAYER (Completely flat, nothing below)
+        # 4. BEDROCK LAYER (Completely flat, nothing below) - CHECK FOR EXISTING BLOCKS
         bedrock_y = 127  # Fixed bedrock level (bottom of screen)
-        set_block(x, bedrock_y, "bedrock")
+        if get_block(x, bedrock_y) is None:
+            set_block(x, bedrock_y, "bedrock")
         
         # TEMPORARILY DISABLE VALIDATION TO SEE IF GRASS GENERATES
         # validate_column_integrity(x, ground_y)
@@ -8618,41 +8211,61 @@ def generate_initial_world(world_seed=None):
             if get_block(x, y) is not None:
                 world_data.pop((x, y), None)  # Remove any blocks below bedrock
         
-        # Clean tree generation (only on grass, no messy placement)
-        if world_rng.random() < 0.08:  # Reduced tree density for cleaner look
+        # BIOME-BASED TREE GENERATION: Forests have lots of trees, fields have few
+        biome_type = get_biome_type(x)
+        if should_generate_tree(x, ground_y, biome_type):
+            # ABSOLUTE RULE: Trees can ONLY spawn ABOVE surface (y < ground_y) - NEVER underground!
+            # CRITICAL: Trees can NEVER EVER spawn underground or at ground level
             # Only place trees if there's clean space
-            if get_block(x, ground_y - 1) is None:
-                set_block(x, ground_y - 1, "log")
-            if get_block(x, ground_y - 2) is None:
-                set_block(x, ground_y - 2, "log")
-            
-            # Clean leaf placement (only in empty spaces)
+            if get_block(x, ground_y - 1) is None and (ground_y - 1) < ground_y:
+                set_block(x, ground_y - 1, "log")  # ABOVE surface only
+                if get_block(x, ground_y - 2) is None and (ground_y - 2) < ground_y:
+                    set_block(x, ground_y - 2, "log")  # ABOVE surface only
+                
+                # Clean leaf placement (only in empty spaces) - ONLY ABOVE SURFACE - NEVER underground!
             for dx in [-1, 0, 1]:
                 for dy in [-3, -4]:
                     leaf_x, leaf_y = x + dx, ground_y + dy
-                    if get_block(leaf_x, leaf_y) is None:
+                    # CRITICAL: Only place leaves if they're above surface (leaf_y < ground_y)
+                    # ABSOLUTE: Leaves can NEVER EVER spawn at or below ground level
+                    if leaf_y < ground_y and get_block(leaf_x, leaf_y) is None:
                         set_block(leaf_x, leaf_y, "leaves")
 
-        # Clean carrot placement (only on grass, no messy spawning) - INCREASED FREQUENCY
+        # Clean carrot placement (only on grass, no messy spawning) - CHECK FOR EXISTING BLOCKS
         if in_carrot_biome(x):
             if can_place_surface_item(x, ground_y) and world_rng.random() < 0.8:  # Increased from 0.6 to 0.8
-                set_block(x, ground_y - 1, "carrot")
+                # Only place carrot if the location is empty
+                if get_block(x, ground_y - 1) is None:
+                    set_block(x, ground_y - 1, "carrot")
             
-            # Clean neighbor carrot spawning - INCREASED FREQUENCY
+            # Clean neighbor carrot spawning - CHECK FOR EXISTING BLOCKS
             gy_r = ground_y_of_column(x + 1)
             if gy_r is not None and can_place_surface_item(x + 1, gy_r) and world_rng.random() < 0.5:  # Increased from 0.35 to 0.5
-                set_block(x + 1, gy_r - 1, "carrot")
+                if get_block(x + 1, gy_r - 1) is None:
+                    set_block(x + 1, gy_r - 1, "carrot")
             gy_l = ground_y_of_column(x - 1)
             if gy_l is not None and can_place_surface_item(x - 1, gy_l) and world_rng.random() < 0.35:
-                set_block(x - 1, gy_l - 1, "carrot")
+                if get_block(x - 1, gy_l - 1) is None:
+                    set_block(x - 1, gy_l - 1, "carrot")
         else:
             if can_place_surface_item(x, ground_y) and world_rng.random() < 0.15:  # Increased from 0.05 to 0.15
-                set_block(x, ground_y - 1, "carrot")
+                # Only place carrot if the location is empty
+                if get_block(x, ground_y - 1) is None:
+                    set_block(x, ground_y - 1, "carrot")
 
-        # Clean chest placement (only on grass, no messy spawning) - REDUCED FREQUENCY
-        if can_place_surface_item(x, ground_y) and world_rng.random() < 0.02:  # 2% chance - rare but not too rare
-            set_block(x, ground_y - 1, "chest")
-            chest_system.generate_chest_loot("village")
+        # Clean chest placement (only on grass, no messy spawning) - CHECK FOR EXISTING BLOCKS
+        # GRASS RULE: Chests can only be placed on grass blocks during world generation
+        if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:  # 5% chance - uncommon but visible
+            # Check if we can place a chest according to the grass rule
+            # Place chest ABOVE the grass block (ground_y - 1)
+            chest_y = ground_y - 1
+            if can_place_chest_on_grass(x, chest_y) and get_block(x, chest_y) is None:
+                set_block(x, chest_y, "chest")
+                if chest_system:
+                    chest_system.generate_chest_loot("village")
+                print(f"📦 Chest placed on grass at ({x}, {chest_y})")
+            else:
+                print(f"❌ Cannot place chest at ({x}, {chest_y}) - grass rule: {can_place_chest_on_grass(x, chest_y)}, block exists: {get_block(x, chest_y) is not None}")
         
         # Carbine fields - groups of carrots with 10% chance
         if can_place_surface_item(x, ground_y) and world_rng.random() < 0.1:  # 10% chance for carbine field
@@ -8664,17 +8277,7 @@ def generate_initial_world(world_seed=None):
         if get_block(x, 10) == "grass":  # Only on clean flat ground (Y=10)
             flat_areas.append(x)
     
-    # Place starter village in clean flat area
-    if flat_areas:
-        village_x = world_rng.choice(flat_areas)
-        village_chunk = (village_x // 50)
-        maybe_generate_village_for_chunk(village_chunk, village_chunk * 50)
-        print(f"Placed village in clean flat area at X: {village_x}")
-    else:
-        # Fallback: place village near starting area
-        village_chunk = world_rng.randint(-2, 2)
-        maybe_generate_village_for_chunk(village_chunk, start_x + village_chunk * 50)
-        print(f"Placed village in fallback location at chunk: {village_chunk}")
+    # Villages removed from world generation
     
     # Set player spawn position
     player["x"] = start_x
@@ -8690,17 +8293,17 @@ def generate_initial_world(world_seed=None):
     print(f"Stone starts at Y=13 (3 blocks below surface)")
     print(f"Bedrock at Y: 22")
     
-    # TEMPORARILY DISABLE VALIDATION TO SEE IF GRASS GENERATES
-    # validate_and_fix_terrain()
-    print("🔍 Skipping terrain validation for now...")
+    # ENABLE STRICT VALIDATION TO ENFORCE SURFACE-ONLY RULE
+    validate_and_fix_terrain()
+    print("🔍 STRICT VALIDATION ENABLED: Enforcing surface-only rule!")
     
     return world_seed
 
 def validate_and_fix_terrain():
-    """Commercial-grade terrain validation and repair system"""
+    """ABSOLUTE VALIDATION: Grass and dirt NEVER underground, trees NEVER underground - NO EXCEPTIONS!"""
     global world_data
     
-    print("🔍 Validating terrain integrity...")
+    print("🔍 STRICT VALIDATION: Enforcing surface-only rule...")
     print(f"🌱 Checking for grass blocks...")
     fixes_applied = 0
     
@@ -8752,8 +8355,18 @@ def validate_and_fix_terrain():
                 fixes_applied += 1
                 print(f"✅ Fixed: Removed underground grass at ({x}, {y})")
         
-        # STEP 2: Ensure dirt layer is complete (3 blocks deep)
-        for y in range(surface_y + 1, surface_y + 4):
+        # STEP 2: ABSOLUTE RULE - Dirt can NEVER be underground - NO EXCEPTIONS!
+        # Remove ALL dirt that's deeper than 2 blocks below surface
+        for y in range(surface_y + 3, 400):  # Check deep underground for misplaced dirt
+            if get_block(x, y) == "dirt":
+                # This dirt is underground - replace with stone immediately
+                world_data.pop((x, y), None)
+                set_block(x, y, "stone")
+                fixes_applied += 1
+                print(f"🚫 ABSOLUTE FIX: Removed underground dirt at ({x}, {y}) - replaced with stone - NEVER ALLOWED!")
+        
+        # Ensure dirt layer is complete (ONLY 2 blocks deep)
+        for y in range(surface_y + 1, surface_y + 3):  # FIXED: Only 2 blocks deep
             if get_block(x, y) != "dirt":
                 if get_block(x, y) is None:
                     set_block(x, y, "dirt")
@@ -8781,8 +8394,18 @@ def validate_and_fix_terrain():
                 fixes_applied += 1
                 print(f"✅ Fixed: Replaced {old_block} with stone at ({x}, {y})")
         
-        # STEP 4: Ensure bedrock at Y=22
-        bedrock_y = 22
+        # STEP 4: ABSOLUTE RULE - Trees (logs/leaves) can NEVER be underground - NO EXCEPTIONS!
+        # Remove any logs or leaves that are at or below surface level
+        for y in range(surface_y, 400):  # Check deep underground for misplaced tree parts
+            if get_block(x, y) in ["log", "leaves"]:
+                # This tree part is underground - remove it immediately
+                old_block = get_block(x, y)
+                world_data.pop((x, y), None)
+                fixes_applied += 1
+                print(f"🚫 ABSOLUTE FIX: Removed underground tree part at ({x}, {y}) - {old_block} - NEVER ALLOWED!")
+        
+        # STEP 5: Ensure bedrock at the bottom of the 200-block stone layer
+        bedrock_y = surface_y + 200  # 200 blocks below surface
         if get_block(x, bedrock_y) != "bedrock":
             if get_block(x, bedrock_y) is None:
                 set_block(x, bedrock_y, "bedrock")
@@ -8796,8 +8419,8 @@ def validate_and_fix_terrain():
                 fixes_applied += 1
                 print(f"✅ Fixed: Replaced {old_block} with bedrock at ({x}, {bedrock_y})")
         
-        # STEP 5: Remove any blocks below bedrock
-        for y in range(bedrock_y + 1, 100):
+        # STEP 6: Remove any blocks below bedrock
+        for y in range(bedrock_y + 1, bedrock_y + 100):  # Check a reasonable range below bedrock
             if get_block(x, y) is not None:
                 world_data.pop((x, y), None)
                 fixes_applied += 1
@@ -8831,7 +8454,10 @@ def validate_and_fix_terrain():
     if underground_grass_found > 0:
         print(f"🚨 Removed {underground_grass_found} underground grass blocks")
     
-    print("✅ Terrain validation complete - commercial quality guaranteed!")
+    print("✅ ABSOLUTE VALIDATION COMPLETE: Rules ENFORCED - NO EXCEPTIONS!")
+    print("🚫 ENFORCED: Grass NEVER underground - NO EXCEPTIONS!")
+    print("🚫 ENFORCED: Dirt NEVER underground - NO EXCEPTIONS!")
+    print("🚫 ENFORCED: Trees NEVER underground - NO EXCEPTIONS!")
 
 def validate_column_integrity(x, ground_y):
     """Validate and fix a single column during generation"""
@@ -9660,8 +9286,20 @@ def load_world_data():
         is_day = world_settings.get("day", True)
         day_start_time = time.time() if is_day else time.time() - 43200  # 12 hours if night
         
+        # Mark all existing columns as generated to prevent terrain regeneration
+        global generated_terrain_columns
+        generated_terrain_columns.clear()
+        for block_key in world_data.keys():
+            try:
+                x, y = block_key.split(',')
+                x = int(x)
+                generated_terrain_columns.add(x)
+            except (ValueError, TypeError):
+                continue  # Skip invalid keys
+        
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
         print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}, stamina={player['stamina']}")
+        print(f"🗺️ Marked {len(generated_terrain_columns)} columns as pre-generated")
         
         return True
         
@@ -9877,8 +9515,13 @@ def load_game():
         
         print("🌍 Loading game with improved world generation...")
         
-        # Generate world using the new system
-        world_info = generate_world(seed=None, world_width=200)
+        # Generate a truly random seed for this world
+        import time
+        world_seed = int(time.time() * 1000) % 1000000  # Use timestamp for unique seeds
+        print(f"🎲 Generated random world seed: {world_seed}")
+        
+        # Generate world using the new system with random seed
+        world_info = generate_world(seed=world_seed, world_width=200)
         
         # Extract world data
         world_data = world_info["blocks"]
@@ -10064,6 +9707,10 @@ while running:
             update_chest_ui_geometry()
 
         elif event.type == pygame.KEYDOWN:
+            # Handle shift key press
+            if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+                shift_key_pressed = True
+            
             if event.key == pygame.K_ESCAPE:
                 if game_state == GameState.GAME:
                     # Auto-save when leaving game to prevent losing progress
@@ -10267,7 +9914,10 @@ while running:
             if pygame.K_1 <= event.key <= pygame.K_9:
                 player["selected"] = event.key - pygame.K_1
             
-
+        elif event.type == pygame.KEYUP:
+            # Handle shift key release
+            if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+                shift_key_pressed = False
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == GameState.GAME:
@@ -10440,44 +10090,6 @@ while running:
                                 
                                 continue
                     
-                    # EXTREME ENGINEERING: Enhanced villager interaction with personality-based dialogue
-                    for entity in entities:
-                        if entity["type"] == "villager":
-                            entity_x = int(entity["x"] * TILE_SIZE)
-                            entity_y = int(entity["y"] * TILE_SIZE) - 100
-                            # Check if click is within villager bounds
-                            if (bx * TILE_SIZE - camera_x <= entity_x + TILE_SIZE and 
-                                bx * TILE_SIZE - camera_x + TILE_SIZE >= entity_x and
-                                by * TILE_SIZE <= entity_y + TILE_SIZE and 
-                                by * TILE_SIZE + TILE_SIZE >= entity_y):
-                                
-                                # EXTREME ENGINEERING: Check dialogue cooldown
-                                if entity.get("dialogue_cooldown", 0) <= 0:
-                                    # Get personality-based dialogue
-                                    dialogue = get_random_villager_dialogue(entity)
-                                    show_villager_dialogue(dialogue, entity)
-                                    
-                                    # EXTREME ENGINEERING: Update villager state
-                                    entity["dialogue_cooldown"] = 120  # 2 second cooldown
-                                    entity["last_interaction"] = time.time()
-                                    
-                                    # EXTREME ENGINEERING: Mood changes based on interaction
-                                    if random.random() < 0.3:  # 30% chance for mood change
-                                        current_mood = entity.get("mood", "neutral")
-                                        if current_mood == "slightly_annoyed":
-                                            entity["mood"] = "neutral"
-                                        elif current_mood == "neutral":
-                                            entity["mood"] = "happy"
-                                    
-                                    print(f"🗣️ {entity.get('name', 'Villager')} ({entity.get('personality', 'friendly')}) says: {dialogue}")
-                                    
-                                    # Check for first villager talk achievement
-                                    check_achievement("first_villager_talk", 15, "Talked to a villager for the first time!")
-                                else:
-                                    # Show cooldown message
-                                    show_message(f"⏰ {entity.get('name', 'Villager')} is busy talking to someone else!")
-                                
-                                continue
                     
                     # If selected carrot, eat it; otherwise place block
                     if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]] and player["inventory"][player["selected"]]["type"] == "carrot":
@@ -10796,7 +10408,6 @@ while running:
         for ch in range(chunk_left, chunk_right + 1):
             base_x = ch * 50
             # Generate structures for chunk
-            maybe_generate_village_for_chunk(ch, base_x)
             maybe_generate_fortress_for_chunk(ch, base_x)
         for x in range(left_edge, right_edge):
             # CRITICAL FIX: Only generate terrain for columns that have NEVER been generated
@@ -10841,40 +10452,25 @@ while running:
         # EXTREME ENGINEERING: Check for Legend NPC spawn
         check_legend_npc_spawn()
         
-        # EXTREME ENGINEERING: Controlled villager spawning - much less frequent
-        if random.random() < 0.01:  # Reduced from 0.05 to 0.01 (5x less)
-                    # Check for nearby villagers to prevent overcrowding
-                    nearby_villagers = 0
-                    for entity in entities:
-                        if entity["type"] == "villager":
-                            distance = abs(entity["x"] - x)
-                            if distance < 30:  # Within 30 blocks
-                                nearby_villagers += 1
-                    
-                    # Only spawn if there are less than 1 villager in a 30-block radius
-                    if nearby_villagers < 1:
-                        # Find ground level for this column
-                        spawn_ground_y = ground_y_of_column(x)
-                        if spawn_ground_y is not None:
-                            entities.append({
-                                "type": "villager",
-                                "x": x,
-                                "y": spawn_ground_y - 1,
-                                "dialogue_cooldown": 0
-                            })
-                            print(f"👤 Spawned random villager at ({x}, {spawn_ground_y - 1})")
+        # Villager spawning removed
 
         update_daylight()
         update_player()
         update_world_interactions()
         update_monsters()
         update_chess_pieces()  # Chess piece spawning and behavior
-        update_villagers()  # EXTREME ENGINEERING: Enhanced villager AI
         update_boss()  # EXTREME ENGINEERING: Legendary boss AI and attacks
         update_hunger()  # Update hunger system
         update_thrown_sword()  # Update sword throwing system
         update_thrown_sword_entities()  # Update thrown sword entities
         update_blood_particles()  # Update blood particle effects
+        
+        # Fallback: Reset shift key state if it gets stuck (safety mechanism)
+        # This prevents the player from getting permanently stuck in slow mode
+        if shift_key_pressed:
+            keys = pygame.key.get_pressed()
+            if not (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]):
+                shift_key_pressed = False
         
         # Check for underground fortress trigger
         check_underground_fortress_trigger()
@@ -10911,21 +10507,6 @@ while running:
             m = font.render(message_text, True, (255, 255, 255))
             screen.blit(m, (SCREEN_WIDTH // 2 - m.get_width() // 2, 70))
         
-        # Draw villager dialogue if any
-        if villager_dialogue_until > time.time() and villager_dialogue_text:
-            # Create a nice dialogue box
-            dialogue_surface = font.render(villager_dialogue_text, True, (255, 255, 255))
-            dialogue_width = dialogue_surface.get_width() + 40
-            dialogue_height = dialogue_surface.get_height() + 20
-            
-            # Draw dialogue box background
-            dialogue_x = SCREEN_WIDTH // 2 - dialogue_width // 2
-            dialogue_y = 100
-            pygame.draw.rect(screen, (50, 50, 100), (dialogue_x, dialogue_y, dialogue_width, dialogue_height))
-            pygame.draw.rect(screen, (100, 100, 200), (dialogue_x, dialogue_y, dialogue_width, dialogue_height), 3)
-            
-            # Draw dialogue text
-            screen.blit(dialogue_surface, (dialogue_x + 20, dialogue_y + 10))
         if chest_open:
             draw_chest_ui()
 
