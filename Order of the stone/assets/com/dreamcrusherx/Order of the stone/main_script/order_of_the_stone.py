@@ -1995,6 +1995,14 @@ STATE_MULTIPLAYER = "multiplayer"  # Temporary until full migration
 
 game_state = GameState.TITLE
 
+# Map system variables
+map_open = False
+map_surface = None
+map_scale = 4  # How many game pixels = 1 map pixel (higher = more detailed)
+map_width = 200  # Map surface width in pixels
+map_height = 150  # Map surface height in pixels
+map_view_radius = 50  # How many blocks around player to show on map
+
 # Time and cycle
 clock = pygame.time.Clock()
 day_start_time = time.time()
@@ -2458,6 +2466,132 @@ def draw_blood_particles():
         
         # Blit to screen
         screen.blit(particle_surface, (particle['x'] - particle['size'], particle['y'] - particle['size']))
+
+def init_map_surface():
+    """Initialize the map surface"""
+    global map_surface
+    map_surface = pygame.Surface((map_width, map_height))
+    map_surface.fill((50, 50, 100))  # Dark blue background
+
+def get_block_color(block_type):
+    """Get the color for a block type on the map"""
+    color_map = {
+        "grass": (34, 139, 34),      # Forest green
+        "dirt": (139, 69, 19),       # Saddle brown
+        "stone": (105, 105, 105),    # Dim gray
+        "bedrock": (25, 25, 25),     # Very dark gray
+        "coal": (47, 79, 79),        # Dark slate gray
+        "iron": (169, 169, 169),     # Dark gray
+        "gold": (255, 215, 0),       # Gold
+        "diamond": (0, 191, 255),    # Deep sky blue
+        "water": (0, 100, 200),      # Blue
+        "lava": (255, 100, 0),       # Red-orange
+        "leaves": (0, 100, 0),       # Dark green
+        "log": (101, 67, 33),        # Brown
+        "carrot": (255, 165, 0),     # Orange
+        "chest": (139, 69, 19),      # Saddle brown
+        "air": (0, 0, 0, 0),         # Transparent
+        None: (0, 0, 0, 0)           # Transparent for empty blocks
+    }
+    return color_map.get(block_type, (100, 100, 100))  # Default gray
+
+def update_map():
+    """Update the map surface with current world data around the player"""
+    global map_surface
+    
+    if map_surface is None:
+        init_map_surface()
+    
+    # Clear the map
+    map_surface.fill((50, 50, 100))
+    
+    # Get player position in block coordinates
+    player_x = int(player["x"])
+    player_y = int(player["y"])
+    
+    # Calculate the area to draw around the player
+    start_x = player_x - map_view_radius
+    end_x = player_x + map_view_radius
+    start_y = player_y - map_view_radius
+    end_y = player_y + map_view_radius
+    
+    # Draw blocks around the player
+    for x in range(start_x, end_x):
+        for y in range(start_y, end_y):
+            block_type = get_block(x, y)
+            if block_type and block_type != "air":
+                # Calculate position on map surface
+                map_x = (x - start_x) * (map_width // (map_view_radius * 2))
+                map_y = (y - start_y) * (map_height // (map_view_radius * 2))
+                
+                # Ensure we're within map bounds
+                if 0 <= map_x < map_width and 0 <= map_y < map_height:
+                    color = get_block_color(block_type)
+                    if len(color) == 4:  # Has alpha channel
+                        # Create a surface with alpha for transparency
+                        pixel_surface = pygame.Surface((1, 1), pygame.SRCALPHA)
+                        pixel_surface.fill(color)
+                        map_surface.blit(pixel_surface, (map_x, map_y))
+                    else:
+                        map_surface.set_at((map_x, map_y), color)
+    
+    # Draw player position
+    player_map_x = map_view_radius * (map_width // (map_view_radius * 2))
+    player_map_y = map_view_radius * (map_height // (map_view_radius * 2))
+    
+    # Draw player as a red dot
+    pygame.draw.circle(map_surface, (255, 0, 0), (player_map_x, player_map_y), 2)
+    # Draw a white outline around the player
+    pygame.draw.circle(map_surface, (255, 255, 255), (player_map_x, player_map_y), 3, 1)
+
+def draw_map():
+    """Draw the map overlay on the screen"""
+    if not map_open or map_surface is None:
+        return
+    
+    # Update the map with current world data
+    update_map()
+    
+    # Create a semi-transparent overlay
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    overlay.set_alpha(128)
+    overlay.fill((0, 0, 0))
+    screen.blit(overlay, (0, 0))
+    
+    # Calculate map position (centered on screen)
+    map_display_width = map_width * 2  # Scale up for better visibility
+    map_display_height = map_height * 2
+    map_x = (SCREEN_WIDTH - map_display_width) // 2
+    map_y = (SCREEN_HEIGHT - map_display_height) // 2
+    
+    # Draw map background
+    map_bg = pygame.Surface((map_display_width + 20, map_display_height + 20))
+    map_bg.fill((20, 20, 40))
+    screen.blit(map_bg, (map_x - 10, map_y - 10))
+    
+    # Draw map border
+    pygame.draw.rect(screen, (255, 255, 255), (map_x - 10, map_y - 10, map_display_width + 20, map_display_height + 20), 2)
+    
+    # Scale and draw the map
+    scaled_map = pygame.transform.scale(map_surface, (map_display_width, map_display_height))
+    screen.blit(scaled_map, (map_x, map_y))
+    
+    # Draw map title
+    title_text = BIG_FONT.render("MAP", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, map_y - 30))
+    screen.blit(title_text, title_rect)
+    
+    # Draw instructions
+    instructions = [
+        "Press M or ESC to close map",
+        f"Player Position: ({int(player['x'])}, {int(player['y'])})",
+        f"View Radius: {map_view_radius} blocks"
+    ]
+    
+    for i, instruction in enumerate(instructions):
+        instruction_text = small_font.render(instruction, True, (200, 200, 200))
+        instruction_rect = instruction_text.get_rect(center=(SCREEN_WIDTH // 2, map_y + map_display_height + 20 + i * 20))
+        screen.blit(instruction_text, instruction_rect)
 
 def draw_multiplayer_chat():
     """Draw the multiplayer chat interface"""
@@ -9712,7 +9846,11 @@ while running:
                 shift_key_pressed = True
             
             if event.key == pygame.K_ESCAPE:
-                if game_state == GameState.GAME:
+                if map_open:
+                    # Close map if it's open
+                    map_open = False
+                    print("🗺️ Map closed")
+                elif game_state == GameState.GAME:
                     # Auto-save when leaving game to prevent losing progress
                     try:
                         save_game()
@@ -9724,12 +9862,21 @@ while running:
                 elif game_state == GameState.PAUSED:
                     game_state = GameState.GAME
                     update_pause_state()  # Resume time when returning to game
-
-
-
                 elif game_state == GameState.INVENTORY:
                     game_state = GameState.GAME
                     update_pause_state()  # Resume time when closing inventory
+            
+            # Map toggle with M key
+            if event.key == pygame.K_m:
+                if game_state == GameState.GAME:
+                    map_open = not map_open
+                    if map_open:
+                        print("🗺️ Map opened")
+                        # Initialize map surface if needed
+                        if map_surface is None:
+                            init_map_surface()
+                    else:
+                        print("🗺️ Map closed")
             # Toggle fullscreen on F11
             if event.key == pygame.K_F11:
                 FULLSCREEN = not FULLSCREEN
@@ -10487,6 +10634,7 @@ while running:
             validate_world_integrity()
 
         draw_world()
+        draw_map()  # Draw the map overlay if it's open
         draw_inventory()
         draw_status_bars()
         draw_fps_display()
