@@ -1435,10 +1435,10 @@ def generate_terrain_column(x):
     for y in range(surface_y + 3, bedrock_y):  # Stone fills 200 blocks underground
         if get_block(x, y) is None:
             set_block(x, y, "stone")
-    
     # 3. DIRT LAYER: 2 blocks below surface - NEVER underground
     for y in range(surface_y + 1, surface_y + 3):
         if get_block(x, y) is None:
+            set_block(x, y, "dirt")
             set_block(x, y, "dirt")
             set_block(x, y, "dirt")
     
@@ -8237,16 +8237,16 @@ def generate_initial_world(world_seed=None):
                 # Only place carrot if the location is empty
                 if get_block(x, ground_y - 1) is None:
                     set_block(x, ground_y - 1, "carrot")
-            
-            # Clean neighbor carrot spawning - CHECK FOR EXISTING BLOCKS
-            gy_r = ground_y_of_column(x + 1)
-            if gy_r is not None and can_place_surface_item(x + 1, gy_r) and world_rng.random() < 0.5:  # Increased from 0.35 to 0.5
-                if get_block(x + 1, gy_r - 1) is None:
-                    set_block(x + 1, gy_r - 1, "carrot")
-            gy_l = ground_y_of_column(x - 1)
-            if gy_l is not None and can_place_surface_item(x - 1, gy_l) and world_rng.random() < 0.35:
-                if get_block(x - 1, gy_l - 1) is None:
-                    set_block(x - 1, gy_l - 1, "carrot")
+                
+                # Clean neighbor carrot spawning - CHECK FOR EXISTING BLOCKS
+                gy_r = ground_y_of_column(x + 1)
+                if gy_r is not None and can_place_surface_item(x + 1, gy_r) and world_rng.random() < 0.5:  # Increased from 0.35 to 0.5
+                    if get_block(x + 1, gy_r - 1) is None:
+                        set_block(x + 1, gy_r - 1, "carrot")
+                gy_l = ground_y_of_column(x - 1)
+                if gy_l is not None and can_place_surface_item(x - 1, gy_l) and world_rng.random() < 0.35:
+                    if get_block(x - 1, gy_l - 1) is None:
+                        set_block(x - 1, gy_l - 1, "carrot")
         else:
             if can_place_surface_item(x, ground_y) and world_rng.random() < 0.15:  # Increased from 0.05 to 0.15
                 # Only place carrot if the location is empty
