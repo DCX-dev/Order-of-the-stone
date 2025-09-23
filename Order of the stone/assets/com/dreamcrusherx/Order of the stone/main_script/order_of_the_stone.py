@@ -2003,6 +2003,17 @@ map_width = 200  # Map surface width in pixels
 map_height = 150  # Map surface height in pixels
 map_view_radius = 50  # How many blocks around player to show on map
 
+# Dash system variables
+dash_active = False
+dash_direction = 1  # 1 = right, -1 = left
+dash_speed = 0.5  # Speed of dash movement
+dash_distance = 3.0  # Distance to dash in blocks
+dash_cooldown = 0  # Frames until dash can be used again
+dash_cooldown_time = 120  # 2 seconds at 60 FPS
+dash_animation_frame = 0  # Current animation frame
+dash_animation_duration = 20  # Frames for dash animation
+dash_trail_particles = []  # List of trail particles for dash effect
+
 # Time and cycle
 clock = pygame.time.Clock()
 day_start_time = time.time()
@@ -2608,6 +2619,133 @@ def draw_map():
         print(f"⚠️ Map drawing error: {e}")
         # Close map on error to prevent further crashes
         map_open = False
+
+def create_dash_trail_particle():
+    """Create a trail particle for dash effect"""
+    return {
+        'x': player["x"] * TILE_SIZE - camera_x,
+        'y': player["y"] * TILE_SIZE - camera_y,
+        'life': 15,
+        'max_life': 15,
+        'size': random.randint(3, 6),
+        'color': (100, 150, 255)  # Light blue color
+    }
+
+def update_dash_system():
+    """Update dash system including cooldown, animation, and trail particles"""
+    global dash_active, dash_animation_frame, dash_cooldown, dash_trail_particles
+    
+    # Update dash cooldown
+    if dash_cooldown > 0:
+        dash_cooldown -= 1
+    
+    # Update dash animation
+    if dash_active:
+        dash_animation_frame += 1
+        
+        # Create trail particles
+        if dash_animation_frame % 3 == 0:  # Create particle every 3 frames
+            dash_trail_particles.append(create_dash_trail_particle())
+        
+        # End dash after animation duration
+        if dash_animation_frame >= dash_animation_duration:
+            dash_active = False
+            dash_animation_frame = 0
+            print("💨 Dash completed!")
+    
+    # Update trail particles
+    for particle in dash_trail_particles[:]:  # Copy list to avoid modification during iteration
+        particle['life'] -= 1
+        if particle['life'] <= 0:
+            dash_trail_particles.remove(particle)
+
+def can_dash():
+    """Check if player can dash (cooldown is ready)"""
+    return dash_cooldown <= 0 and not dash_active
+
+def start_dash():
+    """Start a dash in the current facing direction"""
+    global dash_active, dash_direction, dash_cooldown, dash_animation_frame
+    
+    if not can_dash():
+        return False
+    
+    # Set dash direction based on player facing direction
+    dash_direction = player.get("facing_direction", 1)
+    
+    # Start dash
+    dash_active = True
+    dash_animation_frame = 0
+    dash_cooldown = dash_cooldown_time
+    
+    print(f"💨 Dash started! Direction: {'Right' if dash_direction > 0 else 'Left'}")
+    return True
+
+def update_dash_movement():
+    """Update player position during dash"""
+    global dash_active
+    
+    if not dash_active:
+        return
+    
+    # Calculate dash movement
+    dash_movement = dash_speed * dash_direction
+    
+    # Check if dash can continue (no solid blocks in the way)
+    target_x = player["x"] + dash_movement
+    target_y = player["y"]
+    
+    # Check collision at target position
+    has_collision, block_type, collision_pos = check_collision_at_position(target_x, target_y, 1.0, 1.0)
+    
+    if not has_collision:
+        player["x"] = target_x
+        # Create trail particle
+        if dash_animation_frame % 2 == 0:
+            dash_trail_particles.append(create_dash_trail_particle())
+    else:
+        # Hit a wall, stop dash
+        dash_active = False
+        dash_animation_frame = 0
+        print(f"💨 Dash stopped by {block_type}!")
+
+def draw_dash_trail():
+    """Draw dash trail particles"""
+    for particle in dash_trail_particles:
+        # Calculate alpha based on remaining life
+        alpha = int(255 * (particle['life'] / particle['max_life']))
+        
+        # Create surface with alpha
+        particle_surface = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        
+        # Draw particle as circle with alpha
+        color = (*particle['color'], alpha)
+        pygame.draw.circle(particle_surface, color, (particle['size'], particle['size']), particle['size'])
+        
+        # Blit to screen
+        screen.blit(particle_surface, (particle['x'] - particle['size'], particle['y'] - particle['size']))
+
+def draw_dash_effect():
+    """Draw dash visual effects"""
+    if dash_active:
+        # Draw dash blur effect
+        player_screen_x = int(player["x"] * TILE_SIZE - camera_x)
+        player_screen_y = int(player["y"] * TILE_SIZE - camera_y)
+        
+        # Create blur effect by drawing multiple semi-transparent copies
+        for i in range(3):
+            offset = (i + 1) * dash_direction * 5
+            blur_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+            blur_surface.fill((255, 255, 255, 50 - i * 15))
+            
+            # Draw player texture with blur
+            if character_manager:
+                current_char = character_manager.get_current_character_name()
+                char_texture = character_manager.get_character_texture(current_char)
+                if char_texture:
+                    blur_surface.blit(char_texture, (0, 0))
+            
+            screen.blit(blur_surface, (player_screen_x + offset, player_screen_y))
 
 def draw_multiplayer_chat():
     """Draw the multiplayer chat interface"""
@@ -9817,6 +9955,14 @@ while running:
                 print("🚨 NUCLEAR OPTION TRIGGERED!")
                 nuclear_block_removal()
             
+            # Dash with J key
+            if event.key == pygame.K_j:
+                if game_state == GameState.GAME:
+                    if start_dash():
+                        print("💨 Dash activated!")
+                    else:
+                        print("💨 Dash on cooldown!")
+            
             # Force quit with Ctrl+Q
             if event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 print("🔄 Force quit with Ctrl+Q")
@@ -10524,6 +10670,8 @@ while running:
         update_thrown_sword()  # Update sword throwing system
         update_thrown_sword_entities()  # Update thrown sword entities
         update_blood_particles()  # Update blood particle effects
+        update_dash_system()  # Update dash system
+        update_dash_movement()  # Update dash movement
         
         # Fallback: Reset shift key state if it gets stuck (safety mechanism)
         # This prevents the player from getting permanently stuck in slow mode
@@ -10548,6 +10696,8 @@ while running:
 
         draw_world()
         draw_map()  # Draw the map overlay if it's open
+        draw_dash_trail()  # Draw dash trail particles
+        draw_dash_effect()  # Draw dash visual effects
         draw_inventory()
         draw_status_bars()
         draw_fps_display()
