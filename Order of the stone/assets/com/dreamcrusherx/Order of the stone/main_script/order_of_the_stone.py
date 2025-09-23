@@ -2667,47 +2667,56 @@ def start_dash():
     """Start a dash in the current facing direction"""
     global dash_active, dash_direction, dash_cooldown, dash_animation_frame
     
-    if not can_dash():
+    try:
+        if not can_dash():
+            return False
+        
+        # Set dash direction based on player facing direction
+        dash_direction = player.get("facing_direction", 1)
+        
+        # Start dash
+        dash_active = True
+        dash_animation_frame = 0
+        dash_cooldown = dash_cooldown_time
+        
+        print(f"💨 Dash started! Direction: {'Right' if dash_direction > 0 else 'Left'}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Dash start error: {e}")
         return False
-    
-    # Set dash direction based on player facing direction
-    dash_direction = player.get("facing_direction", 1)
-    
-    # Start dash
-    dash_active = True
-    dash_animation_frame = 0
-    dash_cooldown = dash_cooldown_time
-    
-    print(f"💨 Dash started! Direction: {'Right' if dash_direction > 0 else 'Left'}")
-    return True
 
 def update_dash_movement():
     """Update player position during dash"""
     global dash_active
     
-    if not dash_active:
-        return
-    
-    # Calculate dash movement
-    dash_movement = dash_speed * dash_direction
-    
-    # Check if dash can continue (no solid blocks in the way)
-    target_x = player["x"] + dash_movement
-    target_y = player["y"]
-    
-    # Check collision at target position
-    has_collision, block_type, collision_pos = check_collision_at_position(target_x, target_y, 1.0, 1.0)
-    
-    if not has_collision:
-        player["x"] = target_x
-        # Create trail particle
-        if dash_animation_frame % 2 == 0:
-            dash_trail_particles.append(create_dash_trail_particle())
-    else:
-        # Hit a wall, stop dash
+    try:
+        if not dash_active:
+            return
+        
+        # Calculate dash movement
+        dash_movement = dash_speed * dash_direction
+        
+        # Check if dash can continue (no solid blocks in the way)
+        target_x = player["x"] + dash_movement
+        target_y = player["y"]
+        
+        # Check collision at target position
+        has_collision, block_type, collision_pos = check_collision_at_position(target_x, target_y, 1.0, 1.0)
+        
+        if not has_collision:
+            player["x"] = target_x
+            # Create trail particle
+            if dash_animation_frame % 2 == 0:
+                dash_trail_particles.append(create_dash_trail_particle())
+        else:
+            # Hit a wall, stop dash
+            dash_active = False
+            dash_animation_frame = 0
+            print(f"💨 Dash stopped by {block_type}!")
+    except Exception as e:
+        print(f"⚠️ Dash movement error: {e}")
+        # Stop dash on error to prevent further crashes
         dash_active = False
-        dash_animation_frame = 0
-        print(f"💨 Dash stopped by {block_type}!")
 
 def draw_dash_trail():
     """Draw dash trail particles"""
@@ -2727,25 +2736,33 @@ def draw_dash_trail():
 
 def draw_dash_effect():
     """Draw dash visual effects"""
-    if dash_active:
-        # Draw dash blur effect
-        player_screen_x = int(player["x"] * TILE_SIZE - camera_x)
-        player_screen_y = int(player["y"] * TILE_SIZE - camera_y)
-        
-        # Create blur effect by drawing multiple semi-transparent copies
-        for i in range(3):
-            offset = (i + 1) * dash_direction * 5
-            blur_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-            blur_surface.fill((255, 255, 255, 50 - i * 15))
+    try:
+        if dash_active:
+            # Draw dash blur effect
+            player_screen_x = int(player["x"] * TILE_SIZE - camera_x)
+            player_screen_y = int(player["y"] * TILE_SIZE - camera_y)
             
-            # Draw player texture with blur
-            if character_manager:
-                current_char = character_manager.get_current_character_name()
-                char_texture = character_manager.get_character_texture(current_char)
-                if char_texture:
-                    blur_surface.blit(char_texture, (0, 0))
-            
-            screen.blit(blur_surface, (player_screen_x + offset, player_screen_y))
+            # Create blur effect by drawing multiple semi-transparent copies
+            for i in range(3):
+                offset = (i + 1) * dash_direction * 5
+                blur_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+                blur_surface.fill((255, 255, 255, 50 - i * 15))
+                
+                # Draw player texture with blur (simplified to avoid crashes)
+                try:
+                    if character_manager and hasattr(character_manager, 'get_current_character_name'):
+                        current_char = character_manager.get_current_character_name()
+                        char_texture = character_manager.get_character_texture(current_char)
+                        if char_texture:
+                            blur_surface.blit(char_texture, (0, 0))
+                except:
+                    # Fallback: just draw a colored rectangle
+                    pygame.draw.rect(blur_surface, (100, 150, 255), (0, 0, TILE_SIZE, TILE_SIZE))
+                
+                screen.blit(blur_surface, (player_screen_x + offset, player_screen_y))
+    except Exception as e:
+        print(f"⚠️ Dash effect error: {e}")
+        # Don't crash the game, just skip the effect
 
 def draw_multiplayer_chat():
     """Draw the multiplayer chat interface"""
