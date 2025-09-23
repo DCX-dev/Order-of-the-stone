@@ -2030,8 +2030,6 @@ player = {
         "leggings": None,
         "boots": None
     },
-    "stamina": 100,  # Current stamina
-    "max_stamina": 100,  # Maximum stamina capacity
             "facing_direction": 1,  # 1 = right, -1 = left
         "last_x": 10,  # Initialize last position for movement detection
         "last_y": 0,
@@ -2052,10 +2050,6 @@ SLOW_SPEED = 0.08  # Slower when holding shift
 FALL_DAMAGE_THRESHOLD = 4.0  # Take damage when falling from 4+ blocks
 FALL_DAMAGE_MULTIPLIER = 1.5  # Damage per block above threshold
 
-# Stamina system
-STAMINA_DRAIN_RATE = 0.8  # Reduced from 2.0 - stamina lost per frame while climbing without ladder
-STAMINA_REGEN_RATE = 1.2  # Increased from 0.5 - stamina regained per frame when not climbing
-STAMINA_REGEN_DELAY = 30  # Reduced from 60 - frames to wait before stamina starts regenerating (0.5 seconds)
 
 # World and camera
 world_data = {}
@@ -2076,8 +2070,6 @@ message_until = 0  # pygame.time.get_ticks() deadline
 # --- Door System ---
 door_states = {}  # Track which doors are open/closed
 
-# --- Stamina System ---
-stamina_regen_timer = 0  # Timer for stamina regeneration delay
 
 # EXTREME ENGINEERING: Legendary Boss Fight System
 BOSS_SPAWN_DISTANCE = 0  # Boss arena at spawn location
@@ -2736,55 +2728,6 @@ def show_world_create_error(text, ms=3000):
     world_create_error_message = text
     world_create_error_until = pygame.time.get_ticks() + ms
 
-def update_stamina(is_climbing_without_ladder=False):
-    """Update player stamina based on climbing state"""
-    global stamina_regen_timer
-    
-    if is_climbing_without_ladder:
-        # Drain stamina while climbing without ladder
-        player["stamina"] = max(0, player["stamina"] - STAMINA_DRAIN_RATE)
-        stamina_regen_timer = 0  # Reset regeneration timer
-        print(f"💪 Stamina: {player['stamina']:.1f}/100 (Climbing)")
-    else:
-        # Regenerate stamina when not climbing
-        if stamina_regen_timer > 0:
-            stamina_regen_timer -= 1
-        else:
-            if player["stamina"] < player["max_stamina"]:
-                # Bonus regeneration when on ground
-                bonus_regen = STAMINA_REGEN_RATE * 1.5 if player.get("on_ground", False) else STAMINA_REGEN_RATE
-                player["stamina"] = min(player["max_stamina"], player["stamina"] + bonus_regen)
-                # Show regeneration progress occasionally
-                if player["stamina"] % 20 < STAMINA_REGEN_RATE and player["stamina"] < player["max_stamina"]:
-                    print(f"💪 Stamina regenerating: {player['stamina']:.1f}/100")
-                # Only print when stamina is fully restored to avoid spam
-                if player["stamina"] >= player["max_stamina"]:
-                    print(f"💪 Stamina fully restored!")
-    
-    # Ensure stamina stays within bounds
-    player["stamina"] = max(0, min(player["stamina"], player["max_stamina"]))
-    
-    # Set regeneration delay when player stops climbing
-    if not is_climbing_without_ladder and stamina_regen_timer == 0:
-        stamina_regen_timer = STAMINA_REGEN_DELAY
-
-def restore_stamina(amount=100):
-    """Restore stamina by specified amount (for potions, rest, etc.)"""
-    old_stamina = player["stamina"]
-    player["stamina"] = min(player["max_stamina"], player["stamina"] + amount)
-    restored = player["stamina"] - old_stamina
-    if restored > 0:
-        print(f"💪 Stamina restored by {restored} points!")
-    return restored
-
-def can_climb_without_ladder():
-    """Check if player can climb without a ladder (has stamina)"""
-    return player["stamina"] > 0
-
-def is_climbing_without_ladder():
-    """Check if player is currently climbing without a ladder"""
-    keys = pygame.key.get_pressed()
-    return (keys[pygame.K_w] or keys[pygame.K_UP]) and not is_on_ladder()
 
 def is_on_ladder():
     """Check if player is currently on a ladder"""
@@ -4509,25 +4452,6 @@ def draw_status_bars():
         hunger_color = (255, 165, 0) if i < player["hunger"] else (80, 80, 80)
         pygame.draw.rect(screen, hunger_color, (70 + i * 20, 90, 16, 16))
     
-    # Draw stamina bar
-    stamina_text = font.render("Stamina:", True, (255, 255, 255))
-    screen.blit(stamina_text, (10, 120))
-    
-    # Draw stamina as colored rectangles
-    for i in range(10):
-        if i < player["stamina"] / 10:
-            stamina_color = (0, 255, 0) if player["stamina"] > 50 else (255, 255, 0) if player["stamina"] > 25 else (255, 0, 0)
-        else:
-            stamina_color = (80, 80, 80)
-        pygame.draw.rect(screen, stamina_color, (70 + i * 20, 120, 16, 16))
-    
-    # Show regeneration status
-    if stamina_regen_timer > 0:
-        regen_text = font.render(f"Regen in {stamina_regen_timer//60 + 1}s", True, (150, 150, 150))
-        screen.blit(regen_text, (10, 140))
-    elif player["stamina"] < player["max_stamina"]:
-        regen_text = font.render("Regenerating...", True, (0, 255, 0))
-        screen.blit(regen_text, (10, 140))
     
     # Draw current character info
     character_y = 170
@@ -7682,8 +7606,6 @@ def update_player():
     # Clamp speed to reasonable bounds
     speed = max(0.08, min(0.25, speed))
     
-    # Update stamina based on climbing state
-    update_stamina(is_climbing_without_ladder())
 
     # Horizontal movement intent - Use BOTH WASD and Arrow keys for movement AND character flipping
     move_left = keys[pygame.K_LEFT] or keys[pygame.K_a]  # Left arrow OR A key
@@ -7763,27 +7685,10 @@ def update_player():
                 # Prevent movement through solid blocks
                 print(f"🚫 Collision detected: {block_type} at {collision_pos} - preventing right movement")
 
-        # Check for climbing without ladder (free climbing)
-        if (keys[pygame.K_w] or keys[pygame.K_UP]) and can_climb_without_ladder():
-            # Free climbing - move up slowly
-            climb_speed = 0.10  # Responsive free climbing
-            target_y = player["y"] - climb_speed
-            
-            # Check if we can climb up (need air above) using collision detection
-            has_head_collision, head_block, head_pos = check_collision_at_position(player["x"], int(target_y), 1.0, 0.5)
-            if not has_head_collision:
-                player["y"] = target_y
-                player["vel_y"] = 0  # Stop falling
-                player["on_ground"] = False
-                print(f"🧗 Free climbing! Stamina: {player['stamina']:.1f}")
-            else:
-                # Can't climb up, fall normally
-                pass
-        else:
-            # Normal gravity when not climbing
-            player["vel_y"] += GRAVITY
-            if player["vel_y"] > MAX_FALL_SPEED:
-                player["vel_y"] = MAX_FALL_SPEED
+        # Normal gravity
+        player["vel_y"] += GRAVITY
+        if player["vel_y"] > MAX_FALL_SPEED:
+            player["vel_y"] = MAX_FALL_SPEED
 
         # Normal fall speed
         next_y = player["y"] + player["vel_y"] / TILE_SIZE
@@ -7892,10 +7797,6 @@ def load_world_data():
             player["health"] = 10
         if "hunger" not in player or player["hunger"] <= 0:
             player["hunger"] = 100
-        if "stamina" not in player:
-            player["stamina"] = 100
-        if "max_stamina" not in player:
-            player["max_stamina"] = 100
         if "inventory" not in player:
             player["inventory"] = []
         if "backpack" not in player:
@@ -7912,7 +7813,7 @@ def load_world_data():
         day_start_time = time.time() if is_day else time.time() - 43200  # 12 hours if night
         
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
-        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}, stamina={player['stamina']}")
+        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
         
         # Place starter chest at spawn location
         place_starter_chest()
@@ -9425,10 +9326,6 @@ def load_world_data():
             player["health"] = 10
         if "hunger" not in player or player["hunger"] <= 0:
             player["hunger"] = 100
-        if "stamina" not in player:
-            player["stamina"] = 100
-        if "max_stamina" not in player:
-            player["max_stamina"] = 100
         if "inventory" not in player:
             player["inventory"] = []
         if "backpack" not in player:
@@ -9456,7 +9353,7 @@ def load_world_data():
                 continue  # Skip invalid keys
         
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
-        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}, stamina={player['stamina']}")
+        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
         print(f"🗺️ Marked {len(generated_terrain_columns)} columns as pre-generated")
         
         return True
@@ -9717,8 +9614,6 @@ def load_game():
             "max_health": 10,
             "hunger": 100,
             "max_hunger": 100,
-            "stamina": 100,
-            "max_stamina": 100,
             "inventory": [],
             "backpack": [],
             "selected": 0,
@@ -10008,12 +9903,6 @@ while running:
                     update_pause_state()  # Resume time when closing inventory
                 continue
             
-            # Restore stamina with R key (for testing)
-            if event.key == pygame.K_r:
-                if game_state == GameState.GAME:
-                    restore_stamina(50)
-                    show_message("Stamina restored!")
-                continue
             # Shop navigation with arrow keys when shop is open
             if shop_open:
                 if event.key == pygame.K_LEFT:
@@ -10774,10 +10663,6 @@ def load_world_data():
             player["health"] = 10
         if "hunger" not in player or player["hunger"] <= 0:
             player["hunger"] = 100
-        if "stamina" not in player:
-            player["stamina"] = 100
-        if "max_stamina" not in player:
-            player["max_stamina"] = 100
         if "inventory" not in player:
             player["inventory"] = []
         if "backpack" not in player:
@@ -10809,7 +10694,7 @@ def load_world_data():
         
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
         print(f"🔗 Connected world systems: marked {len(generated_terrain_columns)} pre-generated columns")
-        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}, stamina={player['stamina']}")
+        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
         return True
         
     except Exception as e:
