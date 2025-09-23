@@ -2509,35 +2509,52 @@ def update_map():
     player_x = int(player["x"])
     player_y = int(player["y"])
     
+    # Ensure map_view_radius is at least 1 to avoid division by zero
+    radius = max(1, map_view_radius)
+    
     # Calculate the area to draw around the player
-    start_x = player_x - map_view_radius
-    end_x = player_x + map_view_radius
-    start_y = player_y - map_view_radius
-    end_y = player_y + map_view_radius
+    start_x = player_x - radius
+    end_x = player_x + radius
+    start_y = player_y - radius
+    end_y = player_y + radius
+    
+    # Calculate scaling factors safely
+    total_width = radius * 2
+    total_height = radius * 2
+    
+    if total_width <= 0 or total_height <= 0:
+        return  # Avoid division by zero
+    
+    scale_x = map_width / total_width
+    scale_y = map_height / total_height
     
     # Draw blocks around the player
     for x in range(start_x, end_x):
         for y in range(start_y, end_y):
-            block_type = get_block(x, y)
-            if block_type and block_type != "air":
-                # Calculate position on map surface
-                map_x = (x - start_x) * (map_width // (map_view_radius * 2))
-                map_y = (y - start_y) * (map_height // (map_view_radius * 2))
-                
-                # Ensure we're within map bounds
-                if 0 <= map_x < map_width and 0 <= map_y < map_height:
-                    color = get_block_color(block_type)
-                    if len(color) == 4:  # Has alpha channel
-                        # Create a surface with alpha for transparency
-                        pixel_surface = pygame.Surface((1, 1), pygame.SRCALPHA)
-                        pixel_surface.fill(color)
-                        map_surface.blit(pixel_surface, (map_x, map_y))
-                    else:
-                        map_surface.set_at((map_x, map_y), color)
+            try:
+                block_type = get_block(x, y)
+                if block_type and block_type != "air":
+                    # Calculate position on map surface
+                    map_x = int((x - start_x) * scale_x)
+                    map_y = int((y - start_y) * scale_y)
+                    
+                    # Ensure we're within map bounds
+                    if 0 <= map_x < map_width and 0 <= map_y < map_height:
+                        color = get_block_color(block_type)
+                        if len(color) == 4:  # Has alpha channel
+                            # Create a surface with alpha for transparency
+                            pixel_surface = pygame.Surface((1, 1), pygame.SRCALPHA)
+                            pixel_surface.fill(color)
+                            map_surface.blit(pixel_surface, (map_x, map_y))
+                        else:
+                            map_surface.set_at((map_x, map_y), color)
+            except Exception as e:
+                # Skip problematic blocks to prevent crashes
+                continue
     
-    # Draw player position
-    player_map_x = map_view_radius * (map_width // (map_view_radius * 2))
-    player_map_y = map_view_radius * (map_height // (map_view_radius * 2))
+    # Draw player position (center of map)
+    player_map_x = map_width // 2
+    player_map_y = map_height // 2
     
     # Draw player as a red dot
     pygame.draw.circle(map_surface, (255, 0, 0), (player_map_x, player_map_y), 2)
@@ -2546,52 +2563,59 @@ def update_map():
 
 def draw_map():
     """Draw the map overlay on the screen"""
-    if not map_open or map_surface is None:
-        return
+    global map_open
+    try:
+        if not map_open or map_surface is None:
+            return
+        
+        # Update the map with current world data
+        update_map()
+        
+        # Create a semi-transparent overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        screen.blit(overlay, (0, 0))
+        
+        # Calculate map position (centered on screen)
+        map_display_width = map_width * 2  # Scale up for better visibility
+        map_display_height = map_height * 2
+        map_x = (SCREEN_WIDTH - map_display_width) // 2
+        map_y = (SCREEN_HEIGHT - map_display_height) // 2
+        
+        # Draw map background
+        map_bg = pygame.Surface((map_display_width + 20, map_display_height + 20))
+        map_bg.fill((20, 20, 40))
+        screen.blit(map_bg, (map_x - 10, map_y - 10))
+        
+        # Draw map border
+        pygame.draw.rect(screen, (255, 255, 255), (map_x - 10, map_y - 10, map_display_width + 20, map_display_height + 20), 2)
+        
+        # Scale and draw the map
+        scaled_map = pygame.transform.scale(map_surface, (map_display_width, map_display_height))
+        screen.blit(scaled_map, (map_x, map_y))
+        
+        # Draw map title
+        title_text = BIG_FONT.render("MAP", True, (255, 255, 255))
+        title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, map_y - 30))
+        screen.blit(title_text, title_rect)
+        
+        # Draw instructions
+        instructions = [
+            "Press M or ESC to close map",
+            f"Player Position: ({int(player['x'])}, {int(player['y'])})",
+            f"View Radius: {map_view_radius} blocks"
+        ]
+        
+        for i, instruction in enumerate(instructions):
+            instruction_text = small_font.render(instruction, True, (200, 200, 200))
+            instruction_rect = instruction_text.get_rect(center=(SCREEN_WIDTH // 2, map_y + map_display_height + 20 + i * 20))
+            screen.blit(instruction_text, instruction_rect)
     
-    # Update the map with current world data
-    update_map()
-    
-    # Create a semi-transparent overlay
-    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    overlay.set_alpha(128)
-    overlay.fill((0, 0, 0))
-    screen.blit(overlay, (0, 0))
-    
-    # Calculate map position (centered on screen)
-    map_display_width = map_width * 2  # Scale up for better visibility
-    map_display_height = map_height * 2
-    map_x = (SCREEN_WIDTH - map_display_width) // 2
-    map_y = (SCREEN_HEIGHT - map_display_height) // 2
-    
-    # Draw map background
-    map_bg = pygame.Surface((map_display_width + 20, map_display_height + 20))
-    map_bg.fill((20, 20, 40))
-    screen.blit(map_bg, (map_x - 10, map_y - 10))
-    
-    # Draw map border
-    pygame.draw.rect(screen, (255, 255, 255), (map_x - 10, map_y - 10, map_display_width + 20, map_display_height + 20), 2)
-    
-    # Scale and draw the map
-    scaled_map = pygame.transform.scale(map_surface, (map_display_width, map_display_height))
-    screen.blit(scaled_map, (map_x, map_y))
-    
-    # Draw map title
-    title_text = BIG_FONT.render("MAP", True, (255, 255, 255))
-    title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, map_y - 30))
-    screen.blit(title_text, title_rect)
-    
-    # Draw instructions
-    instructions = [
-        "Press M or ESC to close map",
-        f"Player Position: ({int(player['x'])}, {int(player['y'])})",
-        f"View Radius: {map_view_radius} blocks"
-    ]
-    
-    for i, instruction in enumerate(instructions):
-        instruction_text = small_font.render(instruction, True, (200, 200, 200))
-        instruction_rect = instruction_text.get_rect(center=(SCREEN_WIDTH // 2, map_y + map_display_height + 20 + i * 20))
-        screen.blit(instruction_text, instruction_rect)
+    except Exception as e:
+        print(f"⚠️ Map drawing error: {e}")
+        # Close map on error to prevent further crashes
+        map_open = False
 
 def draw_multiplayer_chat():
     """Draw the multiplayer chat interface"""
