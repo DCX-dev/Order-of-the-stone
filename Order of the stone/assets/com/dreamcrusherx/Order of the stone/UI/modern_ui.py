@@ -133,7 +133,7 @@ class ModernUI:
         
         buttons = [
             ("Play", "play", self.colors["success"]),
-            ("Change Username", "username", self.colors["info"]),
+            ("Username", "username", self.colors["info"]),
             ("Controls", "controls", self.colors["button"]),
             ("About", "about", self.colors["button"]),
             ("Options", "options", self.colors["button"]),
