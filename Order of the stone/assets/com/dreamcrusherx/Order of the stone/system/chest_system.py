@@ -31,6 +31,11 @@ class ChestSystem:
                 {"item": "stone", "count": (4, 6), "chance": 1.0, "guaranteed": True},
                 {"item": "oak_planks", "count": (3, 5), "chance": 1.0, "guaranteed": True},
                 
+                # NEW FOODS (medium to high chance)
+                {"item": "cooked_fish", "count": (1, 3), "chance": 0.7},
+                {"item": "potato", "count": (2, 4), "chance": 0.7},
+                {"item": "steak", "count": (1, 2), "chance": 0.6},
+                
                 # BONUS ITEMS (medium chance)
                 {"item": "iron", "count": (2, 3), "chance": 0.8},
                 {"item": "dirt", "count": (5, 8), "chance": 0.7},
@@ -46,6 +51,12 @@ class ChestSystem:
                 {"item": "carrot", "count": (2, 5), "chance": 0.8},
                 {"item": "coal", "count": (3, 6), "chance": 0.7},
                 {"item": "stone", "count": (2, 4), "chance": 0.6},
+                
+                # NEW FOODS (varied chances)
+                {"item": "cooked_fish", "count": (1, 2), "chance": 0.7},
+                {"item": "steak", "count": (1, 2), "chance": 0.6},
+                {"item": "potato", "count": (2, 4), "chance": 0.7},
+                {"item": "honey_jar", "count": (1, 1), "chance": 0.5},
                 
                 # UNCOMMON ITEMS (medium chance)
                 {"item": "iron", "count": (1, 2), "chance": 0.5},
@@ -71,6 +82,11 @@ class ChestSystem:
                 {"item": "coal", "count": (3, 8), "chance": 0.8},
                 {"item": "stone", "count": (3, 6), "chance": 0.7},
                 
+                # RARE FOODS (fortress treasure)
+                {"item": "steak", "count": (2, 3), "chance": 0.7},
+                {"item": "honey_jar", "count": (1, 2), "chance": 0.5},
+                {"item": "cooked_fish", "count": (2, 4), "chance": 0.6},
+                
                 # UNCOMMON ITEMS (medium chance)
                 {"item": "gold", "count": (1, 3), "chance": 0.6},
                 {"item": "red_brick", "count": (2, 4), "chance": 0.5},
@@ -90,6 +106,12 @@ class ChestSystem:
                 {"item": "diamond", "count": (2, 5), "chance": 0.9},
                 {"item": "gold", "count": (3, 8), "chance": 0.8},
                 {"item": "iron", "count": (5, 10), "chance": 0.7},
+                
+                # LEGENDARY FOODS (dungeon treasure)
+                {"item": "steak", "count": (3, 5), "chance": 0.8},
+                {"item": "honey_jar", "count": (2, 3), "chance": 0.7},
+                {"item": "cooked_fish", "count": (3, 6), "chance": 0.7},
+                {"item": "potato", "count": (4, 8), "chance": 0.8},
                 
                 # UNCOMMON ITEMS (medium chance)
                 {"item": "coal", "count": (4, 8), "chance": 0.6},

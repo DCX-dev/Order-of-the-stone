@@ -324,7 +324,7 @@ class GameState(Enum):
     USERNAME_REQUIRED = "username_required"  # New state for username required
     GAME = "game"
     PAUSED = "paused"
-    INVENTORY = "inventory"
+    BACKPACK = "backpack"
     SHOP = "shop"
     MULTIPLAYER = "multiplayer"
     OPTIONS = "options"
@@ -411,9 +411,9 @@ class StateManager:
             GameState.WORLD_SELECTION: [GameState.TITLE, GameState.WORLD_GENERATION, GameState.USERNAME_REQUIRED],
             GameState.WORLD_GENERATION: [GameState.GAME, GameState.TITLE],
             GameState.USERNAME_REQUIRED: [GameState.TITLE],
-            GameState.GAME: [GameState.PAUSED, GameState.INVENTORY, GameState.SHOP, GameState.TITLE],
+            GameState.GAME: [GameState.PAUSED, GameState.BACKPACK, GameState.SHOP, GameState.TITLE],
             GameState.PAUSED: [GameState.GAME, GameState.TITLE, GameState.OPTIONS],
-            GameState.INVENTORY: [GameState.GAME],
+            GameState.BACKPACK: [GameState.GAME],
             GameState.SHOP: [GameState.GAME, GameState.TITLE],
             GameState.MULTIPLAYER: [GameState.TITLE, GameState.GAME],
             GameState.OPTIONS: [GameState.TITLE, GameState.PAUSED],
@@ -987,10 +987,24 @@ def load_texture(path):
                 fallback_surface.fill((0, 100, 200))    # Blue
             elif "lava" in filename:
                 fallback_surface.fill((255, 69, 0))     # Red-orange
+            elif "sand" in filename:
+                fallback_surface.fill((238, 203, 173))  # Sandy brown
             elif "player" in filename:
                 fallback_surface.fill((255, 192, 203))  # Pink
             elif "monster" in filename or "mob" in filename:
                 fallback_surface.fill((139, 0, 0))      # Dark red
+            elif "bread" in filename:
+                fallback_surface.fill((222, 184, 135))  # Wheat bread color
+            elif "cooked_fish" in filename:
+                fallback_surface.fill((255, 165, 0))    # Orange fish
+            elif "steak" in filename:
+                fallback_surface.fill((139, 69, 19))    # Brown steak
+            elif "honey_jar" in filename:
+                fallback_surface.fill((255, 215, 0))    # Golden honey
+            elif "potato" in filename:
+                fallback_surface.fill((255, 218, 185))  # Light brown potato
+            elif "carrot" in filename:
+                fallback_surface.fill((255, 165, 0))    # Orange carrot
             else:
                 fallback_surface.fill((200, 200, 200))  # Light gray
             
@@ -1061,6 +1075,76 @@ def make_bed_texture(size):
     pygame.draw.rect(surf, outline, (0, 0, size, size), 1)
 
     return surf
+
+# --- Ability System Functions ---
+# Ability unlock system removed - no more abilities
+
+def show_ability_unlock_animation(ability_name, instructions):
+    """Show the black screen animation for ability unlock"""
+    global screen, clock
+    
+    # Black screen for 1 second
+    black_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    black_surface.fill((0, 0, 0))
+    
+    for i in range(60):  # 1 second at 60 FPS
+        screen.blit(black_surface, (0, 0))
+        pygame.display.flip()
+        clock.tick(60)
+    
+    # White particles coming out and back in
+    particles = []
+    for i in range(50):
+        particles.append({
+            "x": SCREEN_WIDTH // 2,
+            "y": SCREEN_HEIGHT // 2,
+            "vel_x": (random.random() - 0.5) * 10,
+            "vel_y": (random.random() - 0.5) * 10,
+            "life": 120,  # 2 seconds
+            "returning": False
+        })
+    
+    # Animate particles
+    for frame in range(180):  # 3 seconds total
+        screen.blit(black_surface, (0, 0))
+        
+        # Update particles
+        for particle in particles:
+            if not particle["returning"]:
+                # Move outward
+                particle["x"] += particle["vel_x"]
+                particle["y"] += particle["vel_y"]
+                particle["life"] -= 1
+                
+                # Start returning after 1 second
+                if particle["life"] <= 60:
+                    particle["returning"] = True
+                    particle["vel_x"] = (SCREEN_WIDTH // 2 - particle["x"]) / 60
+                    particle["vel_y"] = (SCREEN_HEIGHT // 2 - particle["y"]) / 60
+            else:
+                # Move back to center
+                particle["x"] += particle["vel_x"]
+                particle["y"] += particle["vel_y"]
+        
+        # Draw particles
+        for particle in particles:
+            if particle["life"] > 0:
+                pygame.draw.circle(screen, (255, 255, 255), 
+                                 (int(particle["x"]), int(particle["y"])), 3)
+        
+        # Show ability name and instructions
+        if frame > 120:  # After particles return
+            ability_text = font.render(f"ABILITY UNLOCKED: {ability_name}", True, (255, 255, 255))
+            instruction_text = font.render(instructions, True, (200, 200, 200))
+            
+            ability_rect = ability_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
+            instruction_rect = instruction_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
+            
+            screen.blit(ability_text, ability_rect)
+            screen.blit(instruction_text, instruction_rect)
+        
+        pygame.display.flip()
+        clock.tick(60)
 
 # --- EXTREME ENGINEERING: Enhanced Armor Texture Generators ---
 def make_helmet_texture(size):
@@ -1534,7 +1618,7 @@ def generate_terrain_column(x):
             if can_place_chest_on_grass(x, chest_y) and get_block(x, chest_y) is None:
                 set_block(x, chest_y, "chest")
                 if chest_system:
-                    chest_system.generate_chest_loot("village")
+                    generate_chest_with_shopkeeper_loot(x, chest_y, "village")
                 print(f"📦 Chest placed on grass at ({x}, {chest_y})")
             else:
                 print(f"❌ Cannot place chest at ({x}, {chest_y}) - grass rule: {can_place_chest_on_grass(x, chest_y)}, block exists: {get_block(x, chest_y) is not None}")
@@ -1549,30 +1633,7 @@ def generate_terrain_column(x):
     
     print(f"✅ Generated terrain column {x}: surface at Y={surface_y}")
 
-def generate_village(center_x, surface_y):
-    """Generate a small village with different building types for NPCs"""
-    print(f"🏘️ Generating village at ({center_x}, {surface_y})")
-    
-    village_buildings = []
-    
-    # Generate 3-5 buildings in the village
-    num_buildings = random.randint(3, 5)
-    
-    for i in range(num_buildings):
-        # Position buildings around the center
-        building_x = center_x + random.randint(-20, 20)
-        building_y = surface_y
-        
-        # Choose building type
-        building_types = ["house", "farm", "cartographer", "house", "farm"]  # Shops removed
-        building_type = random.choice(building_types)
-        
-        # Generate the building
-        building_data = generate_building(building_x, building_y, building_type)
-        if building_data:
-            village_buildings.append(building_data)
-    
-    return village_buildings
+# Village generation function removed - no more random NPCs
 
 # Shop generation removed - now available in title screen
 
@@ -1667,7 +1728,7 @@ def place_starter_chest(spawn_x, surface_y):
         
         # Generate starter loot for the chest
         if hasattr(chest_system, 'generate_chest_loot'):
-            chest_system.generate_chest_loot("starter")
+            generate_chest_with_shopkeeper_loot(chest_x, chest_y, "starter")
         
         print(f"🎁 Starter chest placed on grass at ({chest_x}, {chest_y})")
         return True
@@ -1678,7 +1739,7 @@ def place_starter_chest(spawn_x, surface_y):
             if can_place_chest_on_grass(alt_chest_x, chest_y) and get_block(alt_chest_x, chest_y) is None:
                 set_block(alt_chest_x, chest_y, "chest")
                 if hasattr(chest_system, 'generate_chest_loot'):
-                    chest_system.generate_chest_loot("starter")
+                    generate_chest_with_shopkeeper_loot(alt_chest_x, chest_y, "starter")
                 print(f"🎁 Starter chest placed on grass at alternative position ({alt_chest_x}, {chest_y})")
                 return True
     
@@ -1686,10 +1747,21 @@ def place_starter_chest(spawn_x, surface_y):
     return False
 
 def fix_player_spawn_position():
-    """Ensure player spawns on the surface, not underground"""
+    """Ensure player spawns on the surface, not underground, or at bed spawn if available"""
     global player
     
     print(f"🏠 Fixing player spawn position from ({player['x']:.1f}, {player['y']:.1f})")
+    
+    # Check if player has a bed spawn point set
+    if player.get("has_bed_spawn", False):
+        bed_x = player["spawn_x"]
+        bed_y = player["spawn_y"]
+        print(f"🏠 Using bed spawn point at ({bed_x}, {bed_y})")
+        
+        # Set player position to bed spawn
+        player["x"] = bed_x
+        player["y"] = bed_y
+        return
     
     # Keep the current X position but find proper Y position
     spawn_x = int(player["x"])
@@ -1786,26 +1858,21 @@ textures = {
     "pickaxe": load_texture(os.path.join(ITEM_DIR, "pickaxe.png")),
     "water": load_texture(os.path.join(TILE_DIR, "water.png")),
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
+    "sand": load_texture(os.path.join(TILE_DIR, "sand.png")),
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
     "ladder": make_ladder_texture(TILE_SIZE),
     "door": load_texture(os.path.join(TILE_DIR, "door.png")), 
     "bread": load_texture(os.path.join(ITEM_DIR, "bread.png")),
+    "cooked_fish": load_texture(os.path.join(ITEM_DIR, "cooked_fish.png")),
+    "steak": load_texture(os.path.join(ITEM_DIR, "steak.png")),
+    "honey_jar": load_texture(os.path.join(ITEM_DIR, "honey_jar.png")),
+    "potato": load_texture(os.path.join(ITEM_DIR, "potato.png")),
     "wheat": load_texture(os.path.join(TILE_DIR, "carrot.gif")),  # Using carrot as wheat for now
     "stick": load_texture(os.path.join(TILE_DIR, "log.png")),  # Using log as stick for now
     
-    # Chess pieces
-    "chess_pawn_white": load_texture(os.path.join(TILE_DIR, "chess_pawn_white.png")),
-    "chess_pawn_black": load_texture(os.path.join(TILE_DIR, "chess_pawn_black.png")),
-    "chess_rook_white": load_texture(os.path.join(TILE_DIR, "chess_rook_white.png")),
-    "chess_rook_black": load_texture(os.path.join(TILE_DIR, "chess_rook_black.png")),
-    "chess_knight_white": load_texture(os.path.join(TILE_DIR, "chess_knight_white.png")),
-    "chess_knight_black": load_texture(os.path.join(TILE_DIR, "chess_knight_black.png")),
-    "chess_bishop_white": load_texture(os.path.join(TILE_DIR, "chess_bishop_white.png")),
-    "chess_bishop_black": load_texture(os.path.join(TILE_DIR, "chess_bishop_black.png")),
-    "chess_queen_white": load_texture(os.path.join(TILE_DIR, "chess_queen_white.png")),
-    "chess_queen_black": load_texture(os.path.join(TILE_DIR, "chess_queen_black.png")),
-    "chess_king_white": load_texture(os.path.join(TILE_DIR, "chess_king_white.png")),
-    "chess_king_black": load_texture(os.path.join(TILE_DIR, "chess_king_black.png")),
+    "shopkeeper": load_texture(os.path.join(TILE_DIR, "shopkeeper.png")),
+    "boss": load_texture(os.path.join(MOB_DIR, "boss.png")),
+        # Portal texture removed - using ability system instead
 }
 
 # Create map texture programmatically
@@ -2077,6 +2144,8 @@ except Exception:
 
 player_image = load_texture(os.path.join(PLAYER_DIR, "player.gif"))
 monster_image = load_texture(os.path.join(MOB_DIR, "monster.gif"))
+boss_image = load_texture(os.path.join(MOB_DIR, "boss.png"))
+villager_image = load_texture(os.path.join(MOB_DIR, "villager.png"))
 alive_hp = load_texture(os.path.join(HP_DIR, "alive_hp.png"))
 dead_hp = load_texture(os.path.join(HP_DIR, "dead_hp.png"))
 
@@ -2155,9 +2224,12 @@ player = {
         "leggings": None,
         "boots": None
     },
-            "facing_direction": 1,  # 1 = right, -1 = left
-        "last_x": 10,  # Initialize last position for movement detection
-        "last_y": 0,
+    "facing_direction": 1,  # 1 = right, -1 = left
+    "last_x": 10,  # Initialize last position for movement detection
+    "last_y": 0,
+    "spawn_x": 10,  # Bed spawn point
+    "spawn_y": 0,   # Bed spawn point
+    "has_bed_spawn": False,  # Whether player has set a bed spawn
     "fall_start_y": None,  # Track where fall started for damage calculation
     "fall_height": 0.0  # Current fall height
 }
@@ -2224,14 +2296,1192 @@ boss_arena_center = {"x": 0, "y": 0}
 boss_texture = None
 boss_texture_loaded = False
 
-# Legend NPC state
-legend_npc_spawned = False
-legend_npc_position = {"x": 0, "y": 0}
-legend_npc_dialogue_cooldown = 0
+# Legend NPC system removed - no more random NPCs
 
-# Village system
+# =============================================================================
+# ABILITY SYSTEM - MONSTER KILL BASED
+# =============================================================================
+
+# Monster kill tracking
+monsters_killed = 0
+total_monsters_killed = 0  # Total monsters killed in this session
+
+# Ability system removed - no more wall jump
+
+# =============================================================================
+# FOOD SYSTEM
+# =============================================================================
+
+# Food definitions with hunger and health restoration
+FOOD_ITEMS = {
+    # Existing foods
+    "carrot": {"hunger": 2, "health": 1, "rarity": 0.15},  # Common
+    "bread": {"hunger": 3, "health": 0, "rarity": 0.12},   # Common
+    
+    # NEW FOODS
+    "cooked_fish": {"hunger": 4, "health": 1, "rarity": 0.10},      # Grilled fish
+    "steak": {"hunger": 5, "health": 2, "rarity": 0.08},            # Cooked beef
+    "honey_jar": {"hunger": 2, "health": 3, "rarity": 0.06},        # Sweet honey (best healing!)
+    "potato": {"hunger": 3, "health": 1, "rarity": 0.12}            # Baked potato
+}
+
+def eat_food(food_type):
+    """Eat a food item and restore hunger/health"""
+    if food_type not in FOOD_ITEMS:
+        print(f"❌ {food_type} is not a food item!")
+        return False
+    
+    food_data = FOOD_ITEMS[food_type]
+    hunger_restore = food_data["hunger"]
+    health_restore = food_data["health"]
+    
+    # Restore hunger (max 10)
+    old_hunger = player["hunger"]
+    player["hunger"] = min(10, player["hunger"] + hunger_restore)
+    hunger_gained = player["hunger"] - old_hunger
+    
+    # Restore health (max 10)
+    old_health = player["health"]
+    player["health"] = min(10, player["health"] + health_restore)
+    health_gained = player["health"] - old_health
+    
+    # Display message
+    food_name = food_type.replace("_", " ").title()
+    message_parts = []
+    if hunger_gained > 0:
+        message_parts.append(f"+{hunger_gained} Hunger")
+    if health_gained > 0:
+        message_parts.append(f"+{health_gained} Health")
+    
+    if message_parts:
+        show_message(f"🍖 Ate {food_name}: {', '.join(message_parts)}!", 2000)
+        print(f"🍖 Ate {food_name}: Hunger {old_hunger} → {player['hunger']}, Health {old_health} → {player['health']}")
+        return True
+    else:
+        show_message(f"🍖 {food_name}: Already full!", 1500)
+        print(f"🍖 Tried to eat {food_name} but hunger and health are already full")
+        return False
+
+# =============================================================================
+# OXYGEN SYSTEM
+# =============================================================================
+
+# Oxygen system variables
+oxygen_level = 100  # Maximum oxygen level
+max_oxygen = 100
+oxygen_timer = 0
+oxygen_decrease_rate = 0.5  # Oxygen decreases by 0.5 per frame when underwater
+oxygen_recovery_rate = 2.0  # Oxygen recovers by 2.0 per frame when above water
+underwater = False
+oxygen_bar_visible = False
+
+def update_oxygen_system():
+    """Update oxygen system based on player position"""
+    global oxygen_level, underwater, oxygen_bar_visible, oxygen_timer
+    
+    # Check if player is underwater
+    px, py = int(player["x"]), int(player["y"])
+    current_block = get_block(px, py)
+    
+    # Check if player is in water
+    if current_block == "water":
+        underwater = True
+        oxygen_bar_visible = True
+        
+        # Decrease oxygen when underwater
+        oxygen_level -= oxygen_decrease_rate
+        if oxygen_level < 0:
+            oxygen_level = 0
+            
+        # Take damage if oxygen runs out
+        if oxygen_level <= 0:
+            player["health"] -= 0.1  # Drown damage
+            if player["health"] <= 0:
+                show_death_screen()
+    else:
+        underwater = False
+        
+        # Recover oxygen when above water
+        if oxygen_level < max_oxygen:
+            oxygen_level += oxygen_recovery_rate
+            if oxygen_level > max_oxygen:
+                oxygen_level = max_oxygen
+        
+        # Hide oxygen bar after a delay when above water
+        if oxygen_level >= max_oxygen:
+            oxygen_timer += 1
+            if oxygen_timer >= 60:  # Hide after 1 second
+                oxygen_bar_visible = False
+                oxygen_timer = 0
+        else:
+            oxygen_timer = 0
+
+def draw_oxygen_bar():
+    """Draw the oxygen bar when underwater"""
+    if not oxygen_bar_visible:
+        return
+    
+    # Oxygen bar dimensions
+    bar_width = 200
+    bar_height = 20
+    bar_x = 20
+    bar_y = 100  # Below health bar
+    
+    # Background (dark blue)
+    pygame.draw.rect(screen, (0, 50, 100), (bar_x, bar_y, bar_width, bar_height))
+    
+    # Oxygen level (light blue)
+    oxygen_width = int((oxygen_level / max_oxygen) * bar_width)
+    pygame.draw.rect(screen, (0, 150, 255), (bar_x, bar_y, oxygen_width, bar_height))
+    
+    # Border
+    pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
+    
+    # Oxygen text
+    oxygen_text = font.render(f"Oxygen: {int(oxygen_level)}%", True, (255, 255, 255))
+    screen.blit(oxygen_text, (bar_x, bar_y - 25))
+
+# =============================================================================
+# BEACH GENERATION SYSTEM
+# =============================================================================
+
+def generate_beach(center_x, surface_y):
+    """Generate a beach with water and sand"""
+    global world_data
+    
+    # Beach dimensions
+    beach_width = random.randint(20, 40)
+    beach_height = random.randint(5, 10)
+    
+    # Generate beach area
+    for x in range(center_x - beach_width//2, center_x + beach_width//2 + 1):
+        for y in range(surface_y - beach_height, surface_y + 1):
+            # Create beach with sand and water
+            if y == surface_y:
+                # Surface level - mix of sand and water
+                if random.random() < 0.7:  # 70% sand
+                    set_block(x, y, "sand")
+                else:  # 30% water
+                    set_block(x, y, "water")
+            elif y < surface_y:
+                # Below surface - mostly water
+                if random.random() < 0.8:  # 80% water
+                    set_block(x, y, "water")
+                else:  # 20% sand
+                    set_block(x, y, "sand")
+    
+    print(f"🏖️ Beach generated at ({center_x}, {surface_y}) with water and sand!")
+
+# =============================================================================
+# BOSS AND FORTRESS SYSTEM
+# =============================================================================
+
+# Boss and fortress variables
+fortresses = []  # List of fortress data
+bosses = []  # List of boss entities
+
+def generate_fortress(center_x, surface_y):
+    """Generate an underground fortress with a boss"""
+    global fortresses
+    
+    # Fortress dimensions
+    fortress_width = random.randint(15, 25)
+    fortress_height = random.randint(8, 12)
+    
+    # Underground position - spawn 10-15 blocks below surface
+    underground_y = surface_y + random.randint(10, 15)
+    
+    # Create fortress data
+    fortress_data = {
+        "center": (center_x, underground_y),
+        "size": (fortress_width, fortress_height),
+        "boss": None,
+        "chests": []
+    }
+    
+    # Generate fortress structure underground
+    for x in range(center_x - fortress_width//2, center_x + fortress_width//2 + 1):
+        for y in range(underground_y - fortress_height, underground_y + 1):
+            # Create fortress walls
+            if x == center_x - fortress_width//2 or x == center_x + fortress_width//2 or y == underground_y - fortress_height:
+                set_block(x, y, "stone")  # Stone walls
+            elif y == underground_y:
+                set_block(x, y, "stone")  # Stone floor
+            else:
+                set_block(x, y, "air")  # Interior space
+    
+    # Add entrance door on one side of the fortress
+    door_side = random.choice(["left", "right"])
+    if door_side == "left":
+        door_x = center_x - fortress_width//2
+    else:
+        door_x = center_x + fortress_width//2
+    
+    # Place door at ground level of the fortress
+    door_y = underground_y
+    set_block(door_x, door_y, "door")
+    
+    # Add exit door on the opposite side
+    if door_side == "left":
+        exit_door_x = center_x + fortress_width//2
+    else:
+        exit_door_x = center_x - fortress_width//2
+    
+    set_block(exit_door_x, door_y, "door")
+    
+    # Fill area around fortress with stone (except interior)
+    for x in range(center_x - fortress_width//2 - 3, center_x + fortress_width//2 + 4):
+        for y in range(underground_y - fortress_height - 3, underground_y + 4):
+            # Only place stone if it's not already part of the fortress
+            if not (center_x - fortress_width//2 <= x <= center_x + fortress_width//2 and 
+                   underground_y - fortress_height <= y <= underground_y):
+                # Check if this position is empty or replaceable
+                current_block = get_block(x, y)
+                if current_block is None or current_block == "air":
+                    set_block(x, y, "stone")  # Surround fortress with stone
+    
+    # Add boss room in the center (underground)
+    boss_room_size = 5
+    boss_x = center_x
+    boss_y = underground_y - fortress_height//2
+    
+    # Create boss room
+    for x in range(boss_x - boss_room_size//2, boss_x + boss_room_size//2 + 1):
+        for y in range(boss_y - boss_room_size//2, boss_y + boss_room_size//2 + 1):
+            if x == boss_x - boss_room_size//2 or x == boss_x + boss_room_size//2 or y == boss_y - boss_room_size//2 or y == boss_y + boss_room_size//2:
+                set_block(x, y, "red_brick")  # Red brick walls
+            else:
+                set_block(x, y, "air")
+    
+    # Add door to boss room (on the side facing the fortress entrance)
+    boss_door_x = boss_x + (1 if door_side == "right" else -1) * (boss_room_size//2)
+    set_block(boss_door_x, boss_y, "door")
+    
+    # Spawn fortress boss
+    boss_data = spawn_fortress_boss(boss_x, boss_y)
+    fortress_data["boss"] = boss_data
+    
+    # Add treasure chests
+    num_chests = random.randint(2, 4)
+    for i in range(num_chests):
+        chest_x = boss_x + random.randint(-boss_room_size//2 + 1, boss_room_size//2 - 1)
+        chest_y = boss_y + random.randint(-boss_room_size//2 + 1, boss_room_size//2 - 1)
+        
+        if get_block(chest_x, chest_y) == "air":
+            set_block(chest_x, chest_y, "chest")
+            fortress_data["chests"].append((chest_x, chest_y))
+    
+    fortresses.append(fortress_data)
+    print(f"🏰 Fortress generated at ({center_x}, {surface_y}) with boss!")
+
+def spawn_fortress_boss(boss_x, boss_y):
+    """Spawn a fortress boss"""
+    boss_data = {
+        "type": "fortress_boss",
+        "x": float(boss_x),
+        "y": float(boss_y),
+        "image": boss_image,
+        "hp": 50,
+        "max_hp": 50,
+        "attack_timer": 0,
+        "attack_cooldown": 120,  # 2 seconds
+        "movement_timer": 0,
+        "target_x": boss_x,
+        "target_y": boss_y
+    }
+    
+    # Add to entities
+    entities.append(boss_data)
+    print(f"👹 Fortress Boss spawned at ({boss_x}, {boss_y})")
+    
+    return boss_data
+
+def update_fortress_bosses():
+    """Update fortress boss AI and behavior"""
+    for boss in entities:
+        if boss["type"] == "fortress_boss":
+            # Boss movement
+            boss["movement_timer"] += 1
+            
+            if boss["movement_timer"] >= 180:  # Move every 3 seconds
+                boss["movement_timer"] = 0
+                
+                # Move towards player
+                dx = player["x"] - boss["x"]
+                dy = player["y"] - boss["y"]
+                distance = math.sqrt(dx*dx + dy*dy)
+                
+                if distance > 0:
+                    speed = 0.01
+                    boss["x"] += speed * dx / distance
+                    boss["y"] += speed * dy / distance
+            
+            # Boss attacks
+            boss["attack_timer"] += 1
+            
+            if boss["attack_timer"] >= boss["attack_cooldown"]:
+                # Check if player is in range
+                dx = player["x"] - boss["x"]
+                dy = player["y"] - boss["y"]
+                distance = math.sqrt(dx*dx + dy*dy)
+                
+                if distance <= 3:  # Attack range
+                    # Create fireball projectile
+                    entities.append({
+                        "type": "fireball",
+                        "x": boss["x"],
+                        "y": boss["y"],
+                        "dx": 0.1 * dx / distance,
+                        "dy": 0.1 * dy / distance,
+                        "damage": 5,
+                        "lifetime": 120
+                    })
+                    
+                    boss["attack_timer"] = 0
+                    print("🔥 Fortress Boss shoots fireball!")
+
+def update_fireball_projectiles():
+    """Update fireball projectiles"""
+    global entities
+    
+    for projectile in entities[:]:
+        if projectile["type"] == "fireball":
+            # Move fireball
+            projectile["x"] += projectile["dx"]
+            projectile["y"] += projectile["dy"]
+            
+            # Decrease lifetime
+            projectile["lifetime"] -= 1
+            
+            # Check collision with player
+            dx = player["x"] - projectile["x"]
+            dy = player["y"] - projectile["y"]
+            distance = math.sqrt(dx*dx + dy*dy)
+            
+            if distance <= 0.5:  # Hit player
+                damage = calculate_armor_damage_reduction(projectile["damage"])
+                player["health"] -= damage
+                play_damage_sound()
+                entities.remove(projectile)
+                print(f"🔥 Fireball hit player for {damage} damage!")
+                continue
+            
+            # Remove if lifetime expired
+            if projectile["lifetime"] <= 0:
+                entities.remove(projectile)
+
+# =============================================================================
+# VILLAGE SYSTEM
+# =============================================================================
+
+# Village variables
 villages = []  # List of village data
-village_spawn_cooldown = 0
+villagers = []  # List of villager entities
+
+def generate_village(center_x, surface_y):
+    """Generate a proper village with houses, beds, and villagers"""
+    global villages
+    
+    # Village size and layout
+    village_width = random.randint(15, 25)
+    village_height = random.randint(8, 12)
+    
+    # Create village data
+    village_data = {
+        "center": (center_x, surface_y),
+        "size": (village_width, village_height),
+        "houses": [],
+        "villagers": [],
+        "beds": [],
+        "chests": []
+    }
+    
+    # Generate houses
+    num_houses = random.randint(3, 6)
+    for i in range(num_houses):
+        house_x = center_x + random.randint(-village_width//2, village_width//2)
+        house_y = surface_y + random.randint(-village_height//2, village_height//2)
+        
+        # Generate individual house
+        house_data = generate_house(house_x, house_y)
+        village_data["houses"].append(house_data)
+        
+        # Add house beds to village beds
+        village_data["beds"].extend(house_data["beds"])
+        
+        # Add house chests to village chests
+        village_data["chests"].extend(house_data["chests"])
+    
+    # Generate villagers
+    num_villagers = random.randint(2, 4)
+    for i in range(num_villagers):
+        villager_x = center_x + random.randint(-village_width//2, village_width//2)
+        villager_y = surface_y + random.randint(-village_height//2, village_height//2)
+        
+        # Spawn villager
+        villager_data = spawn_villager(villager_x, villager_y)
+        village_data["villagers"].append(villager_data)
+    
+    villages.append(village_data)
+    print(f"🏘️ Village generated at ({center_x}, {surface_y}) with {num_houses} houses and {num_villagers} villagers!")
+
+def generate_house(house_x, house_y):
+    """Generate a single house with beds and chest"""
+    house_width = random.randint(4, 7)
+    house_height = random.randint(3, 5)
+    
+    house_data = {
+        "center": (house_x, house_y),
+        "size": (house_width, house_height),
+        "beds": [],
+        "chests": []
+    }
+    
+    # Create house structure
+    for x in range(house_x - house_width//2, house_x + house_width//2 + 1):
+        for y in range(house_y - house_height, house_y + 1):
+            # Floor
+            if y == house_y:
+                set_block(x, y, "oak_planks")
+            # Walls
+            elif x == house_x - house_width//2 or x == house_x + house_width//2 or y == house_y - house_height:
+                set_block(x, y, "oak_planks")
+            # Interior (air)
+            else:
+                set_block(x, y, "air")
+    
+    # Add beds inside house
+    num_beds = random.randint(1, 2)
+    for i in range(num_beds):
+        bed_x = house_x + random.randint(-house_width//2 + 1, house_width//2 - 1)
+        bed_y = house_y - random.randint(1, house_height - 1)
+        
+        if get_block(bed_x, bed_y) == "air":
+            set_block(bed_x, bed_y, "bed")
+            house_data["beds"].append((bed_x, bed_y))
+    
+    # Add chest inside house
+    chest_x = house_x + random.randint(-house_width//2 + 1, house_width//2 - 1)
+    chest_y = house_y - random.randint(1, house_height - 1)
+    
+    if get_block(chest_x, chest_y) == "air":
+        set_block(chest_x, chest_y, "chest")
+        house_data["chests"].append((chest_x, chest_y))
+    
+    return house_data
+
+def spawn_villager(villager_x, villager_y):
+    """Spawn a villager entity with a random job"""
+    # Random villager jobs
+    jobs = [
+        {
+            "name": "Farmer",
+            "dialogue": [
+                "I grow the best crops in the village!",
+                "Need some food? Check our fields!",
+                "The soil here is perfect for farming!",
+                "I've been farming for 20 years!",
+                "Fresh vegetables, anyone?"
+            ]
+        },
+        {
+            "name": "Blacksmith",
+            "dialogue": [
+                "I forge the finest tools in the land!",
+                "Need a new pickaxe? I can help!",
+                "My forge burns day and night!",
+                "Quality tools for quality work!",
+                "I've been smithing since I was young!"
+            ]
+        },
+        {
+            "name": "Merchant",
+            "dialogue": [
+                "Welcome to my shop, traveler!",
+                "I have the best prices in town!",
+                "Looking for something specific?",
+                "Trade is the lifeblood of our village!",
+                "I travel far to get rare goods!"
+            ]
+        },
+        {
+            "name": "Guard",
+            "dialogue": [
+                "I keep this village safe from monsters!",
+                "Have you seen any threats nearby?",
+                "Safety is our top priority!",
+                "I patrol the village day and night!",
+                "Stay alert, traveler!"
+            ]
+        },
+        {
+            "name": "Builder",
+            "dialogue": [
+                "I built most of these houses myself!",
+                "Need help with construction?",
+                "A good foundation is everything!",
+                "I take pride in my craftsmanship!",
+                "This village is my masterpiece!"
+            ]
+        }
+    ]
+    
+    job = random.choice(jobs)
+    
+    villager_data = {
+        "type": "villager",
+        "x": float(villager_x),
+        "y": float(villager_y),
+        "image": villager_image,
+        "hp": 20,
+        "max_hp": 20,
+        "job": job["name"],
+        "dialogue": job["dialogue"],
+        "current_dialogue": 0,
+        "last_interaction": 0,
+        "movement_timer": 0,
+        "target_x": villager_x,
+        "target_y": villager_y
+    }
+    
+    # Add to entities
+    entities.append(villager_data)
+    print(f"👤 Villager spawned at ({villager_x}, {villager_y})")
+    
+    return villager_data
+
+def update_villagers():
+    """Update villager AI and behavior"""
+    for villager in entities:
+        if villager["type"] == "villager":
+            # Simple villager movement (wander around)
+            villager["movement_timer"] += 1
+            
+            if villager["movement_timer"] >= 300:  # Move every 5 seconds
+                villager["movement_timer"] = 0
+                
+                # Choose new target position
+                current_x = villager["x"]
+                current_y = villager["y"]
+                
+                # Move in random direction
+                direction = random.choice([(-1, 0), (1, 0), (0, -1), (0, 1)])
+                new_x = current_x + direction[0] * random.randint(1, 3)
+                new_y = current_y + direction[1] * random.randint(1, 3)
+                
+                # Check if new position is valid (not blocked)
+                if get_block(int(new_x), int(new_y)) == "air":
+                    villager["target_x"] = new_x
+                    villager["target_y"] = new_y
+                
+                # Move towards target
+                dx = villager["target_x"] - villager["x"]
+                dy = villager["target_y"] - villager["y"]
+                
+                if abs(dx) > 0.1 or abs(dy) > 0.1:
+                    speed = 0.02
+                    villager["x"] += speed * dx
+                    villager["y"] += speed * dy
+
+def interact_with_villager(villager):
+    """Handle villager interaction"""
+    current_time = pygame.time.get_ticks()
+    
+    # Prevent spam clicking
+    if current_time - villager["last_interaction"] < 2000:  # 2 second cooldown
+        return
+    
+    villager["last_interaction"] = current_time
+    
+    # Cycle through dialogue
+    dialogue = villager["dialogue"][villager["current_dialogue"]]
+    job_name = villager.get("job", "Villager")
+    show_message(f"👤 {job_name}: {dialogue}", 3000)
+    print(f"👤 {job_name} says: {dialogue}")
+    
+    # Move to next dialogue
+    villager["current_dialogue"] = (villager["current_dialogue"] + 1) % len(villager["dialogue"])
+
+# =============================================================================
+# LOST RUINS DUNGEON SYSTEM
+# =============================================================================
+
+# Lost Ruins variables
+lost_ruins_entrances = []  # List of Lost Ruins entrance positions
+lost_ruins_systems = []    # List of Lost Ruins system data
+final_boss_active = False  # Whether the final boss is currently active
+final_boss_position = None  # Position of the final boss
+final_boss_health = 100  # Final boss health
+final_boss_max_health = 100  # Final boss max health
+credits_from_boss_defeat = False  # Whether credits screen is shown due to boss defeat
+
+def generate_lost_ruins(center_x, surface_y):
+    """Generate the Lost Ruins dungeon with portal to final boss"""
+    global lost_ruins_entrances, lost_ruins_systems
+    
+    # Lost Ruins entrance (underground)
+    entrance_width = 4
+    entrance_height = 3
+    entrance_y = surface_y - 10  # 10 blocks underground
+    
+    # Create entrance
+    for x in range(center_x - entrance_width//2, center_x + entrance_width//2 + 1):
+        for y in range(entrance_y - entrance_height, entrance_y + 1):
+            if get_block(x, y) in ["stone", "dirt", "grass"]:
+                set_block(x, y, "air")
+    
+    # Add entrance to list
+    lost_ruins_entrances.append((center_x, entrance_y))
+    
+    # Generate Lost Ruins structure
+    ruins_data = {
+        "entrance": (center_x, entrance_y),
+        "rooms": [],
+        "portal_room": None,
+        "boss_room": None
+    }
+    
+    # Main hall (5x8 room)
+    hall_x = center_x
+    hall_y = entrance_y - 5
+    hall_width = 5
+    hall_height = 8
+    
+    for rx in range(hall_x - hall_width//2, hall_x + hall_width//2 + 1):
+        for ry in range(hall_y - hall_height, hall_y + 1):
+            if get_block(rx, ry) in ["stone", "dirt", "grass"]:
+                set_block(rx, ry, "air")
+    
+    ruins_data["rooms"].append((hall_x, hall_y, hall_width, hall_height))
+    
+    # Portal room (4x6 room)
+    portal_x = center_x - 8
+    portal_y = entrance_y - 5
+    portal_width = 4
+    portal_height = 6
+    
+    for rx in range(portal_x - portal_width//2, portal_x + portal_width//2 + 1):
+        for ry in range(portal_y - portal_height, portal_y + 1):
+            if get_block(rx, ry) in ["stone", "dirt", "grass"]:
+                set_block(rx, ry, "air")
+    
+    # Place portal in portal room
+    set_block(portal_x, portal_y, "portal")
+    ruins_data["portal_room"] = (portal_x, portal_y, portal_width, portal_height)
+    
+    # Boss room (6x8 room)
+    boss_x = center_x + 8
+    boss_y = entrance_y - 5
+    boss_width = 6
+    boss_height = 8
+    
+    for rx in range(boss_x - boss_width//2, boss_x + boss_width//2 + 1):
+        for ry in range(boss_y - boss_height, boss_y + 1):
+            if get_block(rx, ry) in ["stone", "dirt", "grass"]:
+                set_block(rx, ry, "air")
+    
+    # Place final boss in boss room
+    global final_boss_position
+    final_boss_position = (boss_x, boss_y - 2)
+    ruins_data["boss_room"] = (boss_x, boss_y, boss_width, boss_height)
+    
+    # Add torches for lighting
+    torch_positions = [
+        (center_x - 2, entrance_y - 2),
+        (center_x + 2, entrance_y - 2),
+        (portal_x, portal_y - 2),
+        (boss_x - 2, boss_y - 2),
+        (boss_x + 2, boss_y - 2)
+    ]
+    
+    for tx, ty in torch_positions:
+        if get_block(tx, ty) == "air":
+            set_block(tx, ty, "torch")
+    
+    lost_ruins_systems.append(ruins_data)
+    print(f"🏛️ Lost Ruins generated at ({center_x}, {entrance_y}) with portal and boss room!")
+
+def spawn_final_boss():
+    """Spawn the final boss in the Lost Ruins"""
+    global final_boss_active, final_boss_position, final_boss_health, final_boss_max_health
+    
+    if final_boss_position and not final_boss_active:
+        boss_x, boss_y = final_boss_position
+        
+        # Add boss to entities
+        entities.append({
+            "type": "final_boss",
+            "x": float(boss_x),
+            "y": float(boss_y),
+            "hp": final_boss_health,
+            "max_hp": final_boss_max_health,
+            "cooldown": 0,
+            "image": boss_image,
+            "phase": 1,
+            "attack_timer": 0
+        })
+        
+        final_boss_active = True
+        print(f"👹 Final boss spawned at ({boss_x}, {boss_y})!")
+
+def update_final_boss():
+    """Update final boss AI and attacks"""
+    global final_boss_active, final_boss_health
+    
+    if not final_boss_active:
+        return
+    
+    # Find the boss entity
+    boss_entity = None
+    for entity in entities:
+        if entity["type"] == "final_boss":
+            boss_entity = entity
+            break
+    
+    if not boss_entity:
+        final_boss_active = False
+        return
+    
+    # Update boss health
+    final_boss_health = boss_entity["hp"]
+    
+    # Boss AI - chase player
+    player_x = player["x"]
+    player_y = player["y"]
+    boss_x = boss_entity["x"]
+    boss_y = boss_entity["y"]
+    
+    dx = player_x - boss_x
+    dy = player_y - boss_y
+    dist = math.sqrt(dx*dx + dy*dy)
+    
+    if dist > 0:
+        # Move towards player
+        speed = 0.05
+        boss_entity["x"] += speed * dx / dist
+        boss_entity["y"] += speed * dy / dist
+    
+    # Boss attacks
+    boss_entity["attack_timer"] += 1
+    if boss_entity["attack_timer"] >= 120:  # Attack every 2 seconds
+        boss_entity["attack_timer"] = 0
+        
+        # Ranged attack - fire projectiles
+        if dist > 0:
+            entities.append({
+                "type": "boss_projectile",
+                "x": boss_x,
+                "y": boss_y,
+                "dx": 0.2 * dx / dist,
+                "dy": 0.2 * dy / dist,
+                "damage": 5,
+                "lifetime": 180
+            })
+            print("🔥 Boss fired projectile!")
+    
+    # Contact damage
+    if dist < 1.5:
+        current_time = pygame.time.get_ticks()
+        if "last_attack_time" not in boss_entity:
+            boss_entity["last_attack_time"] = 0
+        
+        if current_time - boss_entity["last_attack_time"] >= 2000:  # 2 second cooldown
+            damage = calculate_armor_damage_reduction(8)  # 8 damage
+            player["health"] -= damage
+            play_damage_sound()
+            boss_entity["last_attack_time"] = current_time
+            print(f"👹 Boss attacked player for {damage} damage!")
+            if player["health"] <= 0:
+                show_death_screen()
+
+# =============================================================================
+# CAVE GENERATION SYSTEM
+# =============================================================================
+
+# Cave generation variables
+cave_entrances = []  # List of cave entrance positions
+cave_systems = []    # List of cave system data
+
+def generate_cave_system(center_x, surface_y):
+    """Generate a cave system with rare diamonds and common iron/coal"""
+    global cave_entrances, cave_systems
+    
+    # Cave entrance size and shape
+    entrance_width = random.randint(3, 6)
+    entrance_height = random.randint(2, 4)
+    
+    # Create cave entrance
+    for x in range(center_x - entrance_width//2, center_x + entrance_width//2 + 1):
+        for y in range(surface_y - entrance_height, surface_y + 1):
+            if get_block(x, y) in ["grass", "dirt", "stone"]:
+                set_block(x, y, "air")
+    
+    # Add cave entrance to list
+    cave_entrances.append((center_x, surface_y))
+    
+    # Generate cave system underground
+    cave_data = {
+        "entrance": (center_x, surface_y),
+        "tunnels": [],
+        "rooms": [],
+        "ores": []
+    }
+    
+    # Generate main tunnel system
+    tunnel_length = random.randint(20, 40)
+    tunnel_direction = random.choice([-1, 1])  # Left or right
+    
+    current_x = center_x
+    current_y = surface_y - 2
+    
+    for i in range(tunnel_length):
+        # Create tunnel segment
+        tunnel_width = random.randint(2, 4)
+        tunnel_height = random.randint(2, 3)
+        
+        for tx in range(current_x - tunnel_width//2, current_x + tunnel_width//2 + 1):
+            for ty in range(current_y - tunnel_height, current_y + 1):
+                if get_block(tx, ty) in ["stone", "dirt", "grass"]:
+                    set_block(tx, ty, "air")
+        
+        # Add to cave data
+        cave_data["tunnels"].append((current_x, current_y, tunnel_width, tunnel_height))
+        
+        # Place ores in tunnel
+        place_cave_ores(current_x, current_y, tunnel_width, tunnel_height)
+        
+        # Move to next tunnel segment
+        current_x += tunnel_direction * random.randint(1, 3)
+        current_y += random.randint(-1, 1)
+        
+        # Occasionally change direction
+        if random.random() < 0.3:
+            tunnel_direction *= -1
+    
+    # Generate cave rooms
+    num_rooms = random.randint(2, 4)
+    for _ in range(num_rooms):
+        room_x = center_x + random.randint(-15, 15)
+        room_y = surface_y - random.randint(3, 15)
+        room_width = random.randint(5, 10)
+        room_height = random.randint(4, 8)
+        
+        # Create room
+        for rx in range(room_x - room_width//2, room_x + room_width//2 + 1):
+            for ry in range(room_y - room_height, room_y + 1):
+                if get_block(rx, ry) in ["stone", "dirt", "grass"]:
+                    set_block(rx, ry, "air")
+        
+        # Add to cave data
+        cave_data["rooms"].append((room_x, room_y, room_width, room_height))
+        
+        # Place ores in room (higher chance for rare ores)
+        place_cave_ores(room_x, room_y, room_width, room_height, is_room=True)
+    
+    cave_systems.append(cave_data)
+    print(f"🕳️ Cave system generated at ({center_x}, {surface_y}) with {len(cave_data['tunnels'])} tunnels and {len(cave_data['rooms'])} rooms")
+
+def place_cave_ores(x, y, width, height, is_room=False):
+    """Place ores in cave areas with diamonds being rare"""
+    ore_blocks = []
+    
+    # Count total air blocks in area
+    for tx in range(x - width//2, x + width//2 + 1):
+        for ty in range(y - height, y + 1):
+            if get_block(tx, ty) == "air":
+                ore_blocks.append((tx, ty))
+    
+    if not ore_blocks:
+        return
+    
+    # Place ores based on rarity
+    for tx, ty in ore_blocks:
+        ore_chance = random.random()
+        
+        if is_room:
+            # Higher ore chance in rooms
+            if ore_chance < 0.15:  # 15% chance for coal
+                set_block(tx, ty, "coal")
+            elif ore_chance < 0.25:  # 10% chance for iron
+                set_block(tx, ty, "iron")
+            elif ore_chance < 0.27:  # 2% chance for gold
+                set_block(tx, ty, "gold")
+            elif ore_chance < 0.28:  # 1% chance for diamond (very rare!)
+                set_block(tx, ty, "diamond")
+        else:
+            # Lower ore chance in tunnels
+            if ore_chance < 0.08:  # 8% chance for coal
+                set_block(tx, ty, "coal")
+            elif ore_chance < 0.12:  # 4% chance for iron
+                set_block(tx, ty, "iron")
+            elif ore_chance < 0.13:  # 1% chance for gold
+                set_block(tx, ty, "gold")
+            elif ore_chance < 0.131:  # 0.1% chance for diamond (extremely rare!)
+                set_block(tx, ty, "diamond")
+
+# =============================================================================
+# PERFORMANCE MONITORING SYSTEM
+# =============================================================================
+
+# Performance monitoring variables
+performance_monitor = {
+    "frame_times": [],
+    "max_frame_time": 0,
+    "avg_frame_time": 0,
+    "frame_count": 0,
+    "last_fps_check": 0,
+    "lag_spikes": 0,
+    "show_stats": False  # Toggle for displaying performance stats
+}
+
+def update_performance_monitor():
+    """Monitor game performance and detect lag spikes"""
+    global performance_monitor
+    
+    current_time = pygame.time.get_ticks()
+    frame_time = current_time - performance_monitor.get("last_frame_time", current_time)
+    performance_monitor["last_frame_time"] = current_time
+    
+    # Track frame times
+    performance_monitor["frame_times"].append(frame_time)
+    if len(performance_monitor["frame_times"]) > 60:  # Keep last 60 frames
+        performance_monitor["frame_times"].pop(0)
+    
+    # Calculate average frame time
+    if performance_monitor["frame_times"]:
+        performance_monitor["avg_frame_time"] = sum(performance_monitor["frame_times"]) / len(performance_monitor["frame_times"])
+        performance_monitor["max_frame_time"] = max(performance_monitor["frame_times"])
+    
+    # Detect lag spikes (frame time > 33ms = < 30 FPS)
+    if frame_time > 33:
+        performance_monitor["lag_spikes"] += 1
+        if performance_monitor["lag_spikes"] % 10 == 0:  # Log every 10th lag spike
+            print(f"⚠️ Performance warning: Frame time {frame_time:.1f}ms (should be < 16ms for 60 FPS)")
+    
+    # Reset lag spike counter occasionally
+    if performance_monitor["frame_count"] % 300 == 0:  # Every 5 seconds at 60 FPS
+        performance_monitor["lag_spikes"] = 0
+    
+    performance_monitor["frame_count"] += 1
+
+def get_performance_stats():
+    """Get current performance statistics"""
+    return {
+        "avg_frame_time": performance_monitor["avg_frame_time"],
+        "max_frame_time": performance_monitor["max_frame_time"],
+        "fps": 1000 / performance_monitor["avg_frame_time"] if performance_monitor["avg_frame_time"] > 0 else 0,
+        "lag_spikes": performance_monitor["lag_spikes"]
+    }
+
+def draw_performance_stats():
+    """Draw performance statistics on screen with player coordinates"""
+    if not performance_monitor["show_stats"]:
+        return
+    
+    stats = get_performance_stats()
+    
+    # Draw semi-transparent background (moved down to not cover player info)
+    overlay = pygame.Surface((300, 160), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 150))
+    screen.blit(overlay, (10, 80))  # Moved down from y=10 to y=80
+    
+    # Draw player coordinates
+    player_x = int(player["x"])
+    player_y = int(player["y"])
+    coords_text = font.render(f"Position: ({player_x}, {player_y})", True, (100, 255, 100))
+    screen.blit(coords_text, (20, 90))
+    
+    # Draw performance stats
+    fps_text = font.render(f"FPS: {stats['fps']:.1f}", True, (255, 255, 255))
+    screen.blit(fps_text, (20, 110))
+    
+    frame_time_text = font.render(f"Frame Time: {stats['avg_frame_time']:.1f}ms", True, (255, 255, 255))
+    screen.blit(frame_time_text, (20, 130))
+    
+    max_frame_text = font.render(f"Max Frame: {stats['max_frame_time']:.1f}ms", True, (255, 255, 255))
+    screen.blit(max_frame_text, (20, 150))
+    
+    lag_text = font.render(f"Lag Spikes: {stats['lag_spikes']}", True, (255, 100, 100) if stats['lag_spikes'] > 0 else (255, 255, 255))
+    screen.blit(lag_text, (20, 170))
+    
+    # Draw toggle instruction
+    toggle_text = font.render("Press F3 to toggle", True, (200, 200, 200))
+    screen.blit(toggle_text, (20, 190))
+
+# =============================================================================
+# MERCHANT SYSTEM - BRAND NEW SHOPKEEPER
+# =============================================================================
+
+# Merchant system variables
+merchant_shop_open = False  # Whether merchant shop is currently open
+merchant_block_pos = None  # Position of the merchant block being used
+merchant_selected_category = "tools"  # Current category being viewed
+merchant_page = 0  # Current page of items
+
+# Merchant shop items with prices and descriptions
+MERCHANT_ITEMS = {
+    # TOOLS & WEAPONS
+    "tools": {
+        "iron_pickaxe": {
+            "name": "Iron Pickaxe",
+            "price": 1000,
+            "description": "Mines 2x faster than stone",
+            "rarity": "common"
+        },
+        "diamond_pickaxe": {
+            "name": "Diamond Pickaxe",
+            "price": 5000,
+            "description": "Mines 3x faster than stone",
+            "rarity": "rare"
+        },
+        "netherite_pickaxe": {
+            "name": "Netherite Pickaxe", 
+            "price": 15000,
+            "description": "Mines 5x faster, unbreakable",
+            "rarity": "epic"
+        },
+        "iron_sword": {
+            "name": "Iron Sword",
+            "price": 800,
+            "description": "Deals 5 damage per hit",
+            "rarity": "common"
+        },
+        "diamond_sword": {
+            "name": "Diamond Sword",
+            "price": 3000,
+            "description": "Deals 8 damage per hit",
+            "rarity": "rare"
+        },
+        "netherite_sword": {
+            "name": "Netherite Sword",
+            "price": 12000,
+            "description": "Deals 12 damage per hit",
+            "rarity": "epic"
+        }
+    },
+    
+    # ARMOR
+    "armor": {
+        "leather_helmet": {
+            "name": "Leather Helmet",
+            "price": 200,
+            "description": "Basic protection",
+            "rarity": "common"
+        },
+        "iron_helmet": {
+            "name": "Iron Helmet",
+            "price": 500,
+            "description": "Good protection",
+            "rarity": "common"
+        },
+        "diamond_helmet": {
+            "name": "Diamond Helmet",
+            "price": 2000,
+            "description": "Excellent protection",
+            "rarity": "rare"
+        },
+        "leather_chestplate": {
+            "name": "Leather Chestplate",
+            "price": 400,
+            "description": "Basic chest protection",
+            "rarity": "common"
+        },
+        "iron_chestplate": {
+            "name": "Iron Chestplate",
+            "price": 1000,
+            "description": "Good chest protection",
+            "rarity": "common"
+        },
+        "diamond_chestplate": {
+            "name": "Diamond Chestplate",
+            "price": 4000,
+            "description": "Excellent chest protection",
+            "rarity": "rare"
+        }
+    },
+    
+    # CONSUMABLES
+    "consumables": {
+        "bread": {
+            "name": "Bread",
+            "price": 50,
+            "description": "Restores 2 health",
+            "rarity": "common"
+        },
+        "golden_apple": {
+            "name": "Golden Apple",
+            "price": 500,
+            "description": "Restores 5 health",
+            "rarity": "rare"
+        },
+        "enchanted_golden_apple": {
+            "name": "Enchanted Golden Apple",
+            "price": 2000,
+            "description": "Restores 10 health",
+            "rarity": "epic"
+        },
+        "speed_potion": {
+            "name": "Speed Potion",
+            "price": 300,
+            "description": "Increases movement speed",
+            "rarity": "rare"
+        },
+        "strength_potion": {
+            "name": "Strength Potion",
+            "price": 400,
+            "description": "Increases damage",
+            "rarity": "rare"
+        },
+        "healing_potion": {
+            "name": "Healing Potion",
+            "price": 250,
+            "description": "Instantly restores 8 health",
+            "rarity": "rare"
+        }
+    },
+    
+    # BUILDING MATERIALS
+    "blocks": {
+        "stone_bricks": {
+            "name": "Stone Bricks",
+            "price": 10,
+            "description": "Decorative building block",
+            "rarity": "common"
+        },
+        "obsidian": {
+            "name": "Obsidian",
+            "price": 100,
+            "description": "Unbreakable building block",
+            "rarity": "rare"
+        },
+        "nether_brick": {
+            "name": "Nether Brick",
+            "price": 50,
+            "description": "Dark building block",
+            "rarity": "uncommon"
+        },
+        "end_stone": {
+            "name": "End Stone",
+            "price": 75,
+            "description": "Mystical building block",
+            "rarity": "rare"
+        },
+        "beacon": {
+            "name": "Beacon",
+            "price": 5000,
+            "description": "Provides special effects",
+            "rarity": "epic"
+        },
+        "chest": {
+            "name": "Chest",
+            "price": 200,
+            "description": "Storage container",
+            "rarity": "common"
+        }
+    }
+}
+
+# Village system removed - no more random NPCs
 
 # World generation system
 world_generation_progress = 0
@@ -2912,6 +4162,7 @@ options_btn = None
 quit_btn = None
 resume_btn = None
 inventory_close_button = None
+backpack_close_button = None
 left_arrow_btn = None
 right_arrow_btn = None
 select_btn = None
@@ -3054,9 +4305,6 @@ last_chat_time = 0
 
 # --- FPS and Performance Settings ---
 fps_limit = 120  # Default FPS limit
-show_fps = False  # F3 debug info
-fps_counter = 0  # Actual FPS counter
-last_fps_time = time.time()
 
 def get_block(x, y):
     """Get block at coordinates with validation"""
@@ -3245,167 +4493,7 @@ def ground_y_of_column(x: int):
 # Village and house building functions removed
 
 
-def spawn_legend_npc():
-    """EXTREME ENGINEERING: Spawn the Legend NPC at the boss location"""
-    global legend_npc_spawned, legend_npc_position
-    
-    if legend_npc_spawned:
-        return
-    
-    # Position the Legend NPC at the boss arena
-    legend_npc_position = {
-        "x": BOSS_SPAWN_DISTANCE,
-        "y": 0  # Will be adjusted to ground level
-    }
-    
-    # Add Legend NPC to entities
-    entities.append({
-        "type": "legend_npc",
-        "x": float(legend_npc_position["x"]),
-        "y": float(legend_npc_position["y"]),
-        "dir": 1,
-        "step": 0,
-        "dialogue_cooldown": 0,
-        "name": "The Legend",
-        "personality": "legendary",
-        "mood": "mysterious",
-        "home_x": legend_npc_position["x"],
-        "home_y": legend_npc_position["y"],
-        "wander_radius": 0,  # Legend NPC doesn't wander
-        "dialogue_history": [],
-        "last_interaction": 0
-    })
-    
-    legend_npc_spawned = True
-    print(f"🌟 LEGENDARY! Spawned The Legend NPC at ({legend_npc_position['x']}, {legend_npc_position['y']})")
-
-def check_legend_npc_spawn():
-    """EXTREME ENGINEERING: Check if player is close enough to spawn the Legend NPC"""
-    global legend_npc_spawned
-    
-    if legend_npc_spawned:
-        return
-    
-    # Check if player is within 1000 blocks of the Legend NPC spawn point
-    distance_to_legend = abs(player["x"] - BOSS_SPAWN_DISTANCE)
-    if distance_to_legend < 1000:
-        spawn_legend_npc()
-
-def check_village_spawn():
-    """Check if a new village should be spawned near the player"""
-    global village_spawn_cooldown, villages
-    
-    # Reduce cooldown
-    if village_spawn_cooldown > 0:
-        village_spawn_cooldown -= 1
-        return
-    
-    # Check if player is far enough from existing villages
-    player_x = int(player["x"])
-    player_y = int(player["y"])
-    
-    for village in villages:
-        distance = abs(village["center_x"] - player_x)
-        if distance < 200:  # Too close to existing village
-            return
-    
-    # Spawn village occasionally (very rare)
-    if random.random() < 0.0001:  # 0.01% chance per frame
-        # Find a good location for the village
-        village_x = player_x + random.randint(100, 300)  # 100-300 blocks away
-        village_y = player_y
-        
-        # Find surface level
-        surface_y = village_y
-        while surface_y < 200:
-            if get_block(village_x, surface_y) in ("grass", "dirt"):
-                break
-            surface_y += 1
-        
-        # Generate the village
-        village_buildings = generate_village(village_x, surface_y)
-        
-        # Store village data
-        village_data = {
-            "center_x": village_x,
-            "center_y": surface_y,
-            "buildings": village_buildings,
-            "villagers_spawned": 0
-        }
-        villages.append(village_data)
-        
-        # Set cooldown to prevent too many villages
-        village_spawn_cooldown = 3600  # 1 minute cooldown
-        
-        print(f"🏘️ New village spawned at ({village_x}, {surface_y}) with {len(village_buildings)} buildings")
-
-def spawn_villager_in_village():
-    """Spawn villagers in appropriate village buildings"""
-    global villages
-    
-    # Check each village for spawning opportunities
-    for village in villages:
-        if village["villagers_spawned"] >= len(village["buildings"]):
-            continue  # Village is full
-        
-        # Check if player is close enough to the village
-        player_x = int(player["x"])
-        distance_to_village = abs(village["center_x"] - player_x)
-        
-        if distance_to_village < 150:  # Within 150 blocks
-            # Try to spawn a villager in an appropriate building
-            for building in village["buildings"]:
-                if random.random() < 0.001:  # 0.1% chance per building per frame
-                    spawn_villager_in_building(building)
-                    village["villagers_spawned"] += 1
-                    break
-
-def spawn_villager_in_building(building):
-    """Spawn a villager in a specific building"""
-    building_type = building["type"]
-    spawn_x = building["spawn_point"]["x"]
-    spawn_y = building["spawn_point"]["y"]
-    
-    # Choose villager based on building type
-    if building_type == "farm":
-        villager_data = {"name": "Farmer", "profession": "farmer", "trades_maps": False}
-    elif building_type == "cartographer":
-        villager_data = {"name": "Map Trader", "profession": "cartographer", "trades_maps": True}
-    # Shop building type removed - now available in title screen
-    elif building_type == "house":
-        # Random house villager
-        house_villagers = [
-            {"name": "Blacksmith", "profession": "toolsmith", "trades_maps": False},
-            {"name": "Librarian", "profession": "librarian", "trades_maps": True},
-            {"name": "Merchant", "profession": "merchant", "trades_maps": True}
-        ]
-        villager_data = random.choice(house_villagers)
-    else:
-        villager_data = {"name": "Villager", "profession": "villager", "trades_maps": False}
-    
-    # Add villager to entities
-    entity_data = {
-        "type": "villager",
-        "x": float(spawn_x),
-        "y": float(spawn_y),
-        "name": villager_data["name"],
-        "profession": villager_data["profession"],
-        "trades_maps": villager_data["trades_maps"],
-        "dialogue_cooldown": 0,
-        "last_interaction": 0,
-        "home_x": spawn_x,
-        "home_y": spawn_y,
-        "wander_radius": 5,  # Smaller wander radius in villages
-        "building_type": building_type
-    }
-    
-    # Add shop_type if it's a shopkeeper
-    if "shop_type" in villager_data:
-        entity_data["shop_type"] = villager_data["shop_type"]
-    
-    entities.append(entity_data)
-    
-    print(f"🏘️ Spawned {villager_data['name']} in {building_type} at ({spawn_x}, {spawn_y})")
+# All NPC spawning functions removed - no more random NPCs
 
 def start_world_generation():
     """Start the world generation process"""
@@ -3891,6 +4979,311 @@ def check_underground_fortress_trigger():
             return True
     
     return False
+
+# =============================================================================
+# POGO JUMP PORTAL SYSTEM FUNCTIONS
+# =============================================================================
+
+# =============================================================================
+# ABILITY SYSTEM FUNCTIONS
+# =============================================================================
+
+def track_monster_kill():
+    """Track when a monster is killed and check for ability unlocks"""
+    global monsters_killed, total_monsters_killed
+    
+    monsters_killed += 1
+    total_monsters_killed += 1
+    
+    print(f"👹 Monster killed! Total: {total_monsters_killed}")
+    
+    # Ability system removed
+
+# Wall jump system removed - no more abilities
+
+# Dash movement function removed - no more dash ability
+
+# =============================================================================
+# MERCHANT SYSTEM FUNCTIONS
+# =============================================================================
+
+def open_merchant_shop(merchant_pos):
+    """Open the merchant shop interface"""
+    global merchant_shop_open, merchant_block_pos, merchant_selected_category, merchant_page
+    
+    merchant_shop_open = True
+    merchant_block_pos = merchant_pos
+    merchant_selected_category = "tools"
+    merchant_page = 0
+    print("🏪 Merchant shop opened!")
+
+def close_merchant_shop():
+    """Close the merchant shop interface"""
+    global merchant_shop_open, merchant_block_pos
+    
+    merchant_shop_open = False
+    merchant_block_pos = None
+    print("🏪 Merchant shop closed!")
+
+def get_player_coins():
+    """Get player's current coin count"""
+    try:
+        with open("coins.json", "r") as f:
+            coins_data = json.load(f)
+            return coins_data.get("coins", 0)
+    except:
+        return 0
+
+def spend_coins(amount):
+    """Spend coins from player's account"""
+    try:
+        with open("coins.json", "r") as f:
+            coins_data = json.load(f)
+        
+        current_coins = coins_data.get("coins", 0)
+        if current_coins >= amount:
+            coins_data["coins"] = current_coins - amount
+            with open("coins.json", "w") as f:
+                json.dump(coins_data, f, indent=2)
+            return True
+        return False
+    except:
+        return False
+
+def buy_merchant_item(category, item_id):
+    """Buy an item from the merchant shop"""
+    if category not in MERCHANT_ITEMS or item_id not in MERCHANT_ITEMS[category]:
+        return False
+    
+    item = MERCHANT_ITEMS[category][item_id]
+    price = item["price"]
+    
+    # Check if player has enough coins
+    if not spend_coins(price):
+        show_message(f"💰 Not enough coins! Need {price} coins.", 3000)
+        return False
+    
+    # Add item to player inventory
+    add_item_to_inventory(item_id, 1)
+    
+    show_message(f"✅ Bought {item['name']} for {price} coins!", 3000)
+    print(f"🏪 Player bought {item['name']} for {price} coins")
+    return True
+
+def add_item_to_inventory(item_id, count):
+    """Add an item to player inventory"""
+    # Find empty slot
+    for i, slot in enumerate(player["inventory"]):
+        if slot is None:
+            player["inventory"][i] = {
+                "type": item_id,
+                "count": count
+            }
+            return True
+    
+    # If no empty slot, try backpack
+    for i, slot in enumerate(player["backpack"]):
+        if slot is None:
+            player["backpack"][i] = {
+                "type": item_id,
+                "count": count
+            }
+            return True
+    
+    # If no space, drop on ground
+    drop_item_near_player(item_id, count)
+
+def drop_item_near_player(item_id, count):
+    """Drop an item near the player"""
+    entities.append({
+        "type": "item_drop",
+        "x": player["x"] + random.uniform(-2, 2),
+        "y": player["y"] + random.uniform(-2, 2),
+        "item_type": item_id,
+        "count": count,
+        "pickup_timer": 0
+    })
+
+def draw_merchant_shop_ui():
+    """Draw the merchant shop interface"""
+    if not merchant_shop_open:
+        return
+    
+    # Draw semi-transparent background
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 150))
+    screen.blit(overlay, (0, 0))
+    
+    # Draw merchant shop window
+    shop_width = 900
+    shop_height = 700
+    shop_x = (SCREEN_WIDTH - shop_width) // 2
+    shop_y = (SCREEN_HEIGHT - shop_height) // 2
+    
+    # Shop background with gradient effect
+    pygame.draw.rect(screen, (30, 30, 50), (shop_x, shop_y, shop_width, shop_height))
+    pygame.draw.rect(screen, (60, 60, 80), (shop_x, shop_y, shop_width, shop_height), 4)
+    
+    # Shop title with fancy styling
+    title_text = title_font.render("🏪 MERCHANT'S MARKETPLACE", True, (255, 215, 0))
+    title_rect = title_text.get_rect(center=(shop_x + shop_width // 2, shop_y + 40))
+    screen.blit(title_text, title_rect)
+    
+    # Player coins display
+    coins = get_player_coins()
+    coins_text = font.render(f"💰 Your Coins: {coins:,}", True, (255, 215, 0))
+    screen.blit(coins_text, (shop_x + 30, shop_y + 80))
+    
+    # Close button
+    close_text = font.render("❌ Close (ESC)", True, (255, 100, 100))
+    screen.blit(close_text, (shop_x + shop_width - 150, shop_y + 80))
+    
+    # Category buttons
+    categories = ["tools", "armor", "consumables", "blocks"]
+    category_names = ["🛠️ Tools", "🛡️ Armor", "🍎 Food", "🧱 Blocks"]
+    
+    cat_x = shop_x + 30
+    cat_y = shop_y + 120
+    cat_width = 180
+    cat_height = 40
+    
+    for i, (cat, name) in enumerate(zip(categories, category_names)):
+        cat_rect = pygame.Rect(cat_x + i * (cat_width + 10), cat_y, cat_width, cat_height)
+        
+        # Highlight selected category
+        if cat == merchant_selected_category:
+            pygame.draw.rect(screen, (100, 150, 255), cat_rect)
+        else:
+            pygame.draw.rect(screen, (60, 60, 80), cat_rect)
+        
+        pygame.draw.rect(screen, (150, 150, 150), cat_rect, 2)
+        
+        # Category text
+        cat_text = font.render(name, True, (255, 255, 255))
+        text_rect = cat_text.get_rect(center=cat_rect.center)
+        screen.blit(cat_text, text_rect)
+    
+    # Draw items in selected category
+    if merchant_selected_category in MERCHANT_ITEMS:
+        items = list(MERCHANT_ITEMS[merchant_selected_category].items())
+        items_per_page = 6
+        start_idx = merchant_page * items_per_page
+        end_idx = min(start_idx + items_per_page, len(items))
+        
+        item_y = shop_y + 180
+        items_per_row = 3
+        item_width = 250
+        item_height = 140
+        
+        for i, (item_id, item_data) in enumerate(items[start_idx:end_idx]):
+            row = i // items_per_row
+            col = i % items_per_row
+            
+            item_x = shop_x + 30 + col * (item_width + 20)
+            item_y_pos = item_y + row * (item_height + 20)
+            
+            # Item background with rarity colors
+            rarity_colors = {
+                "common": (120, 120, 120),
+                "uncommon": (0, 200, 0),
+                "rare": (0, 100, 255),
+                "epic": (150, 0, 255),
+                "legendary": (255, 215, 0)
+            }
+            
+            color = rarity_colors.get(item_data["rarity"], (120, 120, 120))
+            pygame.draw.rect(screen, color, (item_x, item_y_pos, item_width, item_height))
+            pygame.draw.rect(screen, (200, 200, 200), (item_x, item_y_pos, item_width, item_height), 3)
+            
+            # Item name
+            name_text = font.render(item_data["name"], True, (255, 255, 255))
+            screen.blit(name_text, (item_x + 15, item_y_pos + 15))
+            
+            # Item price
+            price_text = font.render(f"💰 {item_data['price']:,} coins", True, (255, 215, 0))
+            screen.blit(price_text, (item_x + 15, item_y_pos + 40))
+            
+            # Item description
+            desc_text = font.render(item_data["description"], True, (200, 200, 200))
+            screen.blit(desc_text, (item_x + 15, item_y_pos + 65))
+            
+            # Buy button
+            buy_rect = pygame.Rect(item_x + 15, item_y_pos + 95, 100, 30)
+            pygame.draw.rect(screen, (0, 150, 0), buy_rect)
+            pygame.draw.rect(screen, (0, 200, 0), buy_rect, 2)
+            buy_text = font.render("BUY", True, (255, 255, 255))
+            screen.blit(buy_text, (buy_rect.x + 30, buy_rect.y + 8))
+            
+            # Check if mouse is over buy button
+            mouse_pos = pygame.mouse.get_pos()
+            if buy_rect.collidepoint(mouse_pos):
+                pygame.draw.rect(screen, (0, 200, 0), buy_rect)
+        
+        # Page navigation
+        if len(items) > items_per_page:
+            page_text = font.render(f"Page {merchant_page + 1} of {(len(items) + items_per_page - 1) // items_per_page}", True, (200, 200, 200))
+            screen.blit(page_text, (shop_x + 30, shop_y + shop_height - 60))
+    
+    # Instructions
+    instruction_text = font.render("🖱️ Click category buttons to browse • Click BUY to purchase", True, (200, 200, 200))
+    screen.blit(instruction_text, (shop_x + 30, shop_y + shop_height - 30))
+
+def handle_merchant_shop_click(mx, my):
+    """Handle clicks in the merchant shop interface"""
+    if not merchant_shop_open:
+        return False
+    
+    shop_width = 900
+    shop_height = 700
+    shop_x = (SCREEN_WIDTH - shop_width) // 2
+    shop_y = (SCREEN_HEIGHT - shop_height) // 2
+    
+    # Check if click is in shop area
+    if not (shop_x <= mx <= shop_x + shop_width and shop_y <= my <= shop_y + shop_height):
+        return False
+    
+    # Check category buttons
+    categories = ["tools", "armor", "consumables", "blocks"]
+    cat_x = shop_x + 30
+    cat_y = shop_y + 120
+    cat_width = 180
+    cat_height = 40
+    
+    for i, cat in enumerate(categories):
+        cat_rect = pygame.Rect(cat_x + i * (cat_width + 10), cat_y, cat_width, cat_height)
+        if cat_rect.collidepoint(mx, my):
+            global merchant_selected_category, merchant_page
+            merchant_selected_category = cat
+            merchant_page = 0
+            print(f"🏪 Switched to {cat} category")
+            return True
+    
+    # Check buy buttons
+    if merchant_selected_category in MERCHANT_ITEMS:
+        items = list(MERCHANT_ITEMS[merchant_selected_category].items())
+        items_per_page = 6
+        start_idx = merchant_page * items_per_page
+        end_idx = min(start_idx + items_per_page, len(items))
+        
+        item_y = shop_y + 180
+        items_per_row = 3
+        item_width = 250
+        item_height = 140
+        
+        for i, (item_id, item_data) in enumerate(items[start_idx:end_idx]):
+            row = i // items_per_row
+            col = i % items_per_row
+            
+            item_x = shop_x + 30 + col * (item_width + 20)
+            item_y_pos = item_y + row * (item_height + 20)
+            
+            buy_rect = pygame.Rect(item_x + 15, item_y_pos + 95, 100, 30)
+            
+            if buy_rect.collidepoint(mx, my):
+                buy_merchant_item(merchant_selected_category, item_id)
+                return True
+    
+    return True  # Click was in shop area
 
 # =============================================================================
 # EXTREME ENGINEERING: PROFESSIONAL MULTIPLAYER SYSTEM
@@ -4694,40 +6087,6 @@ def draw_options():
 
 # Name tag function removed - no more floating name above player
 
-def draw_fps_display():
-    """Display actual FPS counter and FPS limit info"""
-    global fps_counter, last_fps_time
-    
-    if not show_fps:
-        return
-    
-    # Calculate actual FPS based on frame time
-    current_time = time.time()
-    frame_time = current_time - last_fps_time
-    
-    if frame_time > 0:
-        # Calculate FPS from frame time (more accurate)
-        current_fps = 1.0 / frame_time
-        # Smooth the FPS display (average with previous value)
-        fps_counter = int(fps_counter * 0.7 + current_fps * 0.3)
-    
-    last_fps_time = current_time
-    
-    # Draw FPS info with timing details
-    fps_text = font.render(f"FPS: {fps_counter}", True, (255, 255, 0))
-    limit_text = font.render(f"Target: 60 FPS (Locked)", True, (255, 255, 0))
-    timing_text = font.render(f"Frame Time: {frame_time*1000:.1f}ms", True, (255, 255, 0))
-    
-    # Add movement speed info if in game
-    if game_state == GameState.GAME:
-        speed_text = font.render(f"Move Speed: {MOVE_SPEED:.3f}", True, (0, 255, 255))
-        controls_text = font.render("Controls: WASD or Arrow Keys=Move+Flip, Space=Jump", True, (0, 255, 255))
-        screen.blit(speed_text, (10, 130))
-        screen.blit(controls_text, (10, 150))
-    
-    screen.blit(fps_text, (10, 70))
-    screen.blit(limit_text, (10, 90))
-    screen.blit(timing_text, (10, 110))
 
 # --- Part Three ---
 def delete_save_data():
@@ -4841,17 +6200,23 @@ def draw_status_bars():
     screen.blit(coins_text, (10, 35))
         
     # Draw HP and hunger below player info
-    hp_text = font.render("HP:", True, (255, 255, 255))
+    hp_text = font.render("Health:", True, (255, 255, 255))
     hunger_text = font.render("Hunger:", True, (255, 255, 255))
     screen.blit(hp_text, (10, 60))
     screen.blit(hunger_text, (10, 90))
     
-    # Draw HP and hunger bars
+    # Calculate text width for alignment
+    hp_text_width = hp_text.get_width()
+    hunger_text_width = hunger_text.get_width()
+    max_text_width = max(hp_text_width, hunger_text_width)
+    
+    # Draw HP and hunger bars aligned with text
+    bar_start_x = 10 + max_text_width + 10  # 10px padding after text
     for i in range(10):
         hp_img = alive_hp if i < player["health"] else dead_hp
-        screen.blit(hp_img, (70 + i * 20, 60))
+        screen.blit(hp_img, (bar_start_x + i * 20, 60))
         hunger_color = (255, 165, 0) if i < player["hunger"] else (80, 80, 80)
-        pygame.draw.rect(screen, hunger_color, (70 + i * 20, 90, 16, 16))
+        pygame.draw.rect(screen, hunger_color, (bar_start_x + i * 20, 90, 16, 16))
     
     
     # Character info removed as requested
@@ -5248,6 +6613,13 @@ def calculate_armor_damage_reduction(base_damage):
         return base_damage
 
 def draw_world():
+    # OPTIMIZED: Only draw blocks that are visible on screen
+    # Calculate visible area bounds for culling
+    min_x = (camera_x // TILE_SIZE) - 1
+    max_x = ((camera_x + SCREEN_WIDTH) // TILE_SIZE) + 1
+    min_y = (camera_y // TILE_SIZE) - 1
+    max_y = ((camera_y + SCREEN_HEIGHT) // TILE_SIZE) + 1
+    
     # Draw blocks safely (skip None, air, or unknown keys)
     for key, block in world_data.items():
         if not block or block == "air":
@@ -5256,6 +6628,10 @@ def draw_world():
         try:
             x, y = map(int, key.split(','))
         except (ValueError, AttributeError):
+            continue
+        
+        # OPTIMIZED: Skip blocks outside visible area (culling)
+        if x < min_x or x > max_x or y < min_y or y > max_y:
             continue
         
         img = textures.get(block)
@@ -5279,20 +6655,128 @@ def draw_world():
         if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
             screen.blit(img, (screen_x, screen_y))
 
-    # Draw entities
+    # Draw cave entrance indicators
+    for cave_x, cave_y in cave_entrances:
+        screen_x = (cave_x * TILE_SIZE) - camera_x
+        screen_y = (cave_y * TILE_SIZE) - camera_y
+        
+        # Only draw if on screen
+        if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+            # Draw cave entrance indicator (dark circle)
+            pygame.draw.circle(screen, (50, 50, 50), (screen_x + TILE_SIZE//2, screen_y + TILE_SIZE//2), TILE_SIZE//3)
+            pygame.draw.circle(screen, (30, 30, 30), (screen_x + TILE_SIZE//2, screen_y + TILE_SIZE//2), TILE_SIZE//4)
+
+        # Draw Lost Ruins entrance indicators
+        for ruins_x, ruins_y in lost_ruins_entrances:
+            screen_x = (ruins_x * TILE_SIZE) - camera_x
+            screen_y = (ruins_y * TILE_SIZE) - camera_y
+            
+            # Only draw if on screen
+            if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+                # Draw Lost Ruins entrance indicator (ancient stone arch)
+                pygame.draw.rect(screen, (80, 60, 40), (screen_x, screen_y, TILE_SIZE, TILE_SIZE))
+                pygame.draw.rect(screen, (100, 80, 60), (screen_x + 2, screen_y + 2, TILE_SIZE - 4, TILE_SIZE - 4))
+                # Draw arch shape
+                pygame.draw.arc(screen, (60, 40, 20), (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 0, 3.14, 3)
+
+    # OPTIMIZED: Draw entities with culling
     for entity in entities:
         if entity["type"] == "monster":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
             
+            # OPTIMIZED: Skip entities outside screen
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
             # Check if monster should use GIF animation
             monster_gif_path = os.path.join(MOB_DIR, "monster.gif")
             # Use static monster image
             screen.blit(entity["image"], (ex, ey))
+        elif entity["type"] == "final_boss":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            # Skip if outside screen
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
+            # Draw boss
+            screen.blit(entity["image"], (ex, ey))
+            
+            # Draw boss health bar
+            health_ratio = entity["hp"] / entity["max_hp"]
+            bar_width = 60
+            bar_height = 8
+            bar_x = ex + (TILE_SIZE - bar_width) // 2
+            bar_y = ey - 15
+            
+            # Background
+            pygame.draw.rect(screen, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+            # Health
+            pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, int(bar_width * health_ratio), bar_height))
+            # Border
+            pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
         elif entity["type"] == "projectile":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
             pygame.draw.rect(screen, (200, 50, 50), (ex + 12, ey + 12, 8, 8))
+        elif entity["type"] == "boss_projectile":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            pygame.draw.rect(screen, (255, 100, 0), (ex + 12, ey + 12, 12, 12))  # Larger, orange projectile
+        elif entity["type"] == "fireball":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            pygame.draw.circle(screen, (255, 100, 0), (ex + 16, ey + 16), 8)  # Orange fireball
+        elif entity["type"] == "villager":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            # Skip if outside screen
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
+            # Draw villager
+            screen.blit(entity["image"], (ex, ey))
+            
+            # Draw villager name with job
+            job_name = entity.get("job", "Villager")
+            villager_text = font.render(job_name, True, (0, 100, 0))
+            text_rect = villager_text.get_rect(center=(ex + TILE_SIZE//2, ey - 10))
+            screen.blit(villager_text, text_rect)
+        elif entity["type"] == "fortress_boss":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            # Skip if outside screen
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
+            # Draw fortress boss
+            screen.blit(entity["image"], (ex, ey))
+            
+            # Draw boss health bar
+            health_ratio = entity["hp"] / entity["max_hp"]
+            bar_width = 50
+            bar_height = 6
+            bar_x = ex + (TILE_SIZE - bar_width) // 2
+            bar_y = ey - 15
+            
+            # Background
+            pygame.draw.rect(screen, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+            # Health
+            pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, int(bar_width * health_ratio), bar_height))
+            # Border
+            pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
+            
+            # Boss name
+            boss_text = font.render("Fortress Boss", True, (255, 100, 0))
+            screen.blit(boss_text, (ex, ey - 30))
+        elif entity["type"] == "fireball":
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            pygame.draw.circle(screen, (255, 100, 0), (ex + 16, ey + 16), 8)  # Orange fireball
         elif entity["type"] == "zombie":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
@@ -5302,22 +6786,6 @@ def draw_world():
             ey = int(entity["y"] * TILE_SIZE) - camera_y
             # Draw rock projectile as a brown circle
             pygame.draw.circle(screen, (139, 69, 19), (ex + 16, ey + 16), 8)
-        elif entity.get("type", "").startswith("chess_"):
-            ex = int(entity["x"] * TILE_SIZE) - camera_x
-            ey = int(entity["y"] * TILE_SIZE) - camera_y
-            # Draw chess piece
-            if "image" in entity:
-                screen.blit(entity["image"], (ex, ey))
-            else:
-                # Fallback: draw as a colored rectangle
-                color = (255, 255, 255) if "white" in entity["type"] else (64, 64, 64)
-                pygame.draw.rect(screen, color, (ex, ey, TILE_SIZE, TILE_SIZE))
-            
-            # Draw interaction indicator above chess piece
-            indicator_text = font.render("♟️", True, (255, 255, 255))
-            indicator_x = ex + (TILE_SIZE - indicator_text.get_width()) // 2
-            indicator_y = ey - 25
-            screen.blit(indicator_text, (indicator_x, indicator_y))
         
         elif entity["type"] == "villager":
             # Draw villagers with a simple character sprite
@@ -5351,33 +6819,7 @@ def draw_world():
         
         # Shopkeeper drawing removed - now available in title screen
         
-        elif entity["type"] == "legend_npc":
-            # Draw the Legend NPC
-            ex = int(entity["x"] * TILE_SIZE) - camera_x
-            ey = int(entity["y"] * TILE_SIZE) - camera_y
-            
-            # Draw Legend NPC as a special character (golden armor)
-            pygame.draw.rect(screen, (255, 215, 0), (ex + 2, ey + 6, 28, 18))  # Golden armor
-            pygame.draw.rect(screen, (255, 255, 255), (ex + 4, ey + 8, 24, 14))  # White under armor
-            pygame.draw.circle(screen, (255, 220, 177), (ex + 16, ey + 4), 8)  # Head
-            pygame.draw.circle(screen, (255, 215, 0), (ex + 16, ey + 2), 6)  # Golden helmet
-            pygame.draw.circle(screen, (0, 0, 0), (ex + 14, ey + 3), 1)  # Left eye
-            pygame.draw.circle(screen, (0, 0, 0), (ex + 18, ey + 3), 1)  # Right eye
-            pygame.draw.arc(screen, (0, 0, 0), (ex + 14, ey + 4, 4, 2), 0, 3.14)  # Smile
-            
-            # Draw legendary aura effect
-            for i in range(3):
-                alpha = 100 - (i * 30)
-                aura_color = (255, 215, 0, alpha)
-                pygame.draw.circle(screen, (255, 215, 0), (ex + 16, ey + 16), 20 - (i * 5), 2)
-            
-            # Draw name tag above Legend NPC
-            legend_name = entity.get("name", "The Legend")
-            name_text = font.render(legend_name, True, (255, 215, 0))
-            name_rect = name_text.get_rect(center=(ex + 16, ey - 15))
-            # Draw background for name tag
-            pygame.draw.rect(screen, (0, 0, 0), (name_rect.x - 2, name_rect.y - 2, name_rect.width + 4, name_rect.height + 4))
-            screen.blit(name_text, name_rect)
+        # Legend NPC drawing removed - no more random NPCs
     
     # Draw boss if boss fight is active
     if boss_fight_active:
@@ -5455,11 +6897,6 @@ def _draw_player_fallback(px, py, facing_direction):
             else:  # Facing right (default)
                 screen.blit(animation_image, (px, py))
             
-            # Debug info
-            if show_fps:
-                direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
-                debug_text = font.render(f"{animation_name.title()} | Facing: {direction_text}", True, (255, 255, 0))
-                screen.blit(debug_text, (px, py - 30))
             return
         else:
             print(f"⚠️ No animation image for {animation_name}")
@@ -5474,11 +6911,6 @@ def _draw_player_fallback(px, py, facing_direction):
     else:  # Facing right (default)
         screen.blit(player_image, (px, py))
     
-    # Debug info
-    if show_fps:
-        direction_text = "LEFT" if facing_direction == -1 else "RIGHT"
-        debug_text = font.render(f"Static | Facing: {direction_text}", True, (255, 0, 0))
-        screen.blit(debug_text, (px, py - 30))
 
 
 def draw_inventory():
@@ -5736,6 +7168,7 @@ def monitor_world_data():
 
 def break_block(mx, my):
     """EXTREME ENGINEERING: Bulletproof block breaking with multiple verification layers"""
+    global final_boss_active
     px, py = int(player["x"]), int(player["y"])
     # EXTREME ENGINEERING FIX: Force integer coordinates
     bx, by = int((mx + camera_x) // TILE_SIZE), int((my + camera_y) // TILE_SIZE)
@@ -5780,6 +7213,52 @@ def break_block(mx, my):
             else:
                 show_message("⚔️ You need a weapon to attack the boss!", 2000)
                 return False  # Need weapon to attack boss
+    
+    # Final boss combat
+    if final_boss_active:
+        # Find the boss entity
+        for entity in entities:
+            if entity["type"] == "final_boss":
+                boss_x = entity["x"]
+                boss_y = entity["y"]
+                
+                # Check if player is close enough to hit boss
+                if abs(player["x"] - boss_x) < 2 and abs(player["y"] - boss_y) < 2:
+                    # Check if player has weapon selected
+                    if check_weapon_requirement():
+                        # Deal damage to final boss
+                        damage_amount = get_weapon_damage()
+                        entity["hp"] -= damage_amount
+                        show_message(f"👹 Final boss hit! Health: {entity['hp']}/{entity['max_hp']}", 1000)
+                        print(f"👹 Final boss hit! Health: {entity['hp']}/{entity['max_hp']}")
+                        
+                        if entity["hp"] <= 0:
+                            # Final boss defeated
+                            final_boss_active = False
+                            entities.remove(entity)
+                            show_message("🎉 FINAL BOSS DEFEATED! You won the game!", 5000)
+                            print("🎉 FINAL BOSS DEFEATED! You won the game!")
+                            
+                            # Give massive reward
+                            for _ in range(10):
+                                add_to_inventory("diamond")
+                            add_to_inventory("gold")
+                            add_to_inventory("gold")
+                            add_to_inventory("gold")
+                            show_message("💎 Rewarded with 10 diamonds and 3 gold!", 3000)
+                            print("💎 Rewarded with 10 diamonds and 3 gold!")
+                            
+                            # Show credits screen after a delay
+                            pygame.time.wait(2000)  # Wait 2 seconds
+                            global credits_from_boss_defeat
+                            credits_from_boss_defeat = True
+                            game_state = GameState.CREDITS
+                            print("🎬 Credits screen activated!")
+                        return True  # Attack successful, don't break blocks
+                    else:
+                        show_message("⚔️ You need a weapon to attack the final boss!", 2000)
+                        return False  # Need weapon to attack final boss
+                break
     
     # Stone & ores require pickaxe - STRICT REQUIREMENT
     if block in ["stone", "coal", "iron", "gold", "diamond"]:
@@ -6078,6 +7557,19 @@ def place_block(mx, my):
         player["inventory"].pop(player["selected"])
         normalize_inventory()
     
+    # POGO JUMP PORTAL SYSTEM - Check if dirt block is part of portal frame
+    if item_type == "dirt":
+        global portal_frame_positions
+        
+        # Check if this dirt block is part of the portal frame
+        if (bx, by) in portal_frame_positions:
+            print(f"🌍 Portal frame block placed at ({bx}, {by})!")
+            
+            # Show progress message every few blocks
+            current_dirt_count = sum(1 for fx, fy in portal_frame_positions if get_block(fx, fy) == "dirt")
+            if current_dirt_count % 3 == 0:  # Every 3 frame blocks
+                show_message(f"🌍 Portal frame progress: {current_dirt_count}/{len(portal_frame_positions)} blocks!", 2000)
+    
     return True  # Success
 
 def is_sword_type(item_type):
@@ -6183,6 +7675,9 @@ def update_thrown_sword():
                     create_blood_particles(hit_x, hit_y, 8)
                     
                     if mob["hp"] <= 0:
+                        # Track monster kill
+                        track_monster_kill()
+                        
                         # Create dramatic blood spray for death
                         death_x = (mob["x"] * TILE_SIZE) - camera_x
                         death_y = (mob["y"] * TILE_SIZE) - camera_y
@@ -6457,6 +7952,9 @@ def attack_monsters(mx, my):
         # Deal damage immediately for close combat
         closest_monster["hp"] = closest_monster.get("hp", 4) - 1
         if closest_monster["hp"] <= 0:
+            # Track monster kill
+            track_monster_kill()
+            
             # Create dramatic blood spray for death
             death_x = (closest_monster["x"] * TILE_SIZE) - camera_x
             death_y = (closest_monster["y"] * TILE_SIZE) - camera_y
@@ -6472,30 +7970,6 @@ def attack_monsters(mx, my):
         # Long range - throw sword at monster
         throw_sword_at_monster(closest_monster)
 
-def handle_chess_piece_interaction(mx, my):
-    """Handle clicking on chess pieces to collect loot"""
-    target_x = (mx + camera_x) / TILE_SIZE
-    target_y = (my + camera_y) / TILE_SIZE
-    
-    for mob in entities[:]:
-        if mob.get("type", "").startswith("chess_"):
-            dx = target_x - mob["x"]
-            dy = target_y - mob["y"]
-            if math.hypot(dx, dy) <= 2:
-                # Chess pieces can be clicked to collect loot
-                if "loot" in mob:
-                    # Add all loot to player inventory
-                    for loot_item in mob["loot"]:
-                        add_to_inventory(loot_item["type"], loot_item["count"])
-                    
-                    # Show message about collected loot
-                    piece_name = mob["type"].replace("chess_", "").replace("_", " ").title()
-                    loot_count = len(mob["loot"])
-                    show_message(f"♟️ Collected {loot_count} items from {piece_name}!")
-                    
-                    # Remove chess piece
-                    entities.remove(mob)
-                    print(f"♟️ Chess piece {mob['type']} collected at ({mob['x']}, {mob['y']})")
 
 # --- Part Six: World Interaction, Carrots, Chests, Hunger/Health, Monster Damage ---
 def update_world_interactions():
@@ -6520,69 +7994,43 @@ def update_world_interactions():
         if player["health"] <= 0:
             show_death_screen()
 
-    # Carrots: eat if health OR hunger not full, otherwise collect
+    # Carrots: collect to inventory
     if block_at == "carrot":
-        should_eat = False
-        if player["health"] < 10:
-            player["health"] += 1
-            should_eat = True
-        if player["hunger"] < 10:
-            player["hunger"] = min(10, player["hunger"] + 1)
-            should_eat = True
-        
-        if should_eat:
-            # Check for first carrot achievement
-            check_achievement("first_carrot", 10, "Ate first carrot!")
-            
-            # Remove carrot completely from world data (turns into air)
-            if f"{px},{py}" in world_data:
-                del world_data[f"{px},{py}"]
-            # Show what was restored
-            restored = []
-            if player["health"] < 10:
-                restored.append("health")
-            if player["hunger"] < 10:
-                restored.append("hunger")
-            if restored:
-                print(f"🥕 Ate world carrot: Restored {', '.join(restored)} - Health={player['health']}, Hunger={player['hunger']}")
-            else:
-                print(f"🥕 Ate world carrot: Both stats already full - Health={player['health']}, Hunger={player['hunger']}")
-        else:
             add_to_inventory("carrot")
             # Remove carrot completely from world data (turns into air)
             if f"{px},{py}" in world_data:
                 del world_data[f"{px},{py}"]
+            show_message("🥕 Carrot collected! Right-click in inventory to eat", 1500)
+            print(f"🥕 Carrot collected and added to inventory")
+            
+            # Check for first carrot achievement
+            check_achievement("first_carrot", 10, "Collected first carrot!")
     elif block_below == "carrot":
-        should_eat = False
-        if player["health"] < 10:
-            player["health"] += 1
-            should_eat = True
-        if player["hunger"] < 10:
-            player["hunger"] = min(10, player["hunger"] + 1)
-            should_eat = True
-        
-        if should_eat:
-            # Check for first carrot achievement
-            check_achievement("first_carrot", 10, "Ate first carrot!")
+        add_to_inventory("carrot")
+        # Remove carrot completely from world data (turns into air)
+        if f"{px},{py + 1}" in world_data:
+            del world_data[f"{px},{py + 1}"]
+        show_message("🥕 Carrot collected! Right-click in inventory to eat", 1500)
+        print(f"🥕 Carrot collected and added to inventory")
+    
+    # Portal interaction (Lost Ruins portal)
+    if block_at == "portal":
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_e]:
+            spawn_final_boss()
+            show_message("🌀 Portal activated! Final boss spawned!", 3000)
+    
+    # Check for villager interaction
+    for entity in entities:
+        if entity["type"] == "villager":
+            entity_x = int(entity["x"])
+            entity_y = int(entity["y"])
             
-            # Remove carrot completely from world data (turns into air)
-            if f"{px},{py + 1}" in world_data:
-                del world_data[f"{px},{py + 1}"]
-            # Show what was restored
-            restored = []
-            if player["health"] < 10:
-                restored.append("health")
-            if player["hunger"] < 10:
-                restored.append("hunger")
-            if restored:
-                print(f"🥕 Ate world carrot: Restored {', '.join(restored)} - Health={player['health']}, Hunger={player['hunger']}")
-            else:
-                print(f"🥕 Ate world carrot: Both stats already full - Health={player['health']}, Hunger={player['hunger']}")
-        else:
-            add_to_inventory("carrot")
-            # Remove carrot completely from world data (turns into air)
-            if f"{px},{py + 1}" in world_data:
-                del world_data[f"{px},{py + 1}"]
+            # Check if player is near villager
+            if abs(px - entity_x) <= 1 and abs(py - entity_y) <= 1:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_e]:
+                    interact_with_villager(entity)
 
     # Fall damage: apply if fall was 4+ blocks
     if not player["on_ground"]:
@@ -7035,7 +8483,7 @@ def draw_full_inventory_ui():
     
     # Instructions
     instructions = [
-        "T - Close inventory",
+        "I - Close inventory",
         "Click items to move them",
         "Drag items between slots",
         "Right-click to equip armor"
@@ -7070,6 +8518,137 @@ def draw_full_inventory_ui():
         draw_item_icon(inventory_drag_item, mx - 20, my - 20)
         
         # Add item count if more than 1
+        if inventory_drag_item.get("count", 1) > 1:
+            count_text = font.render(str(inventory_drag_item["count"]), True, (255, 255, 0))
+            screen.blit(count_text, (mx + 5, my + 5))
+
+def draw_backpack_ui():
+    """Draw the backpack interface with hotbar display"""
+    global backpack_close_button
+    
+    # Dim background
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    overlay.set_alpha(160)
+    overlay.fill((0, 0, 0))
+    screen.blit(overlay, (0, 0))
+
+    # Backpack window
+    backpack_width = 700
+    backpack_height = 600
+    backpack_x = center_x(backpack_width)
+    backpack_y = (SCREEN_HEIGHT - backpack_height) // 2
+    
+    # Draw backpack background
+    pygame.draw.rect(screen, (40, 40, 60), (backpack_x, backpack_y, backpack_width, backpack_height))
+    pygame.draw.rect(screen, (100, 100, 200), (backpack_x, backpack_y, backpack_width, backpack_height), 3)  # Blue border
+    
+    # Backpack title
+    title = BIG_FONT.render("🎒 Backpack", True, (255, 255, 255))
+    screen.blit(title, (backpack_x + 20, backpack_y + 20))
+    
+    # Player info
+    current_username = get_current_username()
+    player_info = font.render(f"Player: {current_username or 'Unknown'}", True, (255, 255, 100))
+    screen.blit(player_info, (backpack_x + 20, backpack_y + 70))
+    
+    # Instructions
+    instructions = font.render("Press I to close • Drag items to move them", True, (200, 200, 200))
+    screen.blit(instructions, (backpack_x + 20, backpack_y + 100))
+    
+    # Hotbar section (top)
+    hotbar_x = backpack_x + 50
+    hotbar_y = backpack_y + 130
+    hotbar_title = font.render("⚡ Hotbar", True, (255, 255, 255))
+    screen.blit(hotbar_title, (hotbar_x, hotbar_y - 30))
+    
+    # Draw hotbar slots (3x3 grid)
+    for row in range(3):
+        for col in range(3):
+            slot_idx = row * 3 + col
+            slot_x = hotbar_x + col * 60
+            slot_y = hotbar_y + row * 60
+            slot_rect = pygame.Rect(slot_x, slot_y, 50, 50)
+            
+            # Highlight selected slot
+            if slot_idx == player["selected"]:
+                pygame.draw.rect(screen, (255, 255, 100), slot_rect, 3)
+            else:
+                pygame.draw.rect(screen, (80, 80, 100), slot_rect, 2)
+            
+            # Draw item if exists
+            if slot_idx < len(player["inventory"]):
+                item = player["inventory"][slot_idx]
+                if item and isinstance(item, dict):
+                    item_type = item.get("type")
+                    if item_type in textures:
+                        screen.blit(textures[item_type], (slot_x + 2, slot_y + 2))
+                    # Draw count
+                    count = item.get("count", 1)
+                    if count > 1:
+                        count_text = font.render(str(count), True, (255, 255, 0))
+                        screen.blit(count_text, (slot_x + 35, slot_y + 35))
+    
+    # Backpack slots section (bottom)
+    backpack_slots_x = backpack_x + 50
+    backpack_slots_y = backpack_y + 320
+    backpack_slots_title = font.render("🎒 Backpack Storage", True, (255, 255, 255))
+    screen.blit(backpack_slots_title, (backpack_slots_x, backpack_slots_y - 30))
+    
+    # Draw backpack slots (6x6 grid for 36 slots)
+    slot_size = 50
+    slots_per_row = 6
+    total_rows = 6
+    start_x = backpack_slots_x
+    start_y = backpack_slots_y
+    
+    for row in range(total_rows):
+        for col in range(slots_per_row):
+            slot_idx = row * slots_per_row + col
+            slot_x = start_x + col * (slot_size + 5)
+            slot_y = start_y + row * (slot_size + 5)
+            slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
+            
+            # Draw slot background
+            pygame.draw.rect(screen, (80, 80, 100), slot_rect)
+            pygame.draw.rect(screen, (200, 200, 200), slot_rect, 2)
+            
+            # Draw item if exists
+            if slot_idx < len(player["backpack"]):
+                item = player["backpack"][slot_idx]
+                if item and isinstance(item, dict):
+                    item_type = item.get("type")
+                    if item_type in textures:
+                        screen.blit(textures[item_type], (slot_x + 2, slot_y + 2))
+                    # Draw count
+                    count = item.get("count", 1)
+                    if count > 1:
+                        count_text = font.render(str(count), True, (255, 255, 0))
+                        screen.blit(count_text, (slot_x + slot_size - 15, slot_y + slot_size - 15))
+    
+    # Close button
+    close_button = pygame.Rect(backpack_x + backpack_width - 120, backpack_y + 20, 100, 30)
+    pygame.draw.rect(screen, (200, 50, 50), close_button)
+    pygame.draw.rect(screen, (255, 255, 255), close_button, 2)
+    close_text = font.render("Close (I)", True, (255, 255, 255))
+    screen.blit(close_text, (close_button.x + 10, close_button.y + 8))
+    
+    # Store button reference for click detection
+    backpack_close_button = close_button
+    
+    # Draw dragged item if any
+    if inventory_drag_item:
+        mx, my = mouse_pos
+        # Add a semi-transparent background for better visibility
+        drag_bg = pygame.Surface((40, 40), pygame.SRCALPHA)
+        drag_bg.fill((255, 255, 255, 100))  # Semi-transparent white background
+        screen.blit(drag_bg, (mx - 20, my - 20))
+        
+        # Draw the item icon centered on cursor
+        item_type = inventory_drag_item.get("type")
+        if item_type in textures:
+            screen.blit(textures[item_type], (mx - 16, my - 16))
+        
+        # Draw count if more than 1
         if inventory_drag_item.get("count", 1) > 1:
             count_text = font.render(str(inventory_drag_item["count"]), True, (255, 255, 0))
             screen.blit(count_text, (mx + 5, my + 5))
@@ -7869,6 +9448,141 @@ def handle_inventory_click(mouse_pos):
                     show_message("Not enough coins!")
         return
 
+def handle_backpack_click(mouse_pos):
+    """Handle clicks in the backpack interface"""
+    global backpack_close_button, inventory_drag_item, inventory_drag_from
+    
+    # Check if close button was clicked
+    if backpack_close_button and backpack_close_button.collidepoint(mouse_pos):
+        game_state = GameState.GAME
+        update_pause_state()  # Resume time when closing backpack
+        return
+    
+    # Calculate backpack UI position
+    backpack_width, backpack_height = 700, 600
+    backpack_x = center_x(backpack_width)
+    backpack_y = (SCREEN_HEIGHT - backpack_height) // 2
+    
+    # Handle left click for drag and drop
+    if pygame.mouse.get_pressed()[0]:  # Left mouse button
+        # Check hotbar slots (3x3 grid)
+        hotbar_x = backpack_x + 50
+        hotbar_y = backpack_y + 130
+        
+        for row in range(3):
+            for col in range(3):
+                slot_idx = row * 3 + col
+                slot_x = hotbar_x + col * 60
+                slot_y = hotbar_y + row * 60
+                slot_rect = pygame.Rect(slot_x, slot_y, 50, 50)
+                
+                if slot_rect.collidepoint(mouse_pos):
+                    # Check if it's a food item for left-click eating
+                    if slot_idx < len(player["inventory"]) and player["inventory"][slot_idx]:
+                        item = player["inventory"][slot_idx]
+                        if isinstance(item, dict) and "type" in item:
+                            item_type = item["type"]
+                            if item_type in FOOD_ITEMS:
+                                # Eat the food on left-click
+                                if eat_food(item_type):
+                                    # Remove one from stack or delete item
+                                    if "count" in item and item["count"] > 1:
+                                        item["count"] -= 1
+                                    else:
+                                        player["inventory"][slot_idx] = None
+                                return
+                    # Otherwise, handle normal slot click
+                    handle_inventory_slot_click("hotbar", slot_idx, mouse_pos)
+                    return
+        
+        # Check backpack slots (6x6 grid for 36 slots)
+        backpack_slots_x = backpack_x + 50
+        backpack_slots_y = backpack_y + 320
+        slot_size = 50
+        slots_per_row = 6
+        total_rows = 6
+        
+        for row in range(total_rows):
+            for col in range(slots_per_row):
+                slot_idx = row * slots_per_row + col
+                slot_x = backpack_slots_x + col * (slot_size + 5)
+                slot_y = backpack_slots_y + row * (slot_size + 5)
+                slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
+                
+                if slot_rect.collidepoint(mouse_pos):
+                    handle_inventory_slot_click("backpack", slot_idx, mouse_pos)
+                    return
+
+def handle_inventory_right_click(mouse_pos):
+    """Handle right-click on inventory items to eat food"""
+    # Get backpack UI position
+    backpack_width, backpack_height = 700, 600
+    backpack_x = center_x(backpack_width)
+    backpack_y = (SCREEN_HEIGHT - backpack_height) // 2
+    
+    # Check hotbar slots (3x3 grid)
+    hotbar_x = backpack_x + 50
+    hotbar_y = backpack_y + 130
+    
+    for row in range(3):
+        for col in range(3):
+            slot_idx = row * 3 + col
+            slot_x = hotbar_x + col * 60
+            slot_y = hotbar_y + row * 60
+            slot_rect = pygame.Rect(slot_x, slot_y, 50, 50)
+            
+            if slot_rect.collidepoint(mouse_pos):
+                # Try to eat food from hotbar
+                if slot_idx < len(player["inventory"]) and player["inventory"][slot_idx]:
+                    item = player["inventory"][slot_idx]
+                    if isinstance(item, dict) and "type" in item:
+                        item_type = item["type"]
+                        if item_type in FOOD_ITEMS:
+                            # Eat the food
+                            if eat_food(item_type):
+                                # Remove one from stack or delete item
+                                if "count" in item and item["count"] > 1:
+                                    item["count"] -= 1
+                                else:
+                                    player["inventory"][slot_idx] = None
+                            return
+                        else:
+                            show_message(f"❌ {item_type.replace('_', ' ').title()} is not edible!", 1500)
+                return
+    
+    # Check backpack slots (6x6 grid for 36 slots)
+    backpack_slots_x = backpack_x + 50
+    backpack_slots_y = backpack_y + 320
+    slot_size = 50
+    slots_per_row = 6
+    total_rows = 6
+    
+    for row in range(total_rows):
+        for col in range(slots_per_row):
+            slot_idx = row * slots_per_row + col
+            slot_x = backpack_slots_x + col * (slot_size + 5)
+            slot_y = backpack_slots_y + row * (slot_size + 5)
+            slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
+            
+            if slot_rect.collidepoint(mouse_pos):
+                # Try to eat food from backpack
+                if slot_idx < len(player["backpack"]) and player["backpack"][slot_idx]:
+                    item = player["backpack"][slot_idx]
+                    if isinstance(item, dict) and "type" in item:
+                        item_type = item["type"]
+                        if item_type in FOOD_ITEMS:
+                            # Eat the food
+                            if eat_food(item_type):
+                                # Remove one from stack or delete item
+                                if "count" in item and item["count"] > 1:
+                                    item["count"] -= 1
+                                else:
+                                    player["backpack"][slot_idx] = None
+                            return
+                        else:
+                            show_message(f"❌ {item_type.replace('_', ' ').title()} is not edible!", 1500)
+                return
+
 def handle_inventory_slot_click(slot_type, slot_idx, mouse_pos):
     """Handle clicks on inventory slots for drag and drop"""
     global inventory_drag_item, inventory_drag_from
@@ -8301,6 +10015,8 @@ def update_player():
             player["fall_height"] = 0.0
         else:
             print(f"🚫 Can't jump - blocked by {head_block} above!")
+    
+        # Ability system removed - no more wall jump
 
 def load_world_data():
     """Load world data from the world system into the game"""
@@ -8314,6 +10030,7 @@ def load_world_data():
         # Load world data
         world_data = world_system.current_world_data.get("blocks", {})
         entities = world_system.current_world_data.get("entities", [])
+        villages = world_system.current_world_data.get("villages", [])
         
         # Load player data with validation
         player_data = world_system.current_world_data.get("player", {})
@@ -8345,6 +10062,13 @@ def load_world_data():
         global is_day, day_start_time
         is_day = world_settings.get("day", True)
         day_start_time = time.time() if is_day else time.time() - 43200  # 12 hours if night
+        
+        # Load monster data
+        monster_data = world_system.current_world_data.get("monster_data", {})
+        if monster_data:
+            global total_monsters_killed
+            total_monsters_killed = monster_data.get("total_monsters_killed", 0)
+            print(f"🌟 Monster data loaded: {total_monsters_killed} monsters killed")
         
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
         print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
@@ -8401,46 +10125,166 @@ def throw_sword_at_monster(monster):
     print(f"🗡️ Sword thrown at monster!")
     return True
 
+# Night monster spawning system
+night_monster_spawn_timer = 0
+night_monster_spawn_cooldown = 120  # 2 seconds at 60 FPS
+max_night_monsters = 12  # Increased for more intense combat
+
+# Nighttime visual effects
+night_overlay_alpha = 0
+night_overlay_surface = None
+
 def update_monsters():
+    global entities, night_monster_spawn_timer
+    
+    # OPTIMIZED: Night monster spawning near player for intense combat
+    if not is_day:  # Only spawn monsters at night
+        night_monster_spawn_timer += 1
+        
+        # Check if it's time to spawn a monster
+        if night_monster_spawn_timer >= night_monster_spawn_cooldown:
+            # OPTIMIZED: Count monsters more efficiently
+            monster_count = 0
+            for mob in entities:
+                if mob["type"] == "monster":
+                    monster_count += 1
+                    if monster_count >= max_night_monsters:
+                        break
+                        
+            # Spawn monsters near player for intense combat
+            if monster_count < max_night_monsters:
+                spawn_night_monster_near_player()
+                night_monster_spawn_timer = 0  # Reset timer
+    else:
+        # Reset timer during day and clean up night-spawned monsters
+        night_monster_spawn_timer = 0
+        cleanup_night_monsters()
+    
+    # Update monster movement and combat
+    update_monster_movement_and_combat()
+
+def cleanup_night_monsters():
+    """Remove night-spawned monsters when it becomes day"""
     global entities
     
-    # Balanced monster spawning at night from spawn points
-    if not is_day:  # Only spawn monsters at night
-        for pos, block_type in list(world_data.items()):
-            if block_type == "monster_spawn":
-                # Check if we're far enough from spawn (new terrain)
-                x_str, y_str = pos.split(',')
-                x, y = int(x_str), int(y_str)
-                
-                # Only spawn if player is exploring new terrain (reasonable distance from player)
-                player_distance = abs(x - player["x"])
-                if player_distance > 25 and player_distance < 100:  # Sweet spot for spawning
-                    # Check total monster count globally
-                    monster_count = sum(1 for mob in entities if mob["type"] == "monster")
-                    if monster_count < 8:  # Increased limit to 8 monsters for better gameplay
-                        # Check if there's already a monster nearby
-                        monster_nearby = False
-                        for mob in entities:
-                            if mob["type"] == "monster":
-                                dx = abs(mob["x"] - x)
-                                if dx < 30:  # Increased spacing to 30 blocks
-                                    monster_nearby = True
-                                    break
+    # Remove monsters that were spawned at night
+    monsters_removed = 0
+    for mob in entities[:]:
+        if mob["type"] == "monster" and mob.get("night_spawned", False):
+            entities.remove(mob)
+            monsters_removed += 1
+    
+    if monsters_removed > 0:
+        print(f"🌅 Daytime: Removed {monsters_removed} night-spawned monsters")
+
+def update_night_overlay():
+    """Update the nighttime overlay effect"""
+    global night_overlay_alpha, night_overlay_surface
+    
+    if not is_day:  # Nighttime
+        # Fade in the overlay
+        if night_overlay_alpha < 120:  # Max alpha for dark effect
+            night_overlay_alpha += 2
+    else:  # Daytime
+        # Fade out the overlay
+        if night_overlay_alpha > 0:
+            night_overlay_alpha -= 2
+    
+    # Create overlay surface if needed
+    if night_overlay_surface is None or night_overlay_surface.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
+        night_overlay_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+
+def draw_night_overlay():
+    """Draw the nighttime overlay effect"""
+    global night_overlay_alpha, night_overlay_surface
+    
+    if night_overlay_alpha > 0 and night_overlay_surface:
+        # Fill with dark blue/purple tint
+        night_overlay_surface.fill((20, 10, 40, night_overlay_alpha))
+        screen.blit(night_overlay_surface, (0, 0))
+        
+        # Add some intensity text during night
+        if not is_day and night_overlay_alpha > 100:
+            monster_count = sum(1 for mob in entities if mob["type"] in ["monster", "zombie"])
+            if monster_count > 0:
+                intensity_text = f"👹 NIGHT INTENSITY: {monster_count} monsters nearby!"
+                text_surface = font.render(intensity_text, True, (255, 100, 100))
+                text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, 50))
+                screen.blit(text_surface, text_rect)
+
+def spawn_night_monster_near_player():
+    """Spawn a monster near the player for intense nighttime combat"""
+    global entities
+    import random
+    
+    # Get player position
+    player_x = player["x"]
+    player_y = player["y"]
+    
+    # Spawn monsters in a ring around the player (2-4 blocks away)
+    spawn_distance = random.randint(2, 4)
+    spawn_angle = random.uniform(0, 2 * math.pi)
+    
+    # Calculate spawn position
+    spawn_x = player_x + math.cos(spawn_angle) * spawn_distance
+    spawn_y = player_y + math.sin(spawn_angle) * spawn_distance
+    
+    # Find ground level at spawn position
+    ground_y = find_ground_level(int(spawn_x))
+    if ground_y is not None:
+        spawn_y = ground_y - 1  # Spawn on ground
+        
+        # Check if there's already a monster very close
+        too_close = False
+        for mob in entities:
+            if mob["type"] == "monster":
+                distance = math.sqrt((mob["x"] - spawn_x)**2 + (mob["y"] - spawn_y)**2)
+                if distance < 2:  # Too close to another monster
+                    too_close = True
+                    break
                         
-                        if not monster_nearby:
-                            # Spawn balanced monster
-                            entities.append({
-                                "type": "monster",
-                                "x": float(x),
-                                "y": float(y),
-                                "hp": 6,  # Balanced HP for fair combat
-                                "cooldown": 0,
-                                "image": monster_image
-                            })
-                            # Remove the spawn point so it doesn't spawn again
-                            del world_data[pos]
-                            print(f"👹 Night spawn: Monster spawned at ({x}, {y}) - Total: {monster_count + 1}/8")
-                            break  # Only spawn one monster per update
+        if not too_close:
+            # Randomly choose between monster and zombie (30% chance for zombie)
+            import random
+            if random.random() < 0.3:  # 30% chance for zombie
+                monster_type = "zombie"
+                monster_hp = 12  # Zombies are stronger
+                monster_img = textures["zombie"]
+            else:
+                monster_type = "monster"
+                monster_hp = 8
+                monster_img = monster_image
+            
+            # Spawn the monster
+            entities.append({
+                "type": monster_type,
+                "x": float(spawn_x),
+                "y": float(spawn_y),
+                "hp": monster_hp,
+                "cooldown": 0,
+                "image": monster_img,
+                "night_spawned": True  # Mark as night-spawned
+            })
+            
+            monster_count = sum(1 for mob in entities if mob["type"] in ["monster", "zombie"])
+            print(f"👹 Night {monster_type} spawned near player at ({int(spawn_x)}, {int(spawn_y)}) - Total: {monster_count}/{max_night_monsters}")
+
+def find_ground_level(x):
+    """Find the ground level at a given x coordinate"""
+    # Look for the highest solid block at this x position
+    for y in range(0, -50, -1):  # Check from surface down
+        pos_key = f"{x},{y}"
+        if pos_key in world_data:
+            block_type = world_data[pos_key]
+            if block_type in ["grass", "dirt", "stone", "sand", "gravel"]:
+                return y
+    return None
+
+def update_monster_movement_and_combat():
+    """Update monster movement and combat (separated for performance)"""
+    # OPTIMIZED: Cache player position to avoid repeated lookups
+    player_x = player["x"]
+    player_y = player["y"]
     
     # Move and attack existing monsters
     for mob in entities[:]:
@@ -8449,10 +10293,14 @@ def update_monsters():
             if "hp" not in mob:
                 mob["hp"] = 7
 
-            dx = player["x"] - mob["x"]
-            dy = player["y"] - mob["y"]
-            dist = math.hypot(dx, dy)
-            if dist > 0:
+            # OPTIMIZED: Calculate distance once and reuse
+            dx = player_x - mob["x"]
+            dy = player_y - mob["y"]
+            dist_squared = dx * dx + dy * dy  # Avoid expensive sqrt for distance checks
+            
+            if dist_squared > 0:
+                dist = math.sqrt(dist_squared)  # Only calculate sqrt when needed
+                
                 # ENHANCED AI: Faster movement when player is detected nearby
                 if dist < 5:  # Player is very close - aggressive pursuit
                     speed_x = 0.12  # 2x faster horizontal
@@ -8471,7 +10319,7 @@ def update_monsters():
             mob["cooldown"] = mob.get("cooldown", 0) + 1
             if mob["cooldown"] >= 90:  # 1.5 seconds at 60 FPS
                 mob["cooldown"] = 0
-                if dist > 0:
+                if dist_squared > 0:  # Use squared distance for efficiency
                     entities.append({
                         "type": "rock_projectile",  # Changed to rock_projectile
                         "x": mob["x"],
@@ -8483,8 +10331,8 @@ def update_monsters():
                     })
                     print(f"🪨 Monster threw a rock at player!")
 
-            # Contact damage (3 hearts) but do NOT remove the monster
-            if abs(player["x"] - mob["x"]) < 0.5 and abs(player["y"] - mob["y"]) < 1:
+            # OPTIMIZED: Contact damage with squared distance check
+            if dist_squared < 0.25:  # 0.5 * 0.5 = 0.25 (squared distance)
                 # Check cooldown - monsters can only attack every 5 seconds
                 current_time = pygame.time.get_ticks()
                 if "last_attack_time" not in mob:
@@ -8598,6 +10446,30 @@ def update_monsters():
                 proj["x"] < -100 or proj["x"] > 100 or 
                 proj["y"] > 100):
                 entities_to_remove.append(proj)
+        
+        # Boss projectile update and collision
+        elif proj["type"] == "boss_projectile":
+            # Update position
+            proj["x"] += proj["dx"]
+            proj["y"] += proj["dy"]
+            
+            # Check collision with player
+            if abs(player["x"] - proj["x"]) < 0.8 and abs(player["y"] - proj["y"]) < 0.8:
+                base_damage = proj.get("damage", 5)
+                damage = calculate_armor_damage_reduction(base_damage)
+                player["health"] -= damage
+                play_damage_sound()
+                entities_to_remove.append(proj)
+                print(f"🔥 Boss projectile hit player! Damage: {damage}")
+                if player["health"] <= 0:
+                    show_death_screen()
+            
+            # Check lifetime and boundaries
+            proj["lifetime"] = proj.get("lifetime", 180) - 1
+            if (proj["lifetime"] <= 0 or 
+                proj["x"] < -100 or proj["x"] > 100 or 
+                proj["y"] > 100):
+                entities_to_remove.append(proj)
     
     # Remove entities after iteration
     for entity in entities_to_remove:
@@ -8605,91 +10477,6 @@ def update_monsters():
             entities.remove(entity)
 
 
-# --- Chess piece spawning system ---
-def update_chess_pieces():
-    """Update chess piece spawning and behavior - controlled spawning"""
-    global entities
-    
-    # Chess pieces spawn occasionally around the world (not too frequently)
-    if random.random() < 0.0005:  # 0.05% chance per frame (very rare)
-        # Check total chess piece count to prevent overcrowding
-        chess_count = sum(1 for entity in entities if entity.get("type", "").startswith("chess_"))
-        if chess_count < 3:  # Maximum 3 chess pieces at once
-            # Find a random position around the player
-            player_x = int(player["x"])
-            player_y = int(player["y"])
-            
-            # Spawn within 30-100 blocks of player
-            spawn_distance = random.randint(30, 100)
-            angle = random.uniform(0, 2 * math.pi)
-            spawn_x = player_x + int(spawn_distance * math.cos(angle))
-            spawn_y = player_y + int(spawn_distance * math.sin(angle))
-            
-            # Find ground level at spawn position
-            ground_y = None
-            for y in range(110, 125):  # Search in typical surface range
-                if f"{spawn_x},{y}" in world_data and world_data[f"{spawn_x},{y}"] == "grass":
-                    ground_y = y
-                    break
-            
-            if ground_y is not None:
-                # Choose random chess piece type and color
-                piece_types = ["pawn", "rook", "knight", "bishop", "queen", "king"]
-                colors = ["white", "black"]
-                piece_type = random.choice(piece_types)
-                color = random.choice(colors)
-                
-                # Create chess piece entity
-                chess_entity = {
-                    "type": f"chess_{piece_type}_{color}",
-                    "x": float(spawn_x),
-                    "y": float(ground_y - 1),  # Spawn on ground
-                    "hp": 1,  # Chess pieces are fragile
-                    "loot": generate_chess_loot(piece_type),
-                    "image": textures.get(f"chess_{piece_type}_{color}", textures["chest"])
-                }
-                
-                entities.append(chess_entity)
-                print(f"♟️ Chess {piece_type} ({color}) spawned at ({spawn_x}, {ground_y - 1})")
-
-def generate_chess_loot(piece_type):
-    """Generate loot for chess pieces - always includes sword and pickaxe"""
-    loot = []
-    
-    # Always include sword and pickaxe
-    loot.append({"type": "sword", "count": 1, "throwing": False, "throw_distance": 0, "throw_target": None, "throw_speed": 0.3})
-    loot.append({"type": "pickaxe", "count": 1})
-    
-    # Add random items based on piece type
-    if piece_type == "pawn":
-        # Pawns give basic items
-        loot.append({"type": "bread", "count": random.randint(1, 3)})
-        loot.append({"type": "coal", "count": random.randint(2, 4)})
-    elif piece_type == "rook":
-        # Rooks give building materials
-        loot.append({"type": "stone", "count": random.randint(3, 6)})
-        loot.append({"type": "oak_planks", "count": random.randint(2, 4)})
-    elif piece_type == "knight":
-        # Knights give combat items
-        loot.append({"type": "stone_sword", "count": 1})
-        loot.append({"type": "iron", "count": random.randint(1, 2)})
-    elif piece_type == "bishop":
-        # Bishops give rare materials
-        loot.append({"type": "gold", "count": random.randint(1, 2)})
-        loot.append({"type": "diamond", "count": random.randint(1, 1)})
-    elif piece_type == "queen":
-        # Queens give valuable loot
-        loot.append({"type": "diamond", "count": random.randint(2, 3)})
-        loot.append({"type": "gold", "count": random.randint(2, 4)})
-        loot.append({"type": "iron", "count": random.randint(3, 5)})
-    elif piece_type == "king":
-        # Kings give the best loot
-        loot.append({"type": "diamond", "count": random.randint(3, 5)})
-        loot.append({"type": "gold", "count": random.randint(3, 6)})
-        loot.append({"type": "iron", "count": random.randint(5, 8)})
-        loot.append({"type": "stone_sword", "count": 1})
-    
-    return loot
 
 # --- Villager update logic ---
 
@@ -8699,9 +10486,10 @@ def update_hunger():
     # Only update hunger when in the game state
     if game_state == GameState.GAME:
         current_time = time.time()
-        if current_time - hunger_timer - paused_time >= 200:  # 200 seconds = ~3.33 minutes
+        if current_time - hunger_timer - paused_time >= 200:  # 200 seconds
             if player["health"] > 0:
                 player["hunger"] -= 1
+                print(f"🍖 Hunger decreased! Current hunger: {player['hunger']}/10")
             hunger_timer = current_time
             paused_time = 0  # Reset paused time after hunger update
 
@@ -8855,7 +10643,7 @@ def generate_initial_world(world_seed=None):
             if can_place_chest_on_grass(x, chest_y) and get_block(x, chest_y) is None:
                 set_block(x, chest_y, "chest")
                 if chest_system:
-                    chest_system.generate_chest_loot("village")
+                    generate_chest_with_shopkeeper_loot(x, chest_y, "village")
                 print(f"📦 Chest placed on grass at ({x}, {chest_y})")
             else:
                 print(f"❌ Cannot place chest at ({x}, {chest_y}) - grass rule: {can_place_chest_on_grass(x, chest_y)}, block exists: {get_block(x, chest_y) is not None}")
@@ -8869,6 +10657,56 @@ def generate_initial_world(world_seed=None):
     for x in range(start_x - world_width//2, start_x + world_width//2):
         if get_block(x, 10) == "grass":  # Only on clean flat ground (Y=10)
             flat_areas.append(x)
+    
+    # Generate cave systems (rare but valuable)
+    cave_count = 0
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        if get_block(x, 10) == "grass" and random.random() < 0.02:  # 2% chance for cave
+            generate_cave_system(x, 10)
+            cave_count += 1
+    
+    if cave_count > 0:
+        print(f"🕳️ Generated {cave_count} cave systems in the world!")
+    
+    # Generate villages (common and useful)
+    village_count = 0
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        if get_block(x, 10) == "grass" and random.random() < 0.05:  # 5% chance for village
+            generate_village(x, 10)
+            village_count += 1
+    
+    if village_count > 0:
+        print(f"🏘️ Generated {village_count} villages in the world!")
+    
+    # Generate beaches (common coastal areas)
+    beach_count = 0
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        if get_block(x, 10) == "grass" and random.random() < 0.03:  # 3% chance for beach
+            generate_beach(x, 10)
+            beach_count += 1
+    
+    if beach_count > 0:
+        print(f"🏖️ Generated {beach_count} beaches in the world!")
+    
+    # Generate fortresses (rare but dangerous)
+    fortress_count = 0
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        if get_block(x, 10) == "grass" and random.random() < 0.02:  # 2% chance for fortress
+            generate_fortress(x, 10)
+            fortress_count += 1
+    
+    if fortress_count > 0:
+        print(f"🏰 Generated {fortress_count} fortresses in the world!")
+    
+    # Generate Lost Ruins (very rare but important)
+    ruins_count = 0
+    for x in range(start_x - world_width//2, start_x + world_width//2):
+        if get_block(x, 10) == "grass" and random.random() < 0.005:  # 0.5% chance for Lost Ruins
+            generate_lost_ruins(x, 10)
+            ruins_count += 1
+    
+    if ruins_count > 0:
+        print(f"🏛️ Generated {ruins_count} Lost Ruins in the world!")
     
     # Villages removed from world generation
     
@@ -9634,7 +11472,7 @@ def draw_title_screen():
 # --- Credits Screen Drawing Function ---
 def draw_credits_screen():
     """Draw the credits screen"""
-    global credits_back_btn
+    global credits_back_btn, credits_from_boss_defeat
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -9644,6 +11482,26 @@ def draw_credits_screen():
     
     # Store button references for click handling
     credits_back_btn = button_states.get("back")
+    
+    # Draw special completion message if credits are shown due to boss defeat
+    if credits_from_boss_defeat:
+        # Draw completion overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 100))
+        screen.blit(overlay, (0, 0))
+        
+        # Draw completion message
+        completion_text = font.render("🎉 CONGRATULATIONS! 🎉", True, (255, 215, 0))  # Gold color
+        completion_rect = completion_text.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        screen.blit(completion_text, completion_rect)
+        
+        victory_text = font.render("You have defeated the Final Boss!", True, (255, 255, 255))
+        victory_rect = victory_text.get_rect(center=(SCREEN_WIDTH // 2, 130))
+        screen.blit(victory_text, victory_rect)
+        
+        continue_text = font.render("Press ESC or click Back to return to your world", True, (200, 200, 200))
+        continue_rect = continue_text.get_rect(center=(SCREEN_WIDTH // 2, 160))
+        screen.blit(continue_text, continue_rect)
 
 # --- World Selection Screen Drawing Function ---
 def draw_world_selection_screen():
@@ -9664,6 +11522,12 @@ def draw_world_selection_screen():
     world_delete_btn = button_states.get("delete_world")
     world_create_btn = button_states.get("create_world")
     world_back_btn = button_states.get("back")
+    
+    # Debug: Check if play button exists
+    if world_play_btn is None:
+        print("⚠️ Play World button is None!")
+    else:
+        print(f"✅ Play World button exists: {world_play_btn}")
 
 # --- Game Menu Drawing Function ---
 def draw_game_menu():
@@ -9775,21 +11639,41 @@ def print_chest_system_info():
     print("   - Improved UI with guaranteed item highlighting")
     print("   - Better error handling and validation")
 
+def generate_chest_with_shopkeeper_loot(chest_x, chest_y, chest_type="village"):
+    """Generate chest loot including rare shopkeeper blocks"""
+    if not chest_system:
+        return
+    
+    # Generate normal chest loot
+    if hasattr(chest_system, 'generate_chest_loot'):
+        chest_system.generate_chest_loot(chest_type)
+    
+    # Add rare shopkeeper block (1% chance)
+    if random.random() < 0.01:  # 1% chance for shopkeeper block
+        chest_inventory = chest_system.get_chest_inventory((chest_x, chest_y))
+        if chest_inventory:
+            # Find empty slot
+            for i, slot in enumerate(chest_inventory):
+                if slot is None:
+                    chest_inventory[i] = {
+                        "type": "shopkeeper",
+                        "count": 1
+                    }
+                    print(f"🏪 RARE! Shopkeeper block found in chest at ({chest_x}, {chest_y})!")
+                    break
+
 # Print chest system information
 print_chest_system_info()
 
-# Enhanced save function using world system with EXTREME ENGINEERING
+# Enhanced save function with fallback system
 def save_game():
-    """EXTREME ENGINEERING: Save current game state using the world system with comprehensive validation and error handling"""
+    """Save current game state with robust fallback system"""
     try:
-        # Validate world system state
-        if not hasattr(world_system, 'current_world_name') or not world_system.current_world_name:
-            print("⚠️ No world loaded, cannot save")
-            return False
-        
-        print(f"💾 EXTREME ENGINEERING: Starting save process for world '{world_system.current_world_name}'")
-        
-        # EXTREME ENGINEERING: Prepare and validate save data
+        # Try to use world system first
+        if world_system and hasattr(world_system, 'current_world_name') and world_system.current_world_name:
+            print(f"💾 Saving to world system: '{world_system.current_world_name}'")
+            
+            # Prepare save data
         save_data = {
             "name": world_system.current_world_name,
             "blocks": world_data.copy() if world_data else {},
@@ -9799,36 +11683,93 @@ def save_game():
                 "time": time.time(),
                 "day": is_day,
                 "weather": "clear"
+                },
+                "monster_data": {
+                    "total_monsters_killed": total_monsters_killed
+                },
+                "villages": villages
             }
-        }
-        
-        # EXTREME ENGINEERING: Validate save data integrity
-        print(f"   📊 Save data validation:")
-        print(f"      - Blocks: {len(save_data['blocks'])} (type: {type(save_data['blocks'])})")
-        print(f"      - Entities: {len(save_data['entities'])} (type: {type(save_data['entities'])})")
-        print(f"      - Player: {type(save_data['player'])}")
-        print(f"      - World settings: {type(save_data['world_settings'])}")
-        
-        # EXTREME ENGINEERING: Update world system with current data
+            
+            # Update world system with current data
         world_system.current_world_data = save_data
         
-        # EXTREME ENGINEERING: Save using world system (no arguments needed)
+            # Save using world system
         if world_system.save_world():
-            print(f"✅ EXTREME ENGINEERING: Game saved successfully to world: {world_system.current_world_name}")
-            print(f"   📊 Final save statistics:")
-            print(f"      - Blocks saved: {len(save_data['blocks'])}")
-            print(f"      - Entities saved: {len(save_data['entities'])}")
-            print(f"      - Player data: {len(save_data['player'])} fields")
-            print(f"      - Save time: {time.strftime('%H:%M:%S')}")
+            print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
+            print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
             return True
         else:
-            print("❌ EXTREME ENGINEERING: Failed to save world using world system")
-            return False
+            print("⚠️ World system save failed, trying fallback...")
+        
+        # Fallback: Direct file save
+        print("💾 Using fallback save system...")
+        return save_game_fallback()
             
     except Exception as e:
-        print(f"💥 EXTREME ENGINEERING ERROR in save_game: {e}")
+        print(f"💥 Error in save_game: {e}")
         import traceback
         traceback.print_exc()
+        return save_game_fallback()
+
+def save_game_fallback():
+    """Fallback save system that saves directly to files"""
+    try:
+        # Create save directory if it doesn't exist
+        save_dir = "save_data"
+        worlds_dir = os.path.join(save_dir, "worlds")
+        os.makedirs(worlds_dir, exist_ok=True)
+        
+        # Generate world name if none exists
+        world_name = getattr(world_system, 'current_world_name', None) if world_system else None
+        if not world_name:
+            world_name = f"World_{int(time.time())}"
+            print(f"🌍 Generated world name: {world_name}")
+        
+        # Prepare save data
+        save_data = {
+            "name": world_name,
+            "blocks": world_data.copy() if world_data else {},
+            "entities": entities.copy() if entities else [],
+            "player": player.copy() if player else {},
+            "world_settings": {
+                "time": time.time(),
+                "day": is_day,
+                "weather": "clear"
+            },
+            "monster_data": {
+                "total_monsters_killed": total_monsters_killed
+            },
+            "last_saved": time.time()
+        }
+        
+        # Save to file
+        world_file = os.path.join(worlds_dir, f"{world_name}.json")
+        
+        # Create backup
+        backup_file = world_file + ".backup"
+        if os.path.exists(world_file):
+            try:
+                shutil.copy2(world_file, backup_file)
+            except:
+                pass
+        
+        # Save with proper formatting
+        with open(world_file, 'w') as f:
+            json.dump(save_data, f, indent=2, ensure_ascii=False)
+        
+        # Remove backup if save was successful
+        if os.path.exists(backup_file):
+            try:
+                os.remove(backup_file)
+            except:
+                pass
+        
+        print(f"✅ Fallback save successful: {world_name}")
+        print(f"   📊 Saved: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
+        return True
+        
+    except Exception as e:
+        print(f"💥 Fallback save failed: {e}")
         return False
 
 def load_world_data():
@@ -9843,6 +11784,7 @@ def load_world_data():
         # Load world data
         world_data = world_system.current_world_data.get("blocks", {})
         entities = world_system.current_world_data.get("entities", [])
+        villages = world_system.current_world_data.get("villages", [])
         
         # Load player data with validation
         player_data = world_system.current_world_data.get("player", {})
@@ -10241,7 +12183,7 @@ start_time = time.time()
 
 # Add auto-save timer
 last_auto_save = time.time()
-AUTO_SAVE_INTERVAL = 300  # 5 minutes
+AUTO_SAVE_INTERVAL = 60  # 1 minute (more frequent saves)
 
 def auto_save_game():
     """Auto-save the game if enough time has passed"""
@@ -10299,7 +12241,11 @@ while running:
                 shift_key_pressed = True
             
             if event.key == pygame.K_ESCAPE:
-                if map_open:
+                if merchant_shop_open:
+                    # Close merchant shop if it's open
+                    close_merchant_shop()
+                    print("🏪 Merchant shop closed")
+                elif map_open:
                     # Close map if it's open
                     map_open = False
                     print("🗺️ Map closed")
@@ -10318,6 +12264,11 @@ while running:
                 elif game_state == GameState.INVENTORY:
                     game_state = GameState.GAME
                     update_pause_state()  # Resume time when closing inventory
+                elif game_state == GameState.CREDITS:
+                    game_state = GameState.GAME
+                    update_pause_state()  # Resume time when returning to game
+                    credits_from_boss_defeat = False  # Reset the flag
+                    print("🎮 Returned to game from credits screen!")
             
             # Map toggle with M key
             if event.key == pygame.K_m:
@@ -10335,9 +12286,6 @@ while running:
                 FULLSCREEN = not FULLSCREEN
                 apply_display_mode()
                 update_chest_ui_geometry()
-            # Toggle FPS display on F3
-            if event.key == pygame.K_F3:
-                show_fps = not show_fps
             
             # A and D keys now work through the movement system for both movement and character flipping
             
@@ -10356,6 +12304,10 @@ while running:
                 print("🔄 Force quit with Ctrl+Q")
                 running = False
                 break
+            # Toggle performance stats with F3
+            if event.key == pygame.K_F3:
+                performance_monitor["show_stats"] = not performance_monitor["show_stats"]
+                print(f"📊 Performance stats {'enabled' if performance_monitor['show_stats'] else 'disabled'}")
             # Close chest UI with E, U, or ESC
             if chest_open and event.key in (pygame.K_e, pygame.K_u, pygame.K_ESCAPE):
                 close_chest_ui()
@@ -10427,15 +12379,16 @@ while running:
                         chat_input += event.unicode
                     continue
             
-            # Open/Close full inventory with T key
-            if event.key == pygame.K_t:
+            # Open/Close backpack with I key
+            if event.key == pygame.K_i:
                 if game_state == GameState.GAME:
-                    game_state = GameState.INVENTORY
-                    update_pause_state()  # Pause time when opening inventory
-                elif game_state == GameState.INVENTORY:
+                    game_state = GameState.BACKPACK
+                    update_pause_state()  # Pause time when opening backpack
+                elif game_state == GameState.BACKPACK:
                     game_state = GameState.GAME
-                    update_pause_state()  # Resume time when closing inventory
+                    update_pause_state()  # Resume time when closing backpack
                 continue
+            
             
             # Shop navigation with arrow keys when shop is open
             if shop_open:
@@ -10515,6 +12468,11 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == GameState.GAME:
                 mx, my = event.pos  # Define mx, my once for all mouse handling
+                
+                # Handle merchant shop clicks first
+                if handle_merchant_shop_click(mx, my):
+                    continue
+                
                 if chest_open:
                     # Left click: pick up or place item
                     if event.button == 1:
@@ -10596,7 +12554,6 @@ while running:
                     # Not clicking the UI: attack/break in world
                     print(f"🎯 Left click at ({mx}, {my}) - attempting to break blocks/attack monsters")
                     attack_monsters(mx, my)
-                    handle_chess_piece_interaction(mx, my)
                     break_block(mx, my)
 
                 elif event.button == 3:  # RIGHT CLICK - Place blocks and open chests
@@ -10613,6 +12570,17 @@ while running:
                             print(f"📦 Opening chest at ({bx}, {by})")
                         else:
                             print(f"📦 Chest too far away: player at ({px}, {py}), chest at ({bx}, {by})")
+                        continue
+                    
+                    # Check if clicking on a shopkeeper block
+                    elif block_at_pos == "shopkeeper":
+                        # Check if player is within range
+                        px, py = int(player["x"]), int(player["y"])
+                        if abs(bx - px) <= 2 and abs(by - py) <= 2:
+                            open_merchant_shop((bx, by))
+                            print(f"🏪 Opening merchant shop at ({bx}, {by})")
+                        else:
+                            print(f"🏪 Merchant too far away: player at ({px}, {py}), merchant at ({bx}, {by})")
                         continue
                     
                     # Log interaction: right-click to convert to oak planks
@@ -10632,12 +12600,18 @@ while running:
                         continue
                     
                     # If block placement failed, try other interactions
-                    # Bed interaction: sleep at night, message at day
+                    # Bed interaction: sleep at night, set spawn point at day
                     if get_block(bx, by) == "bed":
                         if not is_day:
+                            # Sleep at night
                             sleep_in_bed()
                         else:
-                            show_message("You can only sleep at night")
+                            # Set spawn point during day
+                            player["spawn_x"] = bx
+                            player["spawn_y"] = by
+                            player["has_bed_spawn"] = True
+                            show_message(f"🏠 Spawn point set at ({bx}, {by})", 2000)
+                            print(f"🏠 Bed spawn point set at ({bx}, {by})")
                         continue
                     
                     # Door interaction
@@ -10656,100 +12630,8 @@ while running:
                             print("🚪 Door closed at", door_pos)
                         continue
                     
-                    # EXTREME ENGINEERING: Legend NPC interaction - initiate boss fight
-                    for entity in entities:
-                        if entity["type"] == "legend_npc":
-                            entity_x = int(entity["x"] * TILE_SIZE)
-                            entity_y = int(entity["y"] * TILE_SIZE) - 100
-                            # Check if click is within Legend NPC bounds
-                            if (bx * TILE_SIZE - camera_x <= entity_x + TILE_SIZE and 
-                                bx * TILE_SIZE - camera_x + TILE_SIZE >= entity_x and
-                                by * TILE_SIZE <= entity_y + TILE_SIZE and 
-                                by * TILE_SIZE + TILE_SIZE >= entity_y):
-                                
-                                # EXTREME ENGINEERING: Legend NPC dialogue and boss fight initiation
-                                if entity.get("dialogue_cooldown", 0) <= 0:
-                                    show_message("🌟 THE LEGEND: 'You have traveled far, warrior. Are you ready for the ultimate challenge?'", 4000)
-                                    show_message("🌟 THE LEGEND: 'Click me again to enter the BATTLE ARENA and face the LEGENDARY BOSS!'", 4000)
-                                    
-                                    # Set dialogue cooldown
-                                    entity["dialogue_cooldown"] = 300  # 5 seconds
-                                    entity["last_interaction"] = time.time()
-                                    
-                                    print("🌟 Legend NPC interaction - boss fight initiation available!")
-                                    
-                                    # Check for first Legend NPC interaction achievement
-                                    check_achievement("first_legend_interaction", 100, "Met The Legend NPC!")
-                                else:
-                                    # Show boss room entry dialog
-                                    show_boss_room_dialog()
-                                
-                                continue
-                        
-                        elif entity["type"] == "villager":
-                            entity_x = int(entity["x"] * TILE_SIZE)
-                            entity_y = int(entity["y"] * TILE_SIZE) - 100
-                            # Check if click is within villager bounds
-                            if (bx * TILE_SIZE - camera_x <= entity_x + TILE_SIZE and 
-                                bx * TILE_SIZE - camera_x + TILE_SIZE >= entity_x and
-                                by * TILE_SIZE <= entity_y + TILE_SIZE and 
-                                by * TILE_SIZE + TILE_SIZE >= entity_y):
-                                
-                                # Villager interaction
-                                if entity.get("dialogue_cooldown", 0) <= 0:
-                                    villager_name = entity.get("name", "Villager")
-                                    profession = entity.get("profession", "villager")
-                                    trades_maps = entity.get("trades_maps", False)
-                                    
-                                    if trades_maps:
-                                        # Map trader dialogue
-                                        show_message(f"🗺️ {villager_name}: 'Hello traveler! I sell maps of the surrounding area.'", 3000)
-                                        show_message(f"🗺️ {villager_name}: 'Would you like to buy a map for 50 coins? Right-click me again to purchase!'", 4000)
-                                        
-                                        # Set up for map purchase
-                                        entity["dialogue_cooldown"] = 180  # 3 seconds
-                                        entity["last_interaction"] = time.time()
-                                        entity["ready_for_purchase"] = True
-                                        
-                                        print(f"🗺️ {villager_name} interaction - map purchase available!")
-                                    else:
-                                        # Regular villager dialogue
-                                        dialogues = [
-                                            f"Hello there, traveler! I'm {villager_name}, the {profession}.",
-                                            f"Welcome to our area! I'm {villager_name}.",
-                                            f"Good day! I'm {villager_name}. Nice weather, isn't it?",
-                                            f"Hello! I'm {villager_name}. Have you seen any monsters around here?"
-                                        ]
-                                        dialogue = random.choice(dialogues)
-                                        show_message(f"👋 {dialogue}", 3000)
-                                        
-                                        entity["dialogue_cooldown"] = 180  # 3 seconds
-                                        entity["last_interaction"] = time.time()
-                                        
-                                        print(f"👋 {villager_name} interaction - regular dialogue")
-                                else:
-                                    # Check if villager is ready for map purchase
-                                    if entity.get("ready_for_purchase", False) and entity.get("trades_maps", False):
-                                        # Attempt to purchase map
-                                        if coins_manager and coins_manager.get_coins() >= 50:
-                                            # Player has enough coins
-                                            coins_manager.spend_coins(50)
-                                            add_to_inventory("map", 1)
-                                            show_message("🗺️ Map purchased! You can now use it from your inventory!", 3000)
-                                            show_message("🗺️ The map will show you the surrounding area when used.", 3000)
-                                            
-                                            # Reset villager state
-                                            entity["ready_for_purchase"] = False
-                                            entity["dialogue_cooldown"] = 300  # 5 seconds
-                                            
-                                            print("🗺️ Map purchased successfully!")
-                                        else:
-                                            # Not enough coins
-                                            show_message("💰 You don't have enough coins! Maps cost 50 coins.", 3000)
-                                            entity["dialogue_cooldown"] = 120  # 2 seconds
-                                    
-                                continue
-                        
+                    # Legend NPC interaction removed - no more random NPCs
+                    # Villager interaction removed - no more random NPCs
                         # Shopkeeper interaction removed - now available in title screen
                     
                     
@@ -10762,7 +12644,7 @@ while running:
                             use_map_from_inventory()
                         else:
                             # Try to place the block
-                            place_block(bx, by, selected_item["type"])
+                            place_block(bx, by)
             elif game_state == GameState.TITLE:
                 if play_btn.collidepoint(event.pos):
                     # Check if username is required before allowing play
@@ -10799,11 +12681,14 @@ while running:
                     running = False
             elif game_state == GameState.WORLD_SELECTION:
                 # Handle world selection screen clicks
+                print(f"🔍 World selection click at: {event.pos}")
+                print(f"🔍 Play button exists: {world_play_btn is not None}")
                 
                 # First, check if user clicked on a world to select it
                 world_click_result = world_ui.handle_world_click(event.pos)
                 if world_click_result is not None:
                     print(f"🌍 World {world_click_result} selected!")
+                    # Refresh the world selection screen to update button states
                     continue  # Skip other button checks for this click
                 
                 if world_back_btn and world_back_btn.collidepoint(event.pos):
@@ -10840,6 +12725,9 @@ while running:
                     else:
                         print("❌ Failed to create new world")
                 elif world_play_btn and world_play_btn.collidepoint(event.pos):
+                    print("🎮 Play World button clicked!")
+                    print(f"🔍 Button rect: {world_play_btn}")
+                    print(f"🔍 Click pos: {event.pos}")
                     # EXTREME ENGINEERING: Username validation before world play
                     if require_username_check():
                         print("🚫 Username required before playing - redirecting to username creation")
@@ -10847,8 +12735,10 @@ while running:
                     
                     # Play selected world (if any world is selected)
                     selected_world = world_ui.get_selected_world()
+                    print(f"🔍 Selected world: {selected_world}")
                     if selected_world:
                         world_name = selected_world["name"]
+                        print(f"🌍 Loading world: {world_name}")
                         if world_system.load_world(world_name):
                             # Load the world data into the game
                             if load_world_data():
@@ -10865,7 +12755,8 @@ while running:
                         else:
                             print(f"❌ Failed to load world: {world_name}")
                     else:
-                        print("❌ No world selected")
+                        print("❌ No world selected - please select a world first")
+                        show_message("Please select a world first!", 2000)
                 elif world_delete_btn and world_delete_btn.collidepoint(event.pos):
                     # Delete selected world (if any world is selected)
                     selected_world = world_ui.get_selected_world()
@@ -10959,8 +12850,10 @@ while running:
                     update_pause_state()  # Pause time when returning to title
             elif game_state == GameState.CREDITS:
                 if credits_back_btn.collidepoint(event.pos):
-                    game_state = GameState.TITLE
-                    update_pause_state()  # Pause time when returning to title
+                    game_state = GameState.GAME
+                    update_pause_state()  # Resume time when returning to game
+                    credits_from_boss_defeat = False  # Reset the flag
+                    print("🎮 Returned to game from credits screen!")
             elif game_state == GameState.MULTIPLAYER:
                 # EXTREME ENGINEERING: Professional multiplayer click handling
                 if multiplayer_menu_state == "main":
@@ -11025,9 +12918,12 @@ while running:
                 if not shop_open:
                     game_state = GameState.TITLE
                     update_pause_state()  # Resume time when returning to title
-            elif game_state == GameState.INVENTORY:
-                # Handle inventory clicks
-                handle_inventory_click(event.pos)
+            elif game_state == GameState.BACKPACK:
+                # Handle backpack clicks
+                if event.button == 3:  # RIGHT CLICK - Eat food
+                    handle_inventory_right_click(event.pos)
+                else:
+                    handle_backpack_click(event.pos)
                 continue
             elif game_state == GameState.SKIN_CREATOR:
                 # Handle skin creator clicks
@@ -11095,12 +12991,12 @@ while running:
                 # Only spawn monsters at night when exploring new territory
                 if not is_day and random.random() < 0.008:  # Slightly increased spawn rate for better gameplay
                     # Check total monster count globally to prevent overcrowding
-                    total_monsters = sum(1 for entity in entities if entity["type"] == "monster")
+                    total_monsters = sum(1 for entity in entities if entity["type"] in ["monster", "zombie"])
                     
                     # Check if there are already monsters nearby to prevent clustering
                     nearby_monsters = 0
                     for entity in entities:
-                        if entity["type"] == "monster":
+                        if entity["type"] in ["monster", "zombie"]:
                             distance = abs(entity["x"] - x)
                             if distance < 40:  # Within 40 blocks
                                 nearby_monsters += 1
@@ -11110,36 +13006,49 @@ while running:
                         # Find ground level for this column
                         spawn_ground_y = ground_y_of_column(x)
                         if spawn_ground_y is not None:
+                            # Randomly choose between monster and zombie (30% chance for zombie)
+                            if random.random() < 0.3:  # 30% chance for zombie
+                                monster_type = "zombie"
+                                monster_hp = 10  # Zombies are stronger
+                                monster_img = textures["zombie"]
+                            else:
+                                monster_type = "monster"
+                                monster_hp = 6
+                                monster_img = monster_image
+                            
                             entities.append({
-                                "type": "monster",
+                                "type": monster_type,
                                 "x": x,
                                 "y": spawn_ground_y - 1,
-                                "image": monster_image,
-                                "hp": 6,  # Balanced HP for fair combat
+                                "image": monster_img,
+                                "hp": monster_hp,
                                 "cooldown": 0
                             })
-                            print(f"👹 Night monster spawned at ({x}, {spawn_ground_y - 1}) - Total monsters: {total_monsters + 1}/8")
+                            print(f"👹 Night {monster_type} spawned at ({x}, {spawn_ground_y - 1}) - Total monsters: {total_monsters + 1}/8")
                 
-        # EXTREME ENGINEERING: Check for Legend NPC spawn
-        check_legend_npc_spawn()
-        
-        # Check for village spawning
-        check_village_spawn()
-        
-        # Spawn villagers in villages
-        spawn_villager_in_village()
+        # NPC spawning systems removed - no more random NPCs
+
+        # OPTIMIZED: Update performance monitoring
+        update_performance_monitor()
 
         update_daylight()
         update_player()
         update_world_interactions()
         update_monsters()
+        update_villagers()
+        update_fortress_bosses()  # Update fortress bosses
+        update_oxygen_system()  # Update oxygen system
+        update_night_overlay()  # Update nighttime visual effects
         update_pickaxe_animation()
-        update_chess_pieces()  # Chess piece spawning and behavior
+        update_final_boss()  # Update final boss AI
         update_boss()  # EXTREME ENGINEERING: Legendary boss AI and attacks
         update_hunger()  # Update hunger system
         update_thrown_sword()  # Update sword throwing system
         update_thrown_sword_entities()  # Update thrown sword entities
         update_blood_particles()  # Update blood particle effects
+        update_fireball_projectiles()  # Update fireball projectiles
+        
+        # Ability system removed
         
         # Fallback: Reset shift key state if it gets stuck (safety mechanism)
         # This prevents the player from getting permanently stuck in slow mode
@@ -11166,11 +13075,12 @@ while running:
         draw_map()  # Draw the map overlay if it's open
         draw_inventory()
         draw_status_bars()
-        draw_fps_display()
         draw_boss_health_bar()  # EXTREME ENGINEERING: Legendary boss health bar
         draw_fortress_discovery()  # EXTREME ENGINEERING: Fortress discovery UI
         draw_fortress_minimap()  # EXTREME ENGINEERING: Fortress minimap
         draw_multiplayer_chat()  # EXTREME ENGINEERING: Multiplayer chat interface
+        
+        # Portal and boss systems removed - using ability system instead
         
         # Draw chat system
         if chat_system:
@@ -11186,6 +13096,12 @@ while running:
         
         if chest_open:
             draw_chest_ui()
+        
+        # Draw merchant shop UI if open
+        draw_merchant_shop_ui()
+        
+        # Draw performance stats if enabled
+        draw_performance_stats()
 
         if player["health"] <= 0:
             show_death_screen()
@@ -11213,14 +13129,20 @@ while running:
         draw_options()
     elif game_state == GameState.SHOP:
         draw_shop_ui()
-    elif game_state == GameState.INVENTORY:
-        draw_full_inventory_ui()
+    elif game_state == GameState.BACKPACK:
+        draw_backpack_ui()
     elif game_state == GameState.SKIN_CREATOR:
         draw_skin_creator_ui()
     elif game_state == GameState.MULTIPLAYER:
         draw_multiplayer_screen()
     elif game_state == GameState.CREDITS:
         draw_credits_screen()
+
+    # Draw nighttime overlay effect
+    draw_night_overlay()
+    
+    # Draw oxygen bar when underwater
+    draw_oxygen_bar()
 
     pygame.display.flip()
     
@@ -11261,6 +13183,7 @@ def load_world_data():
         # Load world data
         world_data = world_system.current_world_data.get("blocks", {})
         entities = world_system.current_world_data.get("entities", [])
+        villages = world_system.current_world_data.get("villages", [])
         
         # Load player data with validation
         player_data = world_system.current_world_data.get("player", {})

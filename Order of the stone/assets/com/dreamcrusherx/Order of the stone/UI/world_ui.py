@@ -167,23 +167,21 @@ class WorldUI:
             total_button_width = (self.button_width * 3) + (button_spacing * 2)  # 3 buttons + 2 gaps
             start_x = (screen_width - total_button_width) // 2  # Center the button group
             
-            # Play selected world (only enabled when world is selected)
+            # Play selected world (always present, but disabled when no world selected)
             if is_selected:
                 play_btn = self._draw_button("▶️ Play World", start_x, action_y, mouse_pos, self.colors["success"])
-                button_states["play_world"] = play_btn
             else:
                 # Disabled play button
                 play_btn = self._draw_button("▶️ Play World (Select a World)", start_x, action_y, mouse_pos, self.colors["text_dim"])
-                button_states["play_world"] = None  # Disabled
+            button_states["play_world"] = play_btn
             
-            # Delete selected world (only enabled when world is selected)
+            # Delete selected world (always present, but disabled when no world selected)
             if is_selected:
                 delete_btn = self._draw_button("🗑️ Delete World", start_x + self.button_width + button_spacing, action_y, mouse_pos, self.colors["danger"])
-                button_states["delete_world"] = delete_btn
             else:
                 # Disabled delete button
                 delete_btn = self._draw_button("🗑️ Delete World (Select a World)", start_x + self.button_width + button_spacing, action_y, mouse_pos, self.colors["text_dim"])
-                button_states["delete_world"] = None  # Disabled
+            button_states["delete_world"] = delete_btn
             
             # Create new world (always enabled)
             create_btn = self._draw_button("✨ Create New World", start_x + (self.button_width + button_spacing) * 2, action_y, mouse_pos, self.colors["success"])
