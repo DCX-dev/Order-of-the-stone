@@ -19,8 +19,36 @@ from enum import Enum
 from pathlib import Path
 from PIL import Image
 
+# =============================================================================
+# PYINSTALLER EXECUTABLE SUPPORT
+# =============================================================================
+
+def get_resource_path(relative_path=""):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+        # In PyInstaller, assets are in the root of _MEIPASS
+        return os.path.join(base_path, relative_path)
+    except Exception:
+        # Running in normal Python environment
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Navigate up to find the game root
+        game_root = script_dir
+        for _ in range(6):  # Go up enough levels to find "Order of the stone"
+            parent = os.path.dirname(game_root)
+            if os.path.basename(game_root) == "Order of the stone":
+                break
+            game_root = parent
+        return os.path.join(game_root, relative_path)
+
 # Ensure the game runs from the correct directory (where the game files are located)
-script_dir = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    script_dir = os.path.dirname(sys.executable)
+else:
+    # Running as script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 # Add the parent directories to Python path for imports
@@ -320,6 +348,7 @@ class GameState(Enum):
     STUDIO_LOADING = "studio_loading"  # New state for studio loading screen
     TITLE = "title"
     WORLD_SELECTION = "world_selection"  # New state for world selection
+    WORLD_NAMING = "world_naming"  # New state for world naming
     WORLD_GENERATION = "world_generation"  # New state for world generation loading
     USERNAME_REQUIRED = "username_required"  # New state for username required
     GAME = "game"
@@ -408,7 +437,8 @@ class StateManager:
                 # Define valid transitions
         valid_transitions = {
             GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.SHOP, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION, GameState.CREDITS],
-            GameState.WORLD_SELECTION: [GameState.TITLE, GameState.WORLD_GENERATION, GameState.USERNAME_REQUIRED],
+            GameState.WORLD_SELECTION: [GameState.TITLE, GameState.WORLD_NAMING, GameState.WORLD_GENERATION, GameState.USERNAME_REQUIRED],
+            GameState.WORLD_NAMING: [GameState.WORLD_SELECTION, GameState.WORLD_GENERATION],
             GameState.WORLD_GENERATION: [GameState.GAME, GameState.TITLE],
             GameState.USERNAME_REQUIRED: [GameState.TITLE],
             GameState.GAME: [GameState.PAUSED, GameState.BACKPACK, GameState.SHOP, GameState.TITLE],
@@ -709,7 +739,14 @@ def load_background_music():
     global background_music, music_playing
     
     try:
-        music_path = os.path.join("../../../..", "music", "an_adventure.wav")
+        # Use PyInstaller-compatible path resolution
+        if getattr(sys, 'frozen', False):
+            # Running as executable - use bundled assets
+            music_path = os.path.join(get_resource_path("assets"), "music", "an_adventure.wav")
+        else:
+            # Running as script - use relative path
+            music_path = os.path.join("../../../..", "music", "an_adventure.wav")
+        
         if os.path.exists(music_path):
             pygame.mixer.music.load(music_path)
             pygame.mixer.music.set_volume(music_volume)
@@ -847,6 +884,9 @@ head_bump_effect = False
 # Blood particle system
 blood_particles = []
 
+# Block breaking particle system
+block_particles = []
+
 # Shift key state tracking for reliable movement detection
 shift_key_pressed = False
 
@@ -912,9 +952,21 @@ def find_game_root():
 
 # Find the game root directory
 game_root = find_game_root()
-if game_root:
+
+# Use PyInstaller-compatible path resolution
+if getattr(sys, 'frozen', False):
+    # Running as executable - use get_resource_path
+    print("🎮 Running as executable - using bundled assets")
+    assets_root = get_resource_path("assets")
+    TILE_DIR = os.path.join(assets_root, "tiles")
+    ITEM_DIR = os.path.join(assets_root, "items") 
+    MOB_DIR = os.path.join(assets_root, "mobs")
+    PLAYER_DIR = os.path.join(assets_root, "player")
+    HP_DIR = os.path.join(assets_root, "HP")
+    SOUND_DIR = get_resource_path("damage")
+    SAVE_DIR = os.path.join(script_dir, "save_data")  # Save data goes in exe directory
+elif game_root:
     print(f"🎯 Found game root directory: {game_root}")
-    
     # Set up all directory paths
     assets_root = os.path.join(game_root, "assets")
     TILE_DIR = os.path.join(assets_root, "tiles")
@@ -924,19 +976,18 @@ if game_root:
     HP_DIR = os.path.join(assets_root, "HP")
     SOUND_DIR = os.path.join(game_root, "damage")
     SAVE_DIR = os.path.join(game_root, "save_data")
-    
 else:
     print("⚠️ Could not find game root directory, using fallback paths")
-# Fallback paths
-game_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
-assets_root = os.path.join(game_root, "assets")
-TILE_DIR = os.path.join(assets_root, "tiles")
-ITEM_DIR = os.path.join(assets_root, "items") 
-MOB_DIR = os.path.join(assets_root, "mobs")
-PLAYER_DIR = os.path.join(assets_root, "player")
-HP_DIR = os.path.join(assets_root, "HP")
-SOUND_DIR = os.path.join(game_root, "damage")
-SAVE_DIR = os.path.join(game_root, "save_data")
+    # Fallback paths
+    game_root = os.path.join(current_script_dir, "..", "..", "..", "..", "..")
+    assets_root = os.path.join(game_root, "assets")
+    TILE_DIR = os.path.join(assets_root, "tiles")
+    ITEM_DIR = os.path.join(assets_root, "items") 
+    MOB_DIR = os.path.join(assets_root, "mobs")
+    PLAYER_DIR = os.path.join(assets_root, "player")
+    HP_DIR = os.path.join(assets_root, "HP")
+    SOUND_DIR = os.path.join(game_root, "damage")
+    SAVE_DIR = os.path.join(game_root, "save_data")
 
 # Verify ALL paths and create missing directories
 directories = {
@@ -1413,6 +1464,128 @@ def make_zombie_texture(size):
     pygame.draw.rect(surf, (0, 0, 0, 180), (0, 0, size, size), 1)
     return surf
 
+def make_potion_texture(size):
+    """Procedurally draw a potion texture (upside down)."""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Potion colors
+    bottle = (200, 200, 200)  # Clear glass
+    liquid = (255, 0, 255)    # Magenta potion liquid
+    cork = (101, 67, 33)      # Brown cork
+    
+    # Draw potion bottle (upside down)
+    # Bottle body
+    pygame.draw.ellipse(surf, bottle, (size//4, size//2, size//2, size//2))
+    # Liquid inside
+    pygame.draw.ellipse(surf, liquid, (size//4 + 2, size//2 + 2, size//2 - 4, size//2 - 4))
+    # Bottle neck
+    pygame.draw.rect(surf, bottle, (size//2 - 2, size//4, 4, size//4))
+    # Cork
+    pygame.draw.rect(surf, cork, (size//2 - 3, size//8, 6, size//8))
+    
+    return surf
+
+def make_coral_texture(size):
+    """Create a tropical coral reef texture programmatically"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Coral base (rocky)
+    base_color = (120, 80, 60)  # Brown rocky base
+    pygame.draw.rect(surf, base_color, (2, size-6, size-4, 4))
+    
+    # Coral branches in tropical colors
+    coral_colors = [(255, 100, 150), (255, 150, 100), (255, 200, 100), (200, 100, 255)]
+    
+    # Create 2-3 coral branches
+    for i in range(3):
+        color = coral_colors[i % len(coral_colors)]
+        branch_x = 4 + (i * 4)
+        branch_height = 8 + (i * 2)
+        branch_width = 2
+        
+        # Coral branch
+        pygame.draw.rect(surf, color, (branch_x, size-branch_height-2, branch_width, branch_height))
+        
+        # Coral polyps (small dots)
+        for j in range(2):
+            polyp_y = size - branch_height - 2 + (j * 3)
+            pygame.draw.circle(surf, (255, 255, 255), (branch_x + 1, polyp_y), 1)
+    
+    return surf
+
+def make_seagrass_texture(size):
+    """Create a tropical sea grass texture programmatically"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Sea grass base (sandy)
+    base_color = (200, 180, 120)  # Sandy base
+    pygame.draw.rect(surf, base_color, (6, size-4, size-12, 2))
+    
+    # Sea grass blades in tropical green
+    grass_colors = [(50, 200, 100), (80, 220, 120), (60, 180, 80)]
+    
+    # Create 3-4 sea grass blades
+    for i in range(4):
+        color = grass_colors[i % len(grass_colors)]
+        blade_x = 4 + (i * 3)
+        blade_height = 6 + (i % 2) * 2
+        blade_width = 1
+        
+        # Sea grass blade (curved)
+        for j in range(blade_height):
+            offset = int(2 * math.sin(j * 0.5))
+            pygame.draw.rect(surf, color, (blade_x + offset, size - j - 4, blade_width, 1))
+    
+    return surf
+
+def make_beautiful_water_texture(size):
+    """Create beautiful water that looks like the reference image"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Beautiful ocean blue like in the reference
+    base_color = (50, 120, 200)  # Rich, deep blue
+    
+    # Fill with the beautiful blue
+    surf.fill(base_color)
+    
+    # Add just a subtle gradient - darker at bottom
+    for y in range(size):
+        darken = int(y * 0.3)  # Subtle darkening
+        line_color = (
+            max(0, base_color[0] - darken),
+            max(0, base_color[1] - darken), 
+            max(0, base_color[2] - darken)
+        )
+        pygame.draw.line(surf, line_color, (0, y), (size, y))
+    
+    return surf
+
+def make_tropical_fish_texture(size):
+    """Create a tropical fish texture programmatically"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Fish body (tropical colors)
+    fish_colors = [(255, 100, 100), (100, 200, 255), (255, 200, 100), (200, 100, 255)]
+    body_color = fish_colors[random.randint(0, len(fish_colors)-1)]
+    
+    # Fish body (oval)
+    pygame.draw.ellipse(surf, body_color, (4, 6, size-8, size-12))
+    
+    # Fish tail
+    pygame.draw.polygon(surf, body_color, [(4, size//2), (0, size//2-2), (0, size//2+2)])
+    
+    # Fish eye
+    pygame.draw.circle(surf, (255, 255, 255), (size-6, 8), 2)
+    pygame.draw.circle(surf, (0, 0, 0), (size-5, 8), 1)
+    
+    # Fish stripes (tropical pattern)
+    stripe_color = (255, 255, 255) if body_color[0] < 200 else (0, 0, 0)
+    for i in range(2):
+        stripe_x = 6 + (i * 4)
+        pygame.draw.rect(surf, stripe_color, (stripe_x, 8, 1, size-16))
+    
+    return surf
+
 def make_stone_sword_texture(size):
     """Procedurally draw a simple stone sword texture."""
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -1531,9 +1704,20 @@ def generate_terrain_column(x):
     if get_block(x, surface_y) is None:
         set_block(x, surface_y, "grass")  # Surface ONLY - NEVER underground!
     
-    # BIOME-BASED TREE GENERATION: Forests have lots of trees, fields have few
+    # BIOME-BASED TERRAIN GENERATION: Handle different biomes
     biome_type = get_biome_type(x)
-    if should_generate_tree(x, surface_y, biome_type):
+    
+    # Debug: Print biome type for first few columns
+    if x < 10:
+        print(f"🌍 Column {x}: Biome = {biome_type}")
+    
+    # CAVE SYSTEM: Generate natural caves with mountain entrances
+    if should_generate_cave(x, surface_y):
+        print(f"🕳️ Generating cave system at column {x}")
+        generate_cave_system(x, surface_y)
+    
+    # NORMAL BIOME TREE GENERATION: Forests have lots of trees, fields have few
+    if biome_type in ["forest", "field", "mixed"] and should_generate_tree(x, surface_y, biome_type):
         # ABSOLUTE RULE: Trees can ONLY spawn ABOVE surface (y < surface_y) - NEVER underground!
         # Tree trunk: 2 stacked logs - CHECK FOR EXISTING BLOCKS
         # CRITICAL: Trees can NEVER EVER spawn underground or at ground level
@@ -1632,6 +1816,193 @@ def generate_terrain_column(x):
     generated_terrain_columns.add(x)
     
     print(f"✅ Generated terrain column {x}: surface at Y={surface_y}")
+
+def should_generate_cave(x, surface_y):
+    """Determine if a cave should be generated at this location"""
+    # Caves are uncommon - only 3% chance
+    if random.random() > 0.03:
+        return False
+    
+    # Caves should only generate in mountainous areas (higher surface)
+    if surface_y < 120:  # Only in higher areas
+        return False
+    
+    # Check if there's enough space for a cave entrance
+    # Look for a good spot on the mountain side
+    for check_x in range(x - 2, x + 3):
+        check_surface = calculate_surface_height(check_x)
+        if check_surface >= surface_y - 2:  # Mountain area
+            return True
+    
+    return False
+
+def generate_cave_system(x, surface_y):
+    """Generate a complete cave system with entrance and tunnels"""
+    print(f"🕳️ Creating cave system at ({x}, {surface_y})")
+    
+    # 1. Create cave entrance in the mountain
+    entrance_y = surface_y - random.randint(2, 5)  # Entrance 2-5 blocks below surface
+    entrance_width = random.randint(3, 5)  # Cave entrance 3-5 blocks wide
+    entrance_height = random.randint(2, 4)  # Cave entrance 2-4 blocks tall
+    
+    # Create the cave entrance opening
+    for entrance_x in range(x - entrance_width//2, x + entrance_width//2 + 1):
+        for entrance_y_pos in range(entrance_y, entrance_y + entrance_height):
+            set_block(entrance_x, entrance_y_pos, "air")
+            print(f"🕳️ Set cave entrance at ({entrance_x}, {entrance_y_pos})")
+    
+    # 2. Create cave tunnel system
+    tunnel_length = random.randint(15, 30)  # Cave extends 15-30 blocks deep
+    tunnel_direction = random.choice([-1, 1])  # Tunnel goes left or right
+    
+    current_x = x
+    current_y = entrance_y + entrance_height//2  # Middle of entrance
+    
+    for tunnel_step in range(tunnel_length):
+        # Create tunnel section
+        tunnel_width = random.randint(2, 4)
+        tunnel_height = random.randint(2, 4)
+        
+        # Add some vertical variation to the tunnel
+        if random.random() < 0.3:  # 30% chance to go up or down
+            current_y += random.choice([-1, 0, 1])
+        
+        # Create tunnel opening
+        for tunnel_x in range(current_x, current_x + tunnel_width):
+            for tunnel_y in range(current_y, current_y + tunnel_height):
+                if get_block(tunnel_x, tunnel_y) in ["stone", "dirt"]:
+                    set_block(tunnel_x, tunnel_y, "air")
+                    print(f"🕳️ Set cave tunnel at ({tunnel_x}, {tunnel_y})")
+        
+        # Add ores and treasures in the cave
+        if random.random() < 0.4:  # 40% chance for ores in each tunnel section
+            ore_x = current_x + random.randint(0, tunnel_width-1)
+            ore_y = current_y + random.randint(0, tunnel_height-1)
+            
+            # Choose ore type based on depth
+            depth_from_surface = surface_y - ore_y
+            if depth_from_surface > 20:  # Deep cave - rare ores
+                ore_type = random.choice(["diamond", "gold"])
+            elif depth_from_surface > 10:  # Medium depth - good ores
+                ore_type = random.choice(["iron", "gold"])
+            else:  # Shallow cave - common ores
+                ore_type = random.choice(["coal", "iron"])
+            
+            set_block(ore_x, ore_y, ore_type)
+            print(f"💎 Set cave ore ({ore_type}) at ({ore_x}, {ore_y})")
+        
+        # Add chests with treasures in caves
+        if random.random() < 0.15:  # 15% chance for treasure chest
+            chest_x = current_x + random.randint(0, tunnel_width-1)
+            chest_y = current_y + random.randint(0, tunnel_height-1)
+            set_block(chest_x, chest_y, "chest")
+            print(f"📦 Set cave treasure chest at ({chest_x}, {chest_y})")
+        
+        # Move to next tunnel section
+        current_x += tunnel_direction * random.randint(1, 3)
+        
+        # Add some branching tunnels
+        if random.random() < 0.2:  # 20% chance for side tunnel
+            side_direction = random.choice([-1, 1])
+            side_length = random.randint(5, 12)
+            
+            side_x = current_x
+            side_y = current_y
+            
+            for side_step in range(side_length):
+                side_x += side_direction
+                if random.random() < 0.3:
+                    side_y += random.choice([-1, 0, 1])
+                
+                # Create side tunnel
+                for side_tunnel_x in range(side_x, side_x + 2):
+                    for side_tunnel_y in range(side_y, side_y + 2):
+                        if get_block(side_tunnel_x, side_tunnel_y) in ["stone", "dirt"]:
+                            set_block(side_tunnel_x, side_tunnel_y, "air")
+                            print(f"🕳️ Set cave side tunnel at ({side_tunnel_x}, {side_tunnel_y})")
+                
+                # Add ores to side tunnels too
+                if random.random() < 0.3:
+                    ore_x = side_x
+                    ore_y = side_y
+                    ore_type = random.choice(["coal", "iron", "gold"])
+                    set_block(ore_x, ore_y, ore_type)
+                    print(f"💎 Set side tunnel ore ({ore_type}) at ({ore_x}, {ore_y})")
+    
+    print(f"✅ Cave system complete at ({x}, {surface_y})")
+
+def calculate_surface_height(x):
+    """Calculate the surface height at a given x coordinate"""
+    import math
+    # This is a simplified version - in a real implementation you'd want to
+    # store or calculate the actual surface height
+    base_height = 115
+    height_variation = int(8 * math.sin(x * 0.05) + 3 * math.sin(x * 0.15) + 2 * math.sin(x * 0.3))
+    return max(100, min(125, base_height + height_variation))
+
+# Cloud System
+clouds = []
+
+def generate_clouds():
+    """Generate clouds for the sky background"""
+    global clouds
+    clouds = []
+    
+    # Generate 5-8 clouds across the screen
+    num_clouds = random.randint(5, 8)
+    
+    for i in range(num_clouds):
+        cloud = {
+            'x': random.randint(-200, SCREEN_WIDTH + 200),  # Start off-screen
+            'y': random.randint(50, 200),  # Sky level
+            'width': random.randint(80, 150),  # Cloud width
+            'height': random.randint(30, 60),  # Cloud height
+            'speed': random.uniform(0.2, 0.8),  # Cloud movement speed
+            'opacity': random.randint(150, 255)  # Cloud opacity
+        }
+        clouds.append(cloud)
+
+
+def update_clouds():
+    """Update cloud positions"""
+    global clouds
+    
+    # Update cloud positions
+    for cloud in clouds:
+        cloud['x'] += cloud['speed']
+        # Reset cloud if it goes off-screen
+        if cloud['x'] > SCREEN_WIDTH + 200:
+            cloud['x'] = -200
+            cloud['y'] = random.randint(50, 200)
+
+def draw_sky_background():
+    """Draw the sky with clouds only"""
+    # Draw sky gradient (light blue to darker blue)
+    for y in range(SCREEN_HEIGHT):
+        # Create gradient from light blue at top to darker blue at bottom
+        blue_intensity = int(191 - (y / SCREEN_HEIGHT) * 50)  # 191 to 141
+        sky_color = (0, blue_intensity, 255)
+        pygame.draw.line(screen, sky_color, (0, y), (SCREEN_WIDTH, y))
+    
+    # Draw clouds
+    for cloud in clouds:
+        # Create cloud surface with alpha
+        cloud_surface = pygame.Surface((cloud['width'], cloud['height']), pygame.SRCALPHA)
+        
+        # Draw fluffy cloud shape using multiple circles
+        cloud_color = (255, 255, 255, cloud['opacity'])
+        
+        # Main cloud body
+        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//2, cloud['height']//2), cloud['height']//2)
+        
+        # Cloud puffs
+        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//3, cloud['height']//3), cloud['height']//3)
+        pygame.draw.circle(cloud_surface, cloud_color, (2*cloud['width']//3, cloud['height']//3), cloud['height']//3)
+        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
+        pygame.draw.circle(cloud_surface, cloud_color, (3*cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
+        
+        # Blit cloud to screen
+        screen.blit(cloud_surface, (cloud['x'], cloud['y']))
 
 # Village generation function removed - no more random NPCs
 
@@ -1773,6 +2144,7 @@ def fix_player_spawn_position():
     # Generate terrain for a small area around spawn point
     for x in range(spawn_x - 5, spawn_x + 6):  # 11 columns around spawn
         generate_terrain_column(x)
+        # Replace dirt/stone blocks adjacent to water with sand for natural beaches
     
     print(f"✅ Terrain generated around spawn point, now finding surface...")
     
@@ -1856,7 +2228,7 @@ textures = {
     "sword": load_texture(os.path.join(ITEM_DIR, "sword.png")),
 "stone_sword": make_stone_sword_texture(TILE_SIZE),  # Generated stone sword texture
     "pickaxe": load_texture(os.path.join(ITEM_DIR, "pickaxe.png")),
-    "water": load_texture(os.path.join(TILE_DIR, "water.png")),
+    "water": make_beautiful_water_texture(TILE_SIZE),
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
     "sand": load_texture(os.path.join(TILE_DIR, "sand.png")),
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
@@ -1870,8 +2242,14 @@ textures = {
     "wheat": load_texture(os.path.join(TILE_DIR, "carrot.gif")),  # Using carrot as wheat for now
     "stick": load_texture(os.path.join(TILE_DIR, "log.png")),  # Using log as stick for now
     
+    # Potions (flipped upside down)
+    "healing_potion": pygame.transform.flip(load_texture(os.path.join(ITEM_DIR, "potion.png")), False, True) if os.path.exists(os.path.join(ITEM_DIR, "potion.png")) else make_potion_texture(TILE_SIZE),
+    "speed_potion": pygame.transform.flip(load_texture(os.path.join(ITEM_DIR, "potion.png")), False, True) if os.path.exists(os.path.join(ITEM_DIR, "potion.png")) else make_potion_texture(TILE_SIZE),
+    "strength_potion": pygame.transform.flip(load_texture(os.path.join(ITEM_DIR, "potion.png")), False, True) if os.path.exists(os.path.join(ITEM_DIR, "potion.png")) else make_potion_texture(TILE_SIZE),
+    
     "shopkeeper": load_texture(os.path.join(TILE_DIR, "shopkeeper.png")),
     "boss": load_texture(os.path.join(MOB_DIR, "boss.png")),
+    
         # Portal texture removed - using ability system instead
 }
 
@@ -1971,8 +2349,13 @@ class PlayerAnimator:
     
     def load_animations(self):
         """Load all player animations from the animations folder and extract frames"""
-        # Use the full path since PLAYER_DIR might not be defined yet
-        animations_dir = os.path.join("../../../../player", "animations")
+        # Use PyInstaller-compatible path resolution
+        if getattr(sys, 'frozen', False):
+            # Running as executable - use bundled assets
+            animations_dir = os.path.join(get_resource_path("assets"), "player", "animations")
+        else:
+            # Running as script - use relative path
+            animations_dir = os.path.join("../../../../player", "animations")
         
         if not os.path.exists(animations_dir):
             print(f"⚠️ Animations directory not found: {animations_dir}")
@@ -2224,9 +2607,9 @@ player = {
         "leggings": None,
         "boots": None
     },
-    "facing_direction": 1,  # 1 = right, -1 = left
-    "last_x": 10,  # Initialize last position for movement detection
-    "last_y": 0,
+            "facing_direction": 1,  # 1 = right, -1 = left
+        "last_x": 10,  # Initialize last position for movement detection
+        "last_y": 0,
     "spawn_x": 10,  # Bed spawn point
     "spawn_y": 0,   # Bed spawn point
     "has_bed_spawn": False,  # Whether player has set a bed spawn
@@ -2726,7 +3109,7 @@ def generate_village(center_x, surface_y):
     print(f"🏘️ Village generated at ({center_x}, {surface_y}) with {num_houses} houses and {num_villagers} villagers!")
 
 def generate_house(house_x, house_y):
-    """Generate a single house with beds and chest"""
+    """Generate a single house with beds and chest, properly embedded in ground"""
     house_width = random.randint(4, 7)
     house_height = random.randint(3, 5)
     
@@ -2736,6 +3119,13 @@ def generate_house(house_x, house_y):
         "beds": [],
         "chests": []
     }
+    
+    # Clear the ground underneath to prevent floating
+    for x in range(house_x - house_width//2 - 1, house_x + house_width//2 + 2):
+        # Fill ground beneath house with stone (foundation)
+        for y in range(house_y + 1, house_y + 3):
+            if get_block(x, y) is None:
+                set_block(x, y, "stone")
     
     # Create house structure
     for x in range(house_x - house_width//2, house_x + house_width//2 + 1):
@@ -3853,6 +4243,93 @@ def draw_blood_particles():
         # Blit to screen
         screen.blit(particle_surface, (particle['x'] - particle['size'], particle['y'] - particle['size']))
 
+def create_block_particles(x, y, block_type, count=12):
+    """Create block breaking particles at the specified location"""
+    global block_particles
+    
+    # Define particle colors for different block types
+    particle_colors = {
+        "leaves": [(34, 139, 34), (0, 100, 0), (50, 205, 50)],  # Green variations
+        "grass": [(34, 139, 34), (0, 100, 0), (139, 69, 19), (160, 82, 45)],  # Green and brown
+        "dirt": [(139, 69, 19), (160, 82, 45), (101, 67, 33), (85, 85, 85)],  # Brown variations
+        "stone": [(128, 128, 128), (105, 105, 105), (169, 169, 169), (64, 64, 64)],  # Grey variations
+        "coal": [(64, 64, 64), (32, 32, 32), (96, 96, 96)],  # Dark grey
+        "iron": [(192, 192, 192), (169, 169, 169), (128, 128, 128)],  # Silver/grey
+        "gold": [(255, 215, 0), (218, 165, 32), (184, 134, 11)],  # Gold variations
+        "diamond": [(0, 191, 255), (30, 144, 255), (0, 100, 200)],  # Blue variations
+        "log": [(139, 69, 19), (160, 82, 45), (101, 67, 33)],  # Brown wood
+        "oak_planks": [(222, 184, 135), (205, 133, 63), (160, 82, 45)],  # Light brown
+        "sand": [(238, 203, 173), (210, 180, 140), (188, 143, 143)],  # Sand colors
+        "bedrock": [(64, 64, 64), (32, 32, 32), (96, 96, 96)]  # Dark grey
+    }
+    
+    # Get colors for this block type, default to grey if not found
+    colors = particle_colors.get(block_type, [(128, 128, 128), (105, 105, 105)])
+    
+    for _ in range(count):
+        # Random direction and speed for each particle
+        angle = random.uniform(0, 2 * math.pi)
+        speed = random.uniform(2, 8)
+        life = random.randint(30, 60)  # Frames to live
+        
+        # Choose random color from the block's color palette
+        color = random.choice(colors)
+        
+        particle = {
+            'x': x + random.uniform(-10, 10),  # Slight random offset
+            'y': y + random.uniform(-10, 10),
+            'vel_x': math.cos(angle) * speed,
+            'vel_y': math.sin(angle) * speed,
+            'life': life,
+            'max_life': life,
+            'size': random.randint(2, 5),
+            'color': color
+        }
+        block_particles.append(particle)
+
+def update_block_particles():
+    """Update all block particles"""
+    global block_particles
+    
+    # Update each particle
+    for particle in block_particles[:]:  # Use slice to avoid modification during iteration
+        # Update position
+        particle['x'] += particle['vel_x']
+        particle['y'] += particle['vel_y']
+        
+        # Apply gravity
+        particle['vel_y'] += 0.2
+        
+        # Apply air resistance
+        particle['vel_x'] *= 0.98
+        particle['vel_y'] *= 0.98
+        
+        # Reduce life
+        particle['life'] -= 1
+        
+        # Remove dead particles
+        if particle['life'] <= 0:
+            block_particles.remove(particle)
+
+def draw_block_particles():
+    """Draw all block particles"""
+    for particle in block_particles:
+        # Calculate alpha based on remaining life
+        alpha = int(255 * (particle['life'] / particle['max_life']))
+        
+        # Create surface with alpha
+        particle_surface = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        
+        # Use the particle's color with alpha
+        color = particle['color']
+        alpha_color = (*color, alpha)
+        
+        # Draw the particle
+        pygame.draw.circle(particle_surface, alpha_color, (particle['size'], particle['size']), particle['size'])
+        
+        # Blit to screen
+        screen.blit(particle_surface, (particle['x'] - particle['size'], particle['y'] - particle['size']))
+
 def init_map_surface():
     """Initialize the map surface"""
     global map_surface
@@ -4089,6 +4566,56 @@ def join_multiplayer_server(server_ip, server_port):
         print(f"❌ Multiplayer connection error: {e}")
         return False
 
+def create_world_with_name(name_input):
+    """Create a new world with the given name"""
+    global game_state, world_name_input, world_name_cursor_pos
+    
+    # Determine world name
+    if name_input and name_input.strip():
+        # Use provided name
+        world_name = name_input.strip()
+        print(f"🌍 Creating world with custom name: {world_name}")
+    else:
+        # Use default name
+        world_name = f"World {len(world_system.world_list) + 1}"
+        print(f"🌍 Creating world with default name: {world_name}")
+    
+    # Create the world
+    if world_system.create_world(world_name):
+        print(f"✅ Created new world: {world_name}")
+        # Refresh world selection state
+        world_ui.refresh_world_selection()
+        # Load the newly created world
+        if world_system.load_world(world_name):
+            print(f"✅ World system loaded: {world_name}")
+            # Load the world data into the game
+            if load_world_data():
+                print(f"✅ World data loaded successfully")
+                # Fix player spawn position to ensure surface spawning
+                fix_player_spawn_position()
+                # Start world generation instead of going directly to game
+                start_world_generation()
+                game_state = GameState.WORLD_GENERATION
+                update_pause_state()  # Resume time when entering world generation
+                print(f"🌍 Starting world generation for new world: {world_name}")
+                print(f"🎮 Game state is now: {game_state}")
+            else:
+                print("❌ Failed to load world data into game - returning to world selection")
+                game_state = GameState.WORLD_SELECTION
+                update_pause_state()
+        else:
+            print("❌ Failed to load newly created world - returning to world selection")
+            game_state = GameState.WORLD_SELECTION
+            update_pause_state()
+    else:
+        print("❌ Failed to create new world - returning to world selection")
+        game_state = GameState.WORLD_SELECTION
+        update_pause_state()
+    
+    # Reset naming variables
+    world_name_input = ""
+    world_name_cursor_pos = 0
+
 def create_new_world_with_seed(seed_input):
     """Create a new world with the given seed"""
     global game_state, world_name_input, world_seed_input
@@ -4172,6 +4699,16 @@ world_play_btn = None
 world_delete_btn = None
 world_create_btn = None
 world_back_btn = None
+
+# --- World Naming System ---
+world_name_input = ""
+world_name_cursor_pos = 0
+world_name_cursor_blink = 0
+world_name_onscreen_keyboard = True
+world_name_buttons = {}
+world_name_confirm_btn = None
+world_name_cancel_btn = None
+world_name_skip_btn = None
 
 # --- Character Shop system state ---
 shop_open = False
@@ -4453,7 +4990,136 @@ def can_pass_through_block(block_type, x, y):
     return is_non_solid_block(block_type)
 
 # Terrain helper: which blocks count as real ground for column generation
-TERRAIN_BLOCKS = {"grass","dirt","stone","bedrock","coal","iron","gold","diamond"}
+TERRAIN_BLOCKS = {"grass","dirt","stone","bedrock","coal","iron","gold","diamond","sand","water"}
+
+# Falling blocks system
+falling_blocks = []  # List of blocks that need to fall
+
+# Water flow system
+water_flow_timer = 0
+water_flow_cooldown = 30  # Frames between water flow updates
+
+def add_falling_block(x, y, block_type):
+    """Add a block to the falling blocks list"""
+    global falling_blocks
+    falling_blocks.append({"x": x, "y": y, "type": block_type, "vel_y": 0.0})
+
+def update_falling_blocks():
+    """Update all falling blocks (sand physics)"""
+    global falling_blocks, world_data
+    
+    if not falling_blocks:
+        return  # No blocks to update
+    
+    blocks_to_remove = []
+    blocks_to_add = []
+    
+    for i, block in enumerate(falling_blocks):
+        x, y = block["x"], block["y"]
+        block_type = block["type"]
+        vel_y = block["vel_y"]
+        
+        # Check if block still exists at this position
+        if get_block(x, y) != block_type:
+            blocks_to_remove.append(i)
+            continue
+        
+        # Apply gravity
+        vel_y += 0.5  # Gravity acceleration
+        new_y = y + vel_y
+        
+        # Check collision with blocks below
+        target_y = int(new_y)
+        if target_y != y:
+            # Check if we can fall to the new position
+            block_below = get_block(x, target_y)
+            if block_below is None or block_below in ["air", "water"]:
+                # Can fall - move the block
+                print(f"🏖️ Sand falling from ({x}, {y}) to ({x}, {target_y})")
+                # Remove from old position
+                if f"{x},{y}" in world_data:
+                    del world_data[f"{x},{y}"]
+                
+                # Add to new position
+                set_block(x, target_y, block_type)
+                
+                # Update falling block data
+                block["y"] = target_y
+                block["vel_y"] = vel_y
+            else:
+                # Hit something - stop falling
+                print(f"🏖️ Sand stopped falling at ({x}, {y}) - hit {block_below}")
+                blocks_to_remove.append(i)
+        else:
+            # Update velocity
+            block["vel_y"] = vel_y
+    
+    # Remove stopped blocks
+    for i in reversed(blocks_to_remove):
+        falling_blocks.pop(i)
+
+def check_sand_falling(x, y):
+    """Check if any sand blocks above the broken block need to fall"""
+    # Check blocks above the broken position
+    for check_y in range(y - 1, y - 10, -1):  # Check up to 10 blocks above
+        block_above = get_block(x, check_y)
+        if block_above == "sand":
+            # Check if there's support below this sand block
+            block_below = get_block(x, check_y + 1)
+            if block_below is None or block_below in ["air", "water"]:
+                # Sand has no support - make it fall
+                add_falling_block(x, check_y, "sand")
+                print(f"🏖️ Sand at ({x}, {check_y}) will fall!")
+        elif block_above is not None and block_above != "air":
+            # Hit a solid block - stop checking
+            break
+
+def update_water_flow():
+    """Update water flow - make water flow to empty spaces"""
+    global water_flow_timer, world_data
+    
+    water_flow_timer += 1
+    if water_flow_timer < water_flow_cooldown:
+        return
+    
+    water_flow_timer = 0
+    
+    # Find all water blocks that need to flow
+    water_blocks_to_update = []
+    
+    for pos_key, block_type in list(world_data.items()):
+        if block_type == "water":
+            x, y = map(int, pos_key.split(","))
+            water_blocks_to_update.append((x, y))
+    
+    if water_blocks_to_update:
+        print(f"🌊 Updating {len(water_blocks_to_update)} water blocks")
+    
+    # Update water flow
+    for x, y in water_blocks_to_update:
+        # Check if water can flow down
+        block_below = get_block(x, y + 1)
+        if block_below is None or block_below == "air":
+            # Water can flow down - move it
+            print(f"🌊 Water flowing down from ({x}, {y}) to ({x}, {y + 1})")
+            if f"{x},{y}" in world_data:
+                del world_data[f"{x},{y}"]
+            set_block(x, y + 1, "water")
+            continue
+        
+        # Check if water can flow horizontally
+        for dx in [-1, 1]:  # Check left and right
+            block_side = get_block(x + dx, y)
+            if block_side is None or block_side == "air":
+                # Check if there's support below the side position
+                block_side_below = get_block(x + dx, y + 1)
+                if block_side_below is not None and block_side_below != "air":
+                    # Water can flow horizontally - move it
+                    print(f"🌊 Water flowing horizontally from ({x}, {y}) to ({x + dx}, {y})")
+                    if f"{x},{y}" in world_data:
+                        del world_data[f"{x},{y}"]
+                    set_block(x + dx, y, "water")
+                    break
 
 
 def column_has_terrain(x: int) -> bool:
@@ -4541,6 +5207,7 @@ def update_world_generation():
         
         # Generate terrain for this position
         generate_terrain_column(x)
+        # Replace dirt/stone blocks adjacent to water with sand for natural beaches
         
         world_generation_progress += 1
         
@@ -5925,7 +6592,7 @@ def can_place_surface_item(x: int, ground_y: int) -> bool:
     return True
 
 def get_biome_type(x):
-    """Determine biome type based on position - creates forest vs field biomes"""
+    """Determine biome type based on position - creates forest, field, and mixed biomes"""
     # Use sine waves to create natural biome boundaries
     import math
     
@@ -5953,6 +6620,13 @@ def should_generate_tree(x, surface_y, biome_type):
         for check_y in range(surface_y - 4, surface_y):
             if get_block(check_x, check_y) in ["log", "leaves"]:
                 return False
+    
+    # DON'T place trees on village structures (oak_planks, beds, chests)
+    for check_x in range(x - 2, x + 3):
+        for check_y in range(surface_y - 5, surface_y + 1):
+            block = get_block(check_x, check_y)
+            if block in ["oak_planks", "bed", "chest", "door"]:
+                return False  # This is a village area - no trees!
     
     # Biome-based tree generation
     if biome_type == "forest":
@@ -6650,6 +7324,7 @@ def draw_world():
         if animated_frame:
             img = animated_frame
         
+        # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
         screen_x = x * TILE_SIZE - camera_x
         screen_y = y * TILE_SIZE - camera_y
         if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
@@ -6862,6 +7537,9 @@ def draw_world():
     
     # Draw blood particles
     draw_blood_particles()
+    
+    # Draw block particles
+    draw_block_particles()
     
     # Name tag removed - no more floating name above player
     
@@ -7272,6 +7950,11 @@ def break_block(mx, my):
         # Successfully break with pickaxe
         add_to_inventory(block)
         
+        # Create block breaking particles
+        particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+        particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+        create_block_particles(particle_x, particle_y, block, 15)
+        
         # Track grass blocks that have been broken by the player
         if block == "grass":
             mark_grass_broken(bx, by)
@@ -7368,6 +8051,11 @@ def break_block(mx, my):
             # Carve log into oak planks
             add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
             
+            # Create block breaking particles
+            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+            create_block_particles(particle_x, particle_y, "log", 12)
+            
             # EXTREME ENGINEERING: Multi-layer log removal with pickaxe
             print(f"\n🔨 EXTREME ENGINEERING LOG REMOVAL (PICKAXE)")
             print(f"   🔍 Log key '{block_key}' in world_data: {block_key in world_data}")
@@ -7391,6 +8079,11 @@ def break_block(mx, my):
         else:
             # Regular log breaking without pickaxe
             add_to_inventory("log")
+            
+            # Create block breaking particles
+            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+            create_block_particles(particle_x, particle_y, "log", 10)
             
             # EXTREME ENGINEERING: Multi-layer log removal without pickaxe
             print(f"\n🔨 EXTREME ENGINEERING LOG REMOVAL (NO PICKAXE)")
@@ -7451,6 +8144,11 @@ def break_block(mx, my):
         # Give the empty chest item back to player
         add_to_inventory("chest", 1)
         
+        # Create block breaking particles
+        particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+        particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+        create_block_particles(particle_x, particle_y, "oak_planks", 8)  # Chest particles look like wood
+        
         # EXTREME ENGINEERING: Multi-layer chest removal
         print(f"\n🔨 EXTREME ENGINEERING CHEST REMOVAL")
         print(f"   🔍 Chest key '{block_key}' in world_data: {block_key in world_data}")
@@ -7478,6 +8176,11 @@ def break_block(mx, my):
     else:
         add_to_inventory(block)
         
+        # Create block breaking particles
+        particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+        particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+        create_block_particles(particle_x, particle_y, block, 12)
+        
         # Track grass blocks that have been broken by the player
         if block == "grass":
             mark_grass_broken(bx, by)
@@ -7502,6 +8205,9 @@ def break_block(mx, my):
             print(f"   🎉 Block removal verification: SUCCESS")
         else:
             print(f"   💥 Block removal verification: FAILED - {final_check}")
+        
+        # Check for sand blocks above that need to fall
+        check_sand_falling(bx, by)
         
         return True
 
@@ -7557,18 +8263,6 @@ def place_block(mx, my):
         player["inventory"].pop(player["selected"])
         normalize_inventory()
     
-    # POGO JUMP PORTAL SYSTEM - Check if dirt block is part of portal frame
-    if item_type == "dirt":
-        global portal_frame_positions
-        
-        # Check if this dirt block is part of the portal frame
-        if (bx, by) in portal_frame_positions:
-            print(f"🌍 Portal frame block placed at ({bx}, {by})!")
-            
-            # Show progress message every few blocks
-            current_dirt_count = sum(1 for fx, fy in portal_frame_positions if get_block(fx, fy) == "dirt")
-            if current_dirt_count % 3 == 0:  # Every 3 frame blocks
-                show_message(f"🌍 Portal frame progress: {current_dirt_count}/{len(portal_frame_positions)} blocks!", 2000)
     
     return True  # Success
 
@@ -9264,8 +9958,8 @@ def handle_host_server_click(mouse_pos):
     
     # Check if back button was clicked
     if host_back_btn and host_back_btn.collidepoint(mouse_pos):
-        game_state = GameState.MULTIPLAYER
-        update_pause_state()  # Resume time when returning to multiplayer
+        game_state = GameState.TITLE
+        update_pause_state()  # Pause time when returning to title
         return
 
 def handle_join_server_click(mouse_pos):
@@ -9280,8 +9974,8 @@ def handle_join_server_click(mouse_pos):
     
     # Check if back button was clicked
     if join_back_btn and join_back_btn.collidepoint(mouse_pos):
-        game_state = GameState.MULTIPLAYER
-        update_pause_state()  # Resume time when returning to multiplayer
+        game_state = GameState.TITLE
+        update_pause_state()  # Pause time when returning to title
         return
 
 # REMOVED DUPLICATE FUNCTION DEFINITION - This was causing the argument mismatch error!
@@ -9489,7 +10183,10 @@ def handle_backpack_click(mouse_pos):
                                     if "count" in item and item["count"] > 1:
                                         item["count"] -= 1
                                     else:
+                                        # Remove the item completely
                                         player["inventory"][slot_idx] = None
+                                    # Normalize inventory to clean up None entries
+                                    normalize_inventory()
                                 return
                     # Otherwise, handle normal slot click
                     handle_inventory_slot_click("hotbar", slot_idx, mouse_pos)
@@ -9544,7 +10241,10 @@ def handle_inventory_right_click(mouse_pos):
                                 if "count" in item and item["count"] > 1:
                                     item["count"] -= 1
                                 else:
+                                    # Remove the item completely
                                     player["inventory"][slot_idx] = None
+                                # Normalize inventory to clean up None entries
+                                normalize_inventory()
                             return
                         else:
                             show_message(f"❌ {item_type.replace('_', ' ').title()} is not edible!", 1500)
@@ -9577,11 +10277,14 @@ def handle_inventory_right_click(mouse_pos):
                                 if "count" in item and item["count"] > 1:
                                     item["count"] -= 1
                                 else:
+                                    # Remove the item completely
                                     player["backpack"][slot_idx] = None
+                                # Normalize backpack to clean up None entries
+                                normalize_backpack()
                             return
                         else:
                             show_message(f"❌ {item_type.replace('_', ' ').title()} is not edible!", 1500)
-                return
+        return
 
 def handle_inventory_slot_click(slot_type, slot_idx, mouse_pos):
     """Handle clicks on inventory slots for drag and drop"""
@@ -10070,12 +10773,60 @@ def load_world_data():
             total_monsters_killed = monster_data.get("total_monsters_killed", 0)
             print(f"🌟 Monster data loaded: {total_monsters_killed} monsters killed")
         
+        # Load chest data
+        chest_data = world_system.current_world_data.get("chest_data", {})
+        if chest_system and chest_data:
+            # Restore chest inventories (convert string keys back to tuples)
+            chest_inventories = chest_data.get("chest_inventories", {})
+            if chest_inventories:
+                # Convert string keys like "x,y" back to tuple keys (x, y)
+                for key_str, inventory in chest_inventories.items():
+                    try:
+                        x, y = key_str.split(',')
+                        key_tuple = (int(x), int(y))
+                        chest_system.chest_inventories[key_tuple] = inventory
+                    except (ValueError, IndexError):
+                        print(f"⚠️ Invalid chest key format: {key_str}")
+                print(f"📦 Loaded {len(chest_inventories)} chest inventories")
+            
+            # Restore player-placed chests (convert string keys back to tuples)
+            player_placed_chests = chest_data.get("player_placed_chests", [])
+            if player_placed_chests:
+                # Convert string keys like "x,y" back to tuple keys (x, y)
+                chest_system.player_placed_chests = set()
+                for key_str in player_placed_chests:
+                    try:
+                        x, y = key_str.split(',')
+                        key_tuple = (int(x), int(y))
+                        chest_system.player_placed_chests.add(key_tuple)
+                    except (ValueError, IndexError):
+                        print(f"⚠️ Invalid player-placed chest key format: {key_str}")
+                print(f"📦 Loaded {len(player_placed_chests)} player-placed chests")
+        else:
+            print("📦 No chest data to load or chest system not available")
+        
+        # Mark all existing columns as generated to prevent terrain regeneration
+        global generated_terrain_columns
+        generated_terrain_columns.clear()
+        for block_key in world_data.keys():
+            try:
+                x, y = block_key.split(',')
+                x = int(x)
+                generated_terrain_columns.add(x)
+            except (ValueError, TypeError):
+                continue  # Skip invalid keys
+        
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
         print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
+        print(f"🗺️ Marked {len(generated_terrain_columns)} columns as pre-generated")
         
-        # Place starter chest at spawn location
-        place_starter_chest()
+        # Place starter chest at spawn location (don't fail if this errors)
+        try:
+            place_starter_chest()
+        except Exception as chest_error:
+            print(f"⚠️ Could not place starter chest: {chest_error}")
         
+        print("✅ load_world_data() returning True")
         return True
         
     except Exception as e:
@@ -10129,24 +10880,32 @@ def throw_sword_at_monster(monster):
 night_monster_spawn_timer = 0
 night_monster_spawn_cooldown = 120  # 2 seconds at 60 FPS
 max_night_monsters = 12  # Increased for more intense combat
+night_monsters_spawned = False  # Track if we've spawned monsters for this night
 
 # Nighttime visual effects
 night_overlay_alpha = 0
 night_overlay_surface = None
 
 def update_monsters():
-    global entities, night_monster_spawn_timer
+    global entities, night_monster_spawn_timer, night_monsters_spawned
     
-    # OPTIMIZED: Night monster spawning near player for intense combat
+    # OPTIMIZED: Night monster spawning system
     if not is_day:  # Only spawn monsters at night
+        # Spawn monsters everywhere when night first falls
+        if not night_monsters_spawned:
+            spawn_monsters_everywhere_at_night()
+            night_monsters_spawned = True
+            print("🌙 Night has fallen! Monsters are spawning everywhere!")
+        
+        # Continue spawning monsters near player for intense combat
         night_monster_spawn_timer += 1
         
-        # Check if it's time to spawn a monster
+        # Check if it's time to spawn a monster near player
         if night_monster_spawn_timer >= night_monster_spawn_cooldown:
             # OPTIMIZED: Count monsters more efficiently
             monster_count = 0
             for mob in entities:
-                if mob["type"] == "monster":
+                if mob["type"] in ["monster", "zombie"]:
                     monster_count += 1
                     if monster_count >= max_night_monsters:
                         break
@@ -10158,6 +10917,7 @@ def update_monsters():
     else:
         # Reset timer during day and clean up night-spawned monsters
         night_monster_spawn_timer = 0
+        night_monsters_spawned = False  # Reset for next night
         cleanup_night_monsters()
     
     # Update monster movement and combat
@@ -10170,7 +10930,7 @@ def cleanup_night_monsters():
     # Remove monsters that were spawned at night
     monsters_removed = 0
     for mob in entities[:]:
-        if mob["type"] == "monster" and mob.get("night_spawned", False):
+        if mob["type"] in ["monster", "zombie"] and mob.get("night_spawned", False):
             entities.remove(mob)
             monsters_removed += 1
     
@@ -10212,8 +10972,70 @@ def draw_night_overlay():
                 text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, 50))
                 screen.blit(text_surface, text_rect)
 
+def spawn_monsters_everywhere_at_night():
+    """Spawn monsters across the entire world when night falls"""
+    global entities
+    import random
+    
+    # Get the current world bounds (explored area)
+    if not world_data:
+        return
+    
+    # Find the explored area bounds
+    min_x = min(int(pos.split(',')[0]) for pos in world_data.keys())
+    max_x = max(int(pos.split(',')[0]) for pos in world_data.keys())
+    
+    # Spawn monsters across the explored world
+    monsters_spawned = 0
+    max_world_monsters = 25  # Maximum monsters to spawn across the world
+    
+    # Spawn monsters in a grid pattern across the explored area
+    for x in range(min_x, max_x + 1, 20):  # Every 20 blocks
+        if monsters_spawned >= max_world_monsters:
+            break
+            
+        # Find surface level at this position
+        surface_y = find_surface_level(x)
+        if surface_y is not None:
+                        # Check if there's already a monster nearby
+            nearby_monster = False
+            for entity in entities:
+                if entity["type"] in ["monster", "zombie"]:
+                    distance = abs(entity["x"] - x)
+                    if distance < 15:  # Within 15 blocks
+                        nearby_monster = True
+                        break
+            
+            # Spawn a monster if none nearby
+            if not nearby_monster and random.random() < 0.7:  # 70% chance to spawn
+                # Randomly choose between monster and zombie (30% chance for zombie)
+                if random.random() < 0.3:  # 30% chance for zombie
+                    monster_type = "zombie"
+                    monster_hp = 12  # Zombies are stronger
+                    monster_img = textures["zombie"]  # Use original zombie texture
+                else:
+                    monster_type = "monster"
+                    monster_hp = 8
+                    monster_img = textures["monster"]  # Use original monster texture
+                
+                # Spawn the monster
+                entities.append({
+                    "type": monster_type,
+                    "x": float(x),
+                    "y": float(surface_y),
+                    "hp": monster_hp,
+                    "cooldown": 0,
+                    "image": monster_img,
+                    "night_spawned": True  # Mark as night-spawned
+                })
+                
+                monsters_spawned += 1
+                print(f"👹 Night {monster_type} spawned at world position ({x}, {int(surface_y)})")
+    
+    print(f"🌙 Night monster spawning complete! Spawned {monsters_spawned} monsters across the world!")
+
 def spawn_night_monster_near_player():
-    """Spawn a monster near the player for intense nighttime combat"""
+    """Spawn a monster right next to the player for intense nighttime combat"""
     global entities
     import random
     
@@ -10221,18 +11043,18 @@ def spawn_night_monster_near_player():
     player_x = player["x"]
     player_y = player["y"]
     
-    # Spawn monsters in a ring around the player (2-4 blocks away)
-    spawn_distance = random.randint(2, 4)
+    # Spawn monsters RIGHT NEXT to the player (1-2 blocks away for immediate threat)
+    spawn_distance = random.uniform(1, 2)
     spawn_angle = random.uniform(0, 2 * math.pi)
     
     # Calculate spawn position
     spawn_x = player_x + math.cos(spawn_angle) * spawn_distance
     spawn_y = player_y + math.sin(spawn_angle) * spawn_distance
     
-    # Find ground level at spawn position
-    ground_y = find_ground_level(int(spawn_x))
-    if ground_y is not None:
-        spawn_y = ground_y - 1  # Spawn on ground
+    # Find surface level at spawn position (spawn ON the surface, not underground)
+    surface_y = find_surface_level(int(spawn_x))
+    if surface_y is not None:
+        spawn_y = surface_y  # Spawn ON the surface
         
         # Check if there's already a monster very close
         too_close = False
@@ -10249,11 +11071,11 @@ def spawn_night_monster_near_player():
             if random.random() < 0.3:  # 30% chance for zombie
                 monster_type = "zombie"
                 monster_hp = 12  # Zombies are stronger
-                monster_img = textures["zombie"]
+                monster_img = textures["zombie"]  # Use original zombie texture
             else:
                 monster_type = "monster"
                 monster_hp = 8
-                monster_img = monster_image
+                monster_img = textures["monster"]  # Use original monster texture
             
             # Spawn the monster
             entities.append({
@@ -10277,6 +11099,17 @@ def find_ground_level(x):
         if pos_key in world_data:
             block_type = world_data[pos_key]
             if block_type in ["grass", "dirt", "stone", "sand", "gravel"]:
+                return y
+    return None
+
+def find_surface_level(x):
+    """Find the surface level at a given x coordinate (top of the world)"""
+    # Look for the highest solid block at this x position from the top down
+    for y in range(0, -200, -1):  # Check from surface down to bedrock
+        pos_key = f"{x},{y}"
+        if pos_key in world_data:
+            block_type = world_data[pos_key]
+            if block_type in ["grass", "dirt", "stone", "sand", "gravel", "leaves", "log"]:
                 return y
     return None
 
@@ -11458,16 +12291,53 @@ def draw_title_screen():
     mouse_pos = pygame.mouse.get_pos()
     
     # Draw modern title screen
-    button_states = modern_ui.draw_title_screen(mouse_pos)
-    
-    # Store button references for click handling
-    play_btn = button_states.get("play")
-    username_btn = button_states.get("username")
-    controls_btn = button_states.get("controls")
-    about_btn = button_states.get("about")
-    options_btn = button_states.get("options")
-    credits_btn = button_states.get("credits")
-    quit_btn = button_states.get("quit")
+    if modern_ui:
+        button_states = modern_ui.draw_title_screen(mouse_pos)
+        
+        # Store button references for click handling
+        play_btn = button_states.get("play")
+        username_btn = button_states.get("username")
+        controls_btn = button_states.get("controls")
+        about_btn = button_states.get("about")
+        options_btn = button_states.get("options")
+        credits_btn = button_states.get("credits")
+        quit_btn = button_states.get("quit")
+    else:
+        # Fallback: Draw basic title screen
+        title_text = title_font.render("Order of the Stone", True, (255, 255, 255))
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 100))
+        
+        # Create simple buttons
+        button_y = 300
+        button_spacing = 70
+        button_width = 200
+        button_height = 50
+        
+        play_btn = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, button_y, button_width, button_height)
+        username_btn = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, button_y + button_spacing, button_width, button_height)
+        controls_btn = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, button_y + button_spacing * 2, button_width, button_height)
+        quit_btn = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, button_y + button_spacing * 3, button_width, button_height)
+        
+        # Draw buttons
+        pygame.draw.rect(screen, (100, 100, 100), play_btn)
+        pygame.draw.rect(screen, (100, 100, 100), username_btn)
+        pygame.draw.rect(screen, (100, 100, 100), controls_btn)
+        pygame.draw.rect(screen, (100, 100, 100), quit_btn)
+        
+        # Draw button text
+        play_text = font.render("Play", True, (255, 255, 255))
+        username_text = font.render("Username", True, (255, 255, 255))
+        controls_text = font.render("Controls", True, (255, 255, 255))
+        quit_text = font.render("Quit", True, (255, 255, 255))
+        
+        screen.blit(play_text, (play_btn.centerx - play_text.get_width() // 2, play_btn.centery - play_text.get_height() // 2))
+        screen.blit(username_text, (username_btn.centerx - username_text.get_width() // 2, username_btn.centery - username_text.get_height() // 2))
+        screen.blit(controls_text, (controls_btn.centerx - controls_text.get_width() // 2, controls_btn.centery - controls_text.get_height() // 2))
+        screen.blit(quit_text, (quit_btn.centerx - quit_text.get_width() // 2, quit_btn.centery - quit_text.get_height() // 2))
+        
+        about_btn = None
+        options_btn = None
+        credits_btn = None
 
 # --- Credits Screen Drawing Function ---
 def draw_credits_screen():
@@ -11528,6 +12398,193 @@ def draw_world_selection_screen():
         print("⚠️ Play World button is None!")
     else:
         print(f"✅ Play World button exists: {world_play_btn}")
+
+# --- World Naming Screen Drawing Function ---
+def draw_world_naming_screen():
+    """Draw the world naming screen with on-screen keyboard"""
+    global world_name_input, world_name_cursor_pos, world_name_cursor_blink
+    global world_name_buttons, world_name_confirm_btn, world_name_cancel_btn, world_name_skip_btn
+    
+    # Update cursor blink
+    world_name_cursor_blink += 1
+    if world_name_cursor_blink > 60:  # Blink every second at 60 FPS
+        world_name_cursor_blink = 0
+    
+    # Clear screen with dark background
+    screen.fill((20, 20, 30))
+    
+    # Get screen dimensions
+    screen_width, screen_height = screen.get_size()
+    mouse_pos = pygame.mouse.get_pos()
+    
+    # Title
+    title_font = pygame.font.Font(None, 48)
+    title_text = title_font.render("Name Your World", True, (255, 255, 255))
+    title_rect = title_text.get_rect(center=(screen_width // 2, 100))
+    screen.blit(title_text, title_rect)
+    
+    # Subtitle
+    subtitle_font = pygame.font.Font(None, 24)
+    subtitle_text = subtitle_font.render("Enter a name for your new world (optional)", True, (180, 180, 180))
+    subtitle_rect = subtitle_text.get_rect(center=(screen_width // 2, 140))
+    screen.blit(subtitle_text, subtitle_rect)
+    
+    # Input box
+    input_box_width = 400
+    input_box_height = 50
+    input_box_x = (screen_width - input_box_width) // 2
+    input_box_y = 200
+    
+    # Draw input box background
+    pygame.draw.rect(screen, (40, 40, 50), (input_box_x, input_box_y, input_box_width, input_box_height))
+    pygame.draw.rect(screen, (100, 100, 120), (input_box_x, input_box_y, input_box_width, input_box_height), 2)
+    
+    # Draw input text
+    input_font = pygame.font.Font(None, 32)
+    if world_name_input:
+        input_text = input_font.render(world_name_input, True, (255, 255, 255))
+        screen.blit(input_text, (input_box_x + 10, input_box_y + 10))
+    
+    # Draw cursor
+    if world_name_cursor_blink < 30:  # Show cursor for half the blink cycle
+        cursor_x = input_box_x + 10 + input_font.size(world_name_input[:world_name_cursor_pos])[0]
+        pygame.draw.line(screen, (255, 255, 255), (cursor_x, input_box_y + 10), (cursor_x, input_box_y + 40), 2)
+    
+    # On-screen keyboard
+    keyboard_y = 300
+    keyboard_width = 600
+    keyboard_x = (screen_width - keyboard_width) // 2
+    
+    # Keyboard layout
+    keyboard_rows = [
+        "1234567890",
+        "qwertyuiop",
+        "asdfghjkl",
+        "zxcvbnm"
+    ]
+    
+    key_width = 50
+    key_height = 40
+    key_spacing = 5
+    
+    world_name_buttons = {}
+    
+    for row_idx, row in enumerate(keyboard_rows):
+        row_width = len(row) * (key_width + key_spacing) - key_spacing
+        row_x = keyboard_x + (keyboard_width - row_width) // 2
+        
+        for col_idx, char in enumerate(row):
+            key_x = row_x + col_idx * (key_width + key_spacing)
+            key_y = keyboard_y + row_idx * (key_height + key_spacing)
+            
+            # Check if mouse is over this key
+            key_rect = pygame.Rect(key_x, key_y, key_width, key_height)
+            is_hovered = key_rect.collidepoint(mouse_pos)
+            
+            # Draw key
+            key_color = (80, 80, 100) if is_hovered else (60, 60, 80)
+            pygame.draw.rect(screen, key_color, key_rect)
+            pygame.draw.rect(screen, (100, 100, 120), key_rect, 1)
+            
+            # Draw key text
+            key_font = pygame.font.Font(None, 24)
+            key_text = key_font.render(char.upper(), True, (255, 255, 255))
+            key_text_rect = key_text.get_rect(center=key_rect.center)
+            screen.blit(key_text, key_text_rect)
+            
+            # Store button reference
+            world_name_buttons[char] = key_rect
+    
+    # Special keys
+    special_keys_y = keyboard_y + len(keyboard_rows) * (key_height + key_spacing) + 20
+    
+    # Space bar
+    space_width = 200
+    space_x = keyboard_x + (keyboard_width - space_width) // 2
+    space_rect = pygame.Rect(space_x, special_keys_y, space_width, key_height)
+    is_space_hovered = space_rect.collidepoint(mouse_pos)
+    
+    space_color = (80, 80, 100) if is_space_hovered else (60, 60, 80)
+    pygame.draw.rect(screen, space_color, space_rect)
+    pygame.draw.rect(screen, (100, 100, 120), space_rect, 1)
+    
+    space_font = pygame.font.Font(None, 20)
+    space_text = space_font.render("SPACE", True, (255, 255, 255))
+    space_text_rect = space_text.get_rect(center=space_rect.center)
+    screen.blit(space_text, space_text_rect)
+    
+    world_name_buttons[' '] = space_rect
+    
+    # Backspace
+    backspace_width = 100
+    backspace_x = space_x + space_width + 20
+    backspace_rect = pygame.Rect(backspace_x, special_keys_y, backspace_width, key_height)
+    is_backspace_hovered = backspace_rect.collidepoint(mouse_pos)
+    
+    backspace_color = (80, 80, 100) if is_backspace_hovered else (60, 60, 80)
+    pygame.draw.rect(screen, backspace_color, backspace_rect)
+    pygame.draw.rect(screen, (100, 100, 120), backspace_rect, 1)
+    
+    backspace_font = pygame.font.Font(None, 20)
+    backspace_text = backspace_font.render("⌫", True, (255, 255, 255))
+    backspace_text_rect = backspace_text.get_rect(center=backspace_rect.center)
+    screen.blit(backspace_text, backspace_text_rect)
+    
+    world_name_buttons['backspace'] = backspace_rect
+    
+    # Action buttons
+    button_y = special_keys_y + key_height + 40
+    button_width = 120
+    button_height = 50
+    button_spacing = 20
+    
+    total_buttons_width = (button_width * 3) + (button_spacing * 2)
+    buttons_start_x = (screen_width - total_buttons_width) // 2
+    
+    # Skip button (use default name)
+    skip_rect = pygame.Rect(buttons_start_x, button_y, button_width, button_height)
+    is_skip_hovered = skip_rect.collidepoint(mouse_pos)
+    skip_color = (100, 100, 120) if is_skip_hovered else (80, 80, 100)
+    pygame.draw.rect(screen, skip_color, skip_rect)
+    pygame.draw.rect(screen, (120, 120, 140), skip_rect, 2)
+    
+    skip_font = pygame.font.Font(None, 24)
+    skip_text = skip_font.render("Skip", True, (255, 255, 255))
+    skip_text_rect = skip_text.get_rect(center=skip_rect.center)
+    screen.blit(skip_text, skip_text_rect)
+    world_name_skip_btn = skip_rect
+    
+    # Cancel button
+    cancel_rect = pygame.Rect(buttons_start_x + button_width + button_spacing, button_y, button_width, button_height)
+    is_cancel_hovered = cancel_rect.collidepoint(mouse_pos)
+    cancel_color = (150, 80, 80) if is_cancel_hovered else (120, 60, 60)
+    pygame.draw.rect(screen, cancel_color, cancel_rect)
+    pygame.draw.rect(screen, (170, 100, 100), cancel_rect, 2)
+    
+    cancel_font = pygame.font.Font(None, 24)
+    cancel_text = cancel_font.render("Cancel", True, (255, 255, 255))
+    cancel_text_rect = cancel_text.get_rect(center=cancel_rect.center)
+    screen.blit(cancel_text, cancel_text_rect)
+    world_name_cancel_btn = cancel_rect
+    
+    # Create button
+    create_rect = pygame.Rect(buttons_start_x + (button_width + button_spacing) * 2, button_y, button_width, button_height)
+    is_create_hovered = create_rect.collidepoint(mouse_pos)
+    create_color = (80, 150, 80) if is_create_hovered else (60, 120, 60)
+    pygame.draw.rect(screen, create_color, create_rect)
+    pygame.draw.rect(screen, (100, 170, 100), create_rect, 2)
+    
+    create_font = pygame.font.Font(None, 24)
+    create_text = create_font.render("Create", True, (255, 255, 255))
+    create_text_rect = create_text.get_rect(center=create_rect.center)
+    screen.blit(create_text, create_text_rect)
+    world_name_confirm_btn = create_rect
+    
+    # Instructions
+    instructions_font = pygame.font.Font(None, 20)
+    instructions_text = instructions_font.render("You can also use your physical keyboard to type", True, (150, 150, 150))
+    instructions_rect = instructions_text.get_rect(center=(screen_width // 2, screen_height - 50))
+    screen.blit(instructions_text, instructions_rect)
 
 # --- Game Menu Drawing Function ---
 def draw_game_menu():
@@ -11687,7 +12744,11 @@ def save_game():
                 "monster_data": {
                     "total_monsters_killed": total_monsters_killed
                 },
-                "villages": villages
+                "villages": villages,
+                "chest_data": {
+                    "chest_inventories": {f"{k[0]},{k[1]}": v for k, v in chest_system.chest_inventories.items()} if chest_system else {},
+                    "player_placed_chests": [f"{k[0]},{k[1]}" for k in chest_system.player_placed_chests] if chest_system else []
+                }
             }
             
             # Update world system with current data
@@ -11739,6 +12800,10 @@ def save_game_fallback():
             "monster_data": {
                 "total_monsters_killed": total_monsters_killed
             },
+            "chest_data": {
+                "chest_inventories": {f"{k[0]},{k[1]}": v for k, v in chest_system.chest_inventories.items()} if chest_system else {},
+                "player_placed_chests": [f"{k[0]},{k[1]}" for k in chest_system.player_placed_chests] if chest_system else []
+            },
             "last_saved": time.time()
         }
         
@@ -11770,72 +12835,6 @@ def save_game_fallback():
         
     except Exception as e:
         print(f"💥 Fallback save failed: {e}")
-        return False
-
-def load_world_data():
-    """Load world data from the world system into the game"""
-    global world_data, entities, player
-    
-    if not world_system.current_world_data:
-        print("⚠️ No world data available to load")
-        return False
-    
-    try:
-        # Load world data
-        world_data = world_system.current_world_data.get("blocks", {})
-        entities = world_system.current_world_data.get("entities", [])
-        villages = world_system.current_world_data.get("villages", [])
-        
-        # Load player data with validation
-        player_data = world_system.current_world_data.get("player", {})
-        if not isinstance(player_data, dict):
-            print("⚠️ Invalid player data, using defaults")
-            player_data = {}
-        
-        # Update player with loaded data, preserving any missing fields
-        for key, value in player_data.items():
-            if key in player:
-                player[key] = value
-        
-        # Ensure critical player fields exist
-        if "health" not in player or player["health"] <= 0:
-            player["health"] = 10
-        if "hunger" not in player or player["hunger"] <= 0:
-            player["hunger"] = 100
-        if "inventory" not in player:
-            player["inventory"] = []
-        if "backpack" not in player:
-            player["backpack"] = []
-        if "selected" not in player:
-            player["selected"] = 0
-        if "armor" not in player:
-            player["armor"] = {"helmet": None, "chestplate": None, "leggings": None, "boots": None}
-        
-        # Load world settings
-        world_settings = world_system.current_world_data.get("world_settings", {})
-        global is_day, day_start_time
-        is_day = world_settings.get("day", True)
-        day_start_time = time.time() if is_day else time.time() - 43200  # 12 hours if night
-        
-        # Mark all existing columns as generated to prevent terrain regeneration
-        global generated_terrain_columns
-        generated_terrain_columns.clear()
-        for block_key in world_data.keys():
-            try:
-                x, y = block_key.split(',')
-                x = int(x)
-                generated_terrain_columns.add(x)
-            except (ValueError, TypeError):
-                continue  # Skip invalid keys
-        
-        print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
-        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
-        print(f"🗺️ Marked {len(generated_terrain_columns)} columns as pre-generated")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error loading world data: {e}")
         return False
 
 # Crafting system functions
@@ -12203,12 +13202,24 @@ def auto_save_game():
 while running:
     frame_count += 1
     
+    # Initialize clouds on first frame
+    if frame_count == 1:
+        generate_clouds()
+        print("☁️ Clouds initialized")
+    
+    # Update clouds every frame
+    update_clouds()
+    
     # Safety check: if we've been running for more than 10 seconds without user input, allow force quit
     if frame_count % 600 == 0:  # Check every 600 frames (about 10 seconds at 60 FPS)
         current_time = time.time()
         if current_time - start_time > 10:
             start_time = current_time  # Reset timer
-    screen.fill((0, 191, 255) if is_day else (0, 0, 0))
+    # Draw beautiful sky with clouds and mountains
+    if is_day:
+        draw_sky_background()
+    else:
+        screen.fill((0, 0, 0))  # Night sky
 
 
 
@@ -12261,7 +13272,7 @@ while running:
                 elif game_state == GameState.PAUSED:
                     game_state = GameState.GAME
                     update_pause_state()  # Resume time when returning to game
-                elif game_state == GameState.INVENTORY:
+                elif game_state == GameState.BACKPACK:
                     game_state = GameState.GAME
                     update_pause_state()  # Resume time when closing inventory
                 elif game_state == GameState.CREDITS:
@@ -12649,7 +13660,8 @@ while running:
                 if play_btn.collidepoint(event.pos):
                     # Check if username is required before allowing play
                     if require_username_check():
-                        continue  # Don't proceed to game
+                        # Don't use continue here - just skip the rest of the button logic
+                        pass
                     
                     # Go to world selection screen instead of directly loading game
                     game_state = GameState.WORLD_SELECTION
@@ -12680,97 +13692,164 @@ while running:
                     save_game()
                     running = False
             elif game_state == GameState.WORLD_SELECTION:
-                # Handle world selection screen clicks
+                # Handle world selection screen clicks using the world UI system
                 print(f"🔍 World selection click at: {event.pos}")
-                print(f"🔍 Play button exists: {world_play_btn is not None}")
                 
+                # Use the world UI's button handling system
                 # First, check if user clicked on a world to select it
                 world_click_result = world_ui.handle_world_click(event.pos)
                 if world_click_result is not None:
-                    print(f"🌍 World {world_click_result} selected!")
-                    # Refresh the world selection screen to update button states
-                    continue  # Skip other button checks for this click
+                    print(f"🌍 World {world_click_result} selected or deselected!")
+                    # World was clicked - don't process button clicks
+                    continue  # Skip button handling since we just selected/deselected a world
                 
-                if world_back_btn and world_back_btn.collidepoint(event.pos):
-                    game_state = GameState.TITLE
-                    update_pause_state()  # Resume time when returning to title
-                    print("⬅️ Returning to title screen from world selection")
-                elif world_create_btn and world_create_btn.collidepoint(event.pos):
-                    # EXTREME ENGINEERING: Username validation before world creation
-                    if require_username_check():
-                        print("🚫 Username required before creating world - redirecting to username creation")
-                        continue  # Don't proceed to world creation
-                    
-                    # Create a new world
-                    world_name = f"World {len(world_system.world_list) + 1}"
-                    if world_system.create_world(world_name):
-                        print(f"🌍 Created new world: {world_name}")
-                        # Refresh world selection state
-                        world_ui.refresh_world_selection()
-                        # Load the newly created world
-                        if world_system.load_world(world_name):
-                            # Load the world data into the game
-                            if load_world_data():
-                                # Fix player spawn position to ensure surface spawning
-                                fix_player_spawn_position()
-                                # Start world generation instead of going directly to game
-                                start_world_generation()
-                                game_state = GameState.WORLD_GENERATION
-                                update_pause_state()  # Resume time when entering world generation
-                                print(f"🌍 Starting world generation for new world: {world_name}")
-                            else:
-                                print("❌ Failed to load world data into game")
-                        else:
-                            print("❌ Failed to load newly created world")
-                    else:
-                        print("❌ Failed to create new world")
-                elif world_play_btn and world_play_btn.collidepoint(event.pos):
+                # Now handle button clicks using the world UI's button handling system
+                # We need to pass the button states to the world UI's handle_mouse_click method
+                # But first, let's get the current button states
+                button_states = {
+                    "play_world": world_play_btn,
+                    "delete_world": world_delete_btn,
+                    "create_world": world_create_btn,
+                    "back": world_back_btn
+                }
+                
+                # Use the world UI's button handling system
+                action = world_ui.handle_world_selection_click(button_states, event.pos)
+                
+                # Get the selected world from world_ui
+                selected_world = world_ui.get_selected_world()
+                world_name = selected_world["name"] if selected_world else None
+                new_selection = None
+                
+                # Debug output
+                print(f"📊 Action: {action}, World name: {world_name}, Selected world: {selected_world}")
+                
+                # Handle the action returned by the world UI system
+                if action == "play_world":
                     print("🎮 Play World button clicked!")
-                    print(f"🔍 Button rect: {world_play_btn}")
-                    print(f"🔍 Click pos: {event.pos}")
                     # EXTREME ENGINEERING: Username validation before world play
                     if require_username_check():
                         print("🚫 Username required before playing - redirecting to username creation")
-                        continue  # Don't proceed to game
-                    
-                    # Play selected world (if any world is selected)
-                    selected_world = world_ui.get_selected_world()
-                    print(f"🔍 Selected world: {selected_world}")
-                    if selected_world:
-                        world_name = selected_world["name"]
-                        print(f"🌍 Loading world: {world_name}")
-                        if world_system.load_world(world_name):
-                            # Load the world data into the game
-                            if load_world_data():
-                                # Fix player spawn position to ensure surface spawning
-                                fix_player_spawn_position()
-                                # Start world generation instead of going directly to game
-                                start_world_generation()
-                                game_state = GameState.WORLD_GENERATION
-                                update_pause_state()  # Resume time when entering world generation
-                                print(f"🌍 Starting world generation for world: {world_name}")
-                                print("🎮 Controls: WASD or Arrow Keys = Move + Flip Character, Space = Jump")
-                            else:
-                                print(f"❌ Failed to load world data for: {world_name}")
-                        else:
-                            print(f"❌ Failed to load world: {world_name}")
                     else:
-                        print("❌ No world selected - please select a world first")
-                        show_message("Please select a world first!", 2000)
-                elif world_delete_btn and world_delete_btn.collidepoint(event.pos):
-                    # Delete selected world (if any world is selected)
-                    selected_world = world_ui.get_selected_world()
-                    if selected_world:
-                        world_name = selected_world["name"]
+                        if world_name:
+                            print(f"🌍 Loading world: {world_name}")
+                            if world_system.load_world(world_name):
+                                # Load the world data into the game
+                                if load_world_data():
+                                    # Fix player spawn position to ensure surface spawning
+                                    fix_player_spawn_position()
+                                    # Start world generation instead of going directly to game
+                                    start_world_generation()
+                                    game_state = GameState.WORLD_GENERATION
+                                    update_pause_state()  # Resume time when entering world generation
+                                    print(f"🌍 Starting world generation for world: {world_name}")
+                                    print("🎮 Controls: WASD or Arrow Keys = Move + Flip Character, Space = Jump")
+                                else:
+                                    print(f"❌ Failed to load world data for: {world_name}")
+                            else:
+                                print(f"❌ Failed to load world: {world_name}")
+                        else:
+                            print("❌ No world selected - please select a world first")
+                            show_message("Please select a world first!", 2000)
+                elif action == "delete_world":
+                    print("🗑️ Delete World button clicked!")
+                    if world_name:
                         if world_system.delete_world(world_name):
                             print(f"🗑️ Deleted world: {world_name}")
-                            # Refresh the world selection screen and selection state
-                            world_system._load_world_list()
+                            # Refresh world selection state
                             world_ui.refresh_world_selection()
                         else:
                             print(f"❌ Failed to delete world: {world_name}")
                     else:
-                        print("❌ No world selected")
+                        print("❌ No world selected - please select a world first")
+                        show_message("Please select a world first!", 2000)
+                elif action == "create_world":
+                    print("✨ Create World button clicked!")
+                    # EXTREME ENGINEERING: Username validation before world creation
+                    if require_username_check():
+                        print("🚫 Username required before creating world - redirecting to username creation")
+                    else:
+                        # Go to world naming screen instead of directly creating world
+                        game_state = GameState.WORLD_NAMING
+                        update_pause_state()  # Pause time when entering world naming
+                        print("🌍 Opening world naming screen!")
+                elif action == "back":
+                    print("⬅️ Back button clicked!")
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Resume time when returning to title
+                    print("⬅️ Returning to title screen from world selection")
+                elif action == "page_changed":
+                    print("📄 Page changed!")
+                elif action is None:
+                    print("🔍 No button clicked")
+            elif game_state == GameState.WORLD_NAMING:
+                # Handle world naming screen events
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Left click
+                        # Check on-screen keyboard buttons
+                        for char, button_rect in world_name_buttons.items():
+                            if button_rect.collidepoint(event.pos):
+                                if char == 'backspace':
+                                    # Handle backspace
+                                    if world_name_input and world_name_cursor_pos > 0:
+                                        world_name_input = world_name_input[:world_name_cursor_pos-1] + world_name_input[world_name_cursor_pos:]
+                                        world_name_cursor_pos -= 1
+                                else:
+                                    # Add character at cursor position
+                                    world_name_input = world_name_input[:world_name_cursor_pos] + char + world_name_input[world_name_cursor_pos:]
+                                    world_name_cursor_pos += 1
+                                break
+                        
+                        # Check action buttons
+                        if world_name_skip_btn and world_name_skip_btn.collidepoint(event.pos):
+                            # Skip naming - use default name
+                            create_world_with_name("")
+                        elif world_name_cancel_btn and world_name_cancel_btn.collidepoint(event.pos):
+                            # Cancel - go back to world selection
+                            game_state = GameState.WORLD_SELECTION
+                            update_pause_state()
+                            print("⬅️ Cancelled world naming, returning to world selection")
+                        elif world_name_confirm_btn and world_name_confirm_btn.collidepoint(event.pos):
+                            # Create world with entered name
+                            create_world_with_name(world_name_input.strip())
+                
+                elif event.type == pygame.KEYDOWN:
+                    # Handle physical keyboard input
+                    if event.key == pygame.K_BACKSPACE:
+                        # Handle backspace
+                        if world_name_input and world_name_cursor_pos > 0:
+                            world_name_input = world_name_input[:world_name_cursor_pos-1] + world_name_input[world_name_cursor_pos:]
+                            world_name_cursor_pos -= 1
+                    elif event.key == pygame.K_DELETE:
+                        # Handle delete
+                        if world_name_cursor_pos < len(world_name_input):
+                            world_name_input = world_name_input[:world_name_cursor_pos] + world_name_input[world_name_cursor_pos+1:]
+                    elif event.key == pygame.K_LEFT:
+                        # Move cursor left
+                        if world_name_cursor_pos > 0:
+                            world_name_cursor_pos -= 1
+                    elif event.key == pygame.K_RIGHT:
+                        # Move cursor right
+                        if world_name_cursor_pos < len(world_name_input):
+                            world_name_cursor_pos += 1
+                    elif event.key == pygame.K_HOME:
+                        # Move cursor to beginning
+                        world_name_cursor_pos = 0
+                    elif event.key == pygame.K_END:
+                        # Move cursor to end
+                        world_name_cursor_pos = len(world_name_input)
+                    elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                        # Create world with entered name
+                        create_world_with_name(world_name_input.strip())
+                    elif event.key == pygame.K_ESCAPE:
+                        # Cancel - go back to world selection
+                        game_state = GameState.WORLD_SELECTION
+                        update_pause_state()
+                        print("⬅️ Cancelled world naming, returning to world selection")
+                    elif event.unicode and event.unicode.isprintable() and len(world_name_input) < 32:
+                        # Add printable character at cursor position
+                        world_name_input = world_name_input[:world_name_cursor_pos] + event.unicode + world_name_input[world_name_cursor_pos:]
+                        world_name_cursor_pos += 1
             elif game_state == GameState.PAUSED:
                 if resume_btn.collidepoint(event.pos):
                     game_state = GameState.GAME
@@ -12850,10 +13929,10 @@ while running:
                     update_pause_state()  # Pause time when returning to title
             elif game_state == GameState.CREDITS:
                 if credits_back_btn.collidepoint(event.pos):
-                    game_state = GameState.GAME
-                    update_pause_state()  # Resume time when returning to game
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Pause time when returning to title
                     credits_from_boss_defeat = False  # Reset the flag
-                    print("🎮 Returned to game from credits screen!")
+                    print("🎮 Returned to title screen from credits!")
             elif game_state == GameState.MULTIPLAYER:
                 # EXTREME ENGINEERING: Professional multiplayer click handling
                 if multiplayer_menu_state == "main":
@@ -12879,8 +13958,9 @@ while running:
                         else:
                             show_message("❌ Failed to start server")
                     elif multiplayer_host_back_btn and multiplayer_host_back_btn.collidepoint(event.pos):
-                        multiplayer_menu_state = "main"
-                        print("⬅️ Returning to multiplayer main menu")
+                        game_state = GameState.TITLE
+                        update_pause_state()
+                        print("⬅️ Returning to title screen from multiplayer host")
                 
                 elif multiplayer_menu_state == "join":
                     if multiplayer_search_btn and multiplayer_search_btn.collidepoint(event.pos):
@@ -12890,13 +13970,15 @@ while running:
                         show_message("🔍 Searching for servers...", 2000)
                         print("🔍 Server search initiated")
                     elif multiplayer_join_back_btn and multiplayer_join_back_btn.collidepoint(event.pos):
-                        multiplayer_menu_state = "main"
-                        print("⬅️ Returning to multiplayer main menu")
+                        game_state = GameState.TITLE
+                        update_pause_state()
+                        print("⬅️ Returning to title screen from multiplayer join")
                 
                 elif multiplayer_menu_state == "server_list":
                     if multiplayer_server_list_back_btn and multiplayer_server_list_back_btn.collidepoint(event.pos):
-                        multiplayer_menu_state = "join"
-                        print("⬅️ Returning to join server menu")
+                        game_state = GameState.TITLE
+                        update_pause_state()
+                        print("⬅️ Returning to title screen from server list")
                     elif server_list:
                         # Check if player clicked on a server
                         for i, server in enumerate(server_list[:5]):
@@ -12987,6 +14069,7 @@ while running:
                 
                 # Use the improved terrain generation function (handles terrain, trees, ores, etc.)
                 generate_terrain_column(x)
+                # Replace dirt/stone blocks adjacent to water with sand for natural beaches
                 # EXTREME ENGINEERING: Balanced night monster spawning
                 # Only spawn monsters at night when exploring new territory
                 if not is_day and random.random() < 0.008:  # Slightly increased spawn rate for better gameplay
@@ -13003,28 +14086,28 @@ while running:
                     
                     # Balanced spawning: max 8 total monsters, max 1 per 40-block radius
                     if total_monsters < 8 and nearby_monsters == 0:
-                        # Find ground level for this column
-                        spawn_ground_y = ground_y_of_column(x)
-                        if spawn_ground_y is not None:
+                        # Find surface level for this column (spawn ON surface, not underground)
+                        spawn_surface_y = find_surface_level(x)
+                        if spawn_surface_y is not None:
                             # Randomly choose between monster and zombie (30% chance for zombie)
                             if random.random() < 0.3:  # 30% chance for zombie
                                 monster_type = "zombie"
                                 monster_hp = 10  # Zombies are stronger
-                                monster_img = textures["zombie"]
+                                monster_img = textures["zombie"]  # Use original zombie texture
                             else:
                                 monster_type = "monster"
                                 monster_hp = 6
-                                monster_img = monster_image
+                                monster_img = textures["monster"]  # Use original monster texture
                             
                             entities.append({
                                 "type": monster_type,
                                 "x": x,
-                                "y": spawn_ground_y - 1,
+                                "y": spawn_surface_y,  # Spawn ON the surface
                                 "image": monster_img,
                                 "hp": monster_hp,
                                 "cooldown": 0
                             })
-                            print(f"👹 Night {monster_type} spawned at ({x}, {spawn_ground_y - 1}) - Total monsters: {total_monsters + 1}/8")
+                            print(f"👹 Night {monster_type} spawned at ({x}, {spawn_surface_y}) - Total monsters: {total_monsters + 1}/8")
                 
         # NPC spawning systems removed - no more random NPCs
 
@@ -13033,6 +14116,8 @@ while running:
 
         update_daylight()
         update_player()
+        update_falling_blocks()  # Update sand physics
+        update_water_flow()  # Update water flow
         update_world_interactions()
         update_monsters()
         update_villagers()
@@ -13046,6 +14131,7 @@ while running:
         update_thrown_sword()  # Update sword throwing system
         update_thrown_sword_entities()  # Update thrown sword entities
         update_blood_particles()  # Update blood particle effects
+        update_block_particles()  # Update block breaking particle effects
         update_fireball_projectiles()  # Update fireball projectiles
         
         # Ability system removed
@@ -13112,6 +14198,8 @@ while running:
         draw_title_screen()
     elif game_state == GameState.WORLD_SELECTION:
         draw_world_selection_screen()
+    elif game_state == GameState.WORLD_NAMING:
+        draw_world_naming_screen()
     elif game_state == GameState.WORLD_GENERATION:
         update_world_generation()
         draw_world_generation_screen()
@@ -13168,76 +14256,7 @@ while running:
     # Check if we should exit
     if not running:
         print("🔄 Exit flag set, breaking game loop...")
-        break  
-# World selection action handler removed - game goes directly to play
-
-def load_world_data():
-    """Load world data from the world system into the game"""
-    global world_data, entities, player
-    
-    if not world_system.current_world_data:
-        print("⚠️ No world data available to load")
-        return False
-    
-    try:
-        # Load world data
-        world_data = world_system.current_world_data.get("blocks", {})
-        entities = world_system.current_world_data.get("entities", [])
-        villages = world_system.current_world_data.get("villages", [])
-        
-        # Load player data with validation
-        player_data = world_system.current_world_data.get("player", {})
-        if not isinstance(player_data, dict):
-            print("⚠️ Invalid player data, using defaults")
-            player_data = {}
-        
-        # Update player with loaded data, preserving any missing fields
-        for key, value in player_data.items():
-            if key in player:
-                player[key] = value
-        
-        # Ensure critical player fields exist
-        if "health" not in player or player["health"] <= 0:
-            player["health"] = 10
-        if "hunger" not in player or player["hunger"] <= 0:
-            player["hunger"] = 100
-        if "inventory" not in player:
-            player["inventory"] = []
-        if "backpack" not in player:
-            player["backpack"] = []
-        if "selected" not in player:
-            player["selected"] = 0
-        if "armor" not in player:
-            player["armor"] = {"helmet": None, "chestplate": None, "leggings": None, "boots": None}
-        
-        # Load world settings
-        world_settings = world_system.current_world_data.get("world_settings", {})
-        global is_day, day_start_time
-        is_day = world_settings.get("day", True)
-        day_start_time = time.time() if is_day else time.time() - 43200  # 12 hours if night
-        
-        # CRITICAL: Mark all pre-generated terrain columns to prevent conflicts
-        # This connects the new world generation system with the old dynamic system
-        global generated_terrain_columns
-        generated_terrain_columns.clear()  # Start fresh
-        
-        # Extract X coordinates from all blocks in the world
-        for block_key in world_data.keys():
-            try:
-                x_str, y_str = block_key.split(',')
-                x = int(x_str)
-                generated_terrain_columns.add(x)
-            except (ValueError, AttributeError):
-                continue  # Skip invalid block keys
-        
-        print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
-        print(f"🔗 Connected world systems: marked {len(generated_terrain_columns)} pre-generated columns")
-        print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error loading world data: {e}")
-        return False
+        break
 
 # Cleanup and exit
 print("🔄 Game loop ended, cleaning up...")
