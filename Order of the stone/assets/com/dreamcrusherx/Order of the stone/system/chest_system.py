@@ -205,9 +205,16 @@ class ChestSystem:
                 self.chest_inventories[pos] = [None] * (self.CHEST_ROWS * self.CHEST_COLS)
                 print(f"📦 Created EMPTY inventory for player-placed chest at {pos}")
             else:
-                # Natural chests get generated loot
+                # Natural chests get generated loot ONLY if they don't already exist
+                # This prevents overwriting existing contents when loading a saved world
                 self.chest_inventories[pos] = self._generate_chest_inventory(pos)
-                print(f"📦 Generated loot for natural chest at {pos}")
+                print(f"📦 Generated NEW loot for natural chest at {pos}")
+        else:
+            # Chest already has inventory - preserve existing contents
+            if pos in self.player_placed_chests:
+                print(f"📦 Retrieved existing player-placed chest inventory at {pos} (preserving contents)")
+            else:
+                print(f"📦 Retrieved existing natural chest inventory at {pos} (preserving contents)")
         return self.chest_inventories[pos]
     
     def _generate_chest_inventory(self, pos):
@@ -267,9 +274,16 @@ class ChestSystem:
                 self.chest_inventories[pos] = [None] * (self.CHEST_ROWS * self.CHEST_COLS)
                 print(f"📦 Opening EMPTY player-placed chest at {pos}")
             else:
-                # Natural chests get generated loot
+                # Natural chests get generated loot ONLY if they don't already exist
+                # This prevents overwriting existing contents when loading a saved world
                 self.chest_inventories[pos] = self._generate_chest_inventory(pos)
-                print(f"📦 Opening natural chest with loot at {pos}")
+                print(f"📦 Opening natural chest with NEW loot at {pos}")
+        else:
+            # Chest already has inventory - don't regenerate it
+            if pos in self.player_placed_chests:
+                print(f"📦 Opening existing player-placed chest at {pos} (preserving contents)")
+            else:
+                print(f"📦 Opening existing natural chest at {pos} (preserving contents)")
         return self.chest_inventories[pos]
     
     def get_chest_info(self, pos):

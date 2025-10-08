@@ -1,0 +1,4 @@
+([('Order_of_the_Stone.exe',
+   '/Users/xavierlahens/Team Banana labs '
+   'work/Order-of-the-stone/dist/Order_of_the_Stone.exe',
+   'EXECUTABLE')],)

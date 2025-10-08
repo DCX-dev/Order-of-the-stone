@@ -716,7 +716,7 @@ class WorldUI:
     def handle_world_selection_click(self, button_states: Dict, mouse_pos: tuple) -> Optional[str]:
         """Handle clicks in the world selection screen"""
         for button_name, button_rect in button_states.items():
-            if button_rect.collidepoint(mouse_pos):
+            if button_rect is not None and button_rect.collidepoint(mouse_pos):
                 if button_name.startswith("world_"):
                     # Select world
                     world_index = int(button_name.split("_")[1])
@@ -724,10 +724,20 @@ class WorldUI:
                     return "world_selected"
                 
                 elif button_name == "play_world":
-                    return "play_world"
+                    # Only allow playing if a world is selected
+                    if self.is_world_selected():
+                        return "play_world"
+                    else:
+                        print("⚠️ Cannot play - no world selected")
+                        return None
                 
                 elif button_name == "delete_world":
-                    return "delete_world"
+                    # Only allow deleting if a world is selected
+                    if self.is_world_selected():
+                        return "delete_world"
+                    else:
+                        print("⚠️ Cannot delete - no world selected")
+                        return None
                 
                 elif button_name == "create_world":
                     return "create_world"
@@ -760,7 +770,7 @@ class WorldUI:
     def handle_mouse_click(self, mouse_pos: tuple, world_rects: Dict) -> tuple:
         """Handle mouse clicks and return (action, world_name, new_selection)"""
         for button_name, button_rect in world_rects.items():
-            if button_rect.collidepoint(mouse_pos):
+            if button_rect is not None and button_rect.collidepoint(mouse_pos):
                 if button_name.startswith("world_"):
                     # Select world
                     world_index = int(button_name.split("_")[1])
