@@ -1044,8 +1044,6 @@ def load_texture(path):
                 fallback_surface.fill((139, 69, 19))    # Brown steak
             elif "honey_jar" in filename:
                 fallback_surface.fill((255, 215, 0))    # Golden honey
-            elif "potato" in filename:
-                fallback_surface.fill((255, 218, 185))  # Light brown potato
             elif "carrot" in filename:
                 fallback_surface.fill((255, 165, 0))    # Orange carrot
             else:
@@ -2474,7 +2472,6 @@ textures = {
     "cooked_fish": load_texture(os.path.join(ITEM_DIR, "cooked_fish.png")),
     "steak": load_texture(os.path.join(ITEM_DIR, "steak.png")),
     "honey_jar": load_texture(os.path.join(ITEM_DIR, "honey_jar.png")),
-    "potato": load_texture(os.path.join(ITEM_DIR, "potato.png")),
     "wheat": load_texture(os.path.join(TILE_DIR, "carrot.gif")),  # Using carrot as wheat for now
     "stick": load_texture(os.path.join(TILE_DIR, "log.png")),  # Using log as stick for now
     
@@ -2940,8 +2937,7 @@ FOOD_ITEMS = {
     # NEW FOODS
     "cooked_fish": {"hunger": 4, "health": 1, "rarity": 0.10},      # Grilled fish
     "steak": {"hunger": 5, "health": 2, "rarity": 0.08},            # Cooked beef
-    "honey_jar": {"hunger": 2, "health": 3, "rarity": 0.06},        # Sweet honey (best healing!)
-    "potato": {"hunger": 3, "health": 1, "rarity": 0.12}            # Baked potato
+    "honey_jar": {"hunger": 2, "health": 3, "rarity": 0.06}         # Sweet honey (best healing!)
 }
 
 def eat_food(food_type):
