@@ -1887,6 +1887,7 @@ thunder_timer = 0
 snow_blocks = []  # Track snow blocks for melting
 rain_particles = []
 snow_particles = []
+lightning_bolts = []  # Track active lightning bolts
 
 def draw_sky_background():
     """Draw the sky with weather effects - simple solid color for performance"""
@@ -2001,22 +2002,122 @@ def draw_snow():
             snow_particles.remove(particle)
 
 def draw_lightning():
-    """Draw lightning flash effect"""
-    global thunder_timer
+    """Draw lightning flash effect with realistic lightning bolts"""
+    global thunder_timer, lightning_bolts
     
-    # Random lightning flash
-    if random.random() < 0.02:  # 2% chance per frame
-        thunder_timer = 3  # Flash for 3 frames
-        # Lightning damage to player
-        damage_player_from_lightning()
+    # Random lightning flash (much rarer)
+    if random.random() < 0.005:  # 0.5% chance per frame (much rarer!)
+        thunder_timer = 8  # Flash for 8 frames
+        # Create lightning bolt at random location
+        create_lightning_bolt()
     
     # Draw lightning flash
     if thunder_timer > 0:
         # Create bright white flash overlay
         flash_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         flash_surface.fill((255, 255, 255))
-        flash_surface.set_alpha(100)  # Semi-transparent
+        flash_surface.set_alpha(80)  # Less intense flash
         screen.blit(flash_surface, (0, 0))
+        
+        # Draw lightning bolts
+        for bolt in lightning_bolts:
+            draw_lightning_bolt(bolt)
+
+def create_lightning_bolt():
+    """Create a lightning bolt at a random location"""
+    global lightning_bolts
+    
+    # Choose random location (not necessarily near player)
+    bolt_x = random.randint(50, SCREEN_WIDTH - 50)
+    bolt_start_y = random.randint(0, 100)  # Start from sky
+    
+    # Create zigzag lightning bolt
+    bolt_points = []
+    current_x = bolt_x
+    current_y = bolt_start_y
+    
+    # Generate zigzag path down to ground
+    while current_y < SCREEN_HEIGHT:
+        bolt_points.append((current_x, current_y))
+        
+        # Move down
+        current_y += random.randint(8, 20)
+        
+        # Add horizontal zigzag
+        current_x += random.randint(-15, 15)
+        current_x = max(0, min(SCREEN_WIDTH, current_x))  # Keep in bounds
+        
+        # Add branch occasionally
+        if random.random() < 0.3 and len(bolt_points) > 3:
+            create_lightning_branch(bolt_points, current_x, current_y)
+    
+    # Store the bolt
+    lightning_bolts.append({
+        'points': bolt_points,
+        'life': 8,  # How long to show the bolt
+        'x': bolt_x,
+        'ground_y': current_y
+    })
+    
+    # Check if lightning hit player (much rarer now!)
+    check_lightning_player_hit(bolt_x, current_y)
+
+def create_lightning_branch(main_points, start_x, start_y):
+    """Create a branch off the main lightning bolt"""
+    branch_points = []
+    current_x = start_x
+    current_y = start_y
+    
+    # Create short branch
+    for _ in range(random.randint(2, 5)):
+        branch_points.append((current_x, current_y))
+        current_y += random.randint(5, 12)
+        current_x += random.randint(-10, 10)
+        current_x = max(0, min(SCREEN_WIDTH, current_x))
+    
+    # Add branch to main points
+    main_points.extend(branch_points)
+
+def draw_lightning_bolt(bolt):
+    """Draw a lightning bolt with zigzag lines"""
+    if bolt['life'] <= 0:
+        return
+    
+    # Draw the main lightning path
+    points = bolt['points']
+    if len(points) > 1:
+        # Draw thick white line with slight blue tint
+        color = (200, 220, 255)  # Slightly blue-white
+        for i in range(len(points) - 1):
+            pygame.draw.line(screen, color, points[i], points[i + 1], 3)
+        
+        # Draw bright white core
+        core_color = (255, 255, 255)
+        for i in range(len(points) - 1):
+            pygame.draw.line(screen, core_color, points[i], points[i + 1], 1)
+    
+    # Decrease bolt life
+    bolt['life'] -= 1
+    
+    # Remove dead bolts
+    if bolt['life'] <= 0:
+        lightning_bolts.remove(bolt)
+
+def check_lightning_player_hit(bolt_x, bolt_ground_y):
+    """Check if lightning hit the player (much rarer chance)"""
+    global player
+    
+    # Calculate player position in screen coordinates
+    player_screen_x = int(player["x"] * TILE_SIZE) - camera_x
+    player_screen_y = int(player["y"] * TILE_SIZE) - camera_y
+    
+    # Check if lightning is close to player (within 50 pixels)
+    distance = ((bolt_x - player_screen_x) ** 2 + (bolt_ground_y - player_screen_y) ** 2) ** 0.5
+    
+    if distance < 50:  # Lightning is close to player
+        # Only 10% chance to actually hit player (much rarer!)
+        if random.random() < 0.1:
+            damage_player_from_lightning()
 
 def damage_player_from_lightning():
     """Damage player when struck by lightning"""
@@ -2033,8 +2134,8 @@ def damage_player_from_lightning():
     
     # Damage player for 3 hearts
     player["health"] = max(0, player["health"] - 3)
-    show_message("⚡ STRUCK BY LIGHTNING! -3 hearts!", 3000)
-    print(f"⚡ Player struck by lightning! Health: {player['health']}/10")
+    show_message("⚡ LIGHTNING STRUCK NEARBY! -3 hearts!", 3000)
+    print(f"⚡ Lightning struck near player! Health: {player['health']}/10")
     
     # Check if player died
     if player["health"] <= 0:
