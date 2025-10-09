@@ -2950,6 +2950,12 @@ def eat_food(food_type):
     hunger_restore = food_data["hunger"]
     health_restore = food_data["health"]
     
+    # Check if player needs food (not already full)
+    if player["hunger"] >= 10 and player["health"] >= 10:
+        show_message(f"🍖 Already full! Can't eat {food_type.replace('_', ' ').title()}.", 1500)
+        print(f"🍖 Can't eat {food_type} - hunger and health are already full")
+        return False
+    
     # Restore hunger (max 10)
     old_hunger = player["hunger"]
     player["hunger"] = min(10, player["hunger"] + hunger_restore)
@@ -2971,11 +2977,8 @@ def eat_food(food_type):
     if message_parts:
         show_message(f"🍖 Ate {food_name}: {', '.join(message_parts)}!", 2000)
         print(f"🍖 Ate {food_name}: Hunger {old_hunger} → {player['hunger']}, Health {old_health} → {player['health']}")
-        return True
-    else:
-        show_message(f"🍖 {food_name}: Already full!", 1500)
-        print(f"🍖 Tried to eat {food_name} but hunger and health are already full")
-        return False
+    
+    return True
 
 # =============================================================================
 # OXYGEN SYSTEM
@@ -13657,13 +13660,23 @@ while running:
                         # Confirm within slot bounds
                         if 0 <= slot < 9 and (10 + slot * 50) <= mx <= (10 + slot * 50 + 40):
                             player["selected"] = slot
-                            # If it's a carrot, try to consume it (safely)
+                            # Check if clicking on food or special items
                             if slot < len(player["inventory"]):
                                 it = player["inventory"][slot]
                                 if it and isinstance(it, dict):
-                                    if it.get("type") == "carrot":
-                                        consume_carrot_from_inventory()
-                                    elif it.get("type") == "map":
+                                    item_type = it.get("type")
+                                    # Try to eat any food item
+                                    if item_type in FOOD_ITEMS:
+                                        if eat_food(item_type):
+                                            # Remove one from stack or delete item
+                                            if "count" in it and it["count"] > 1:
+                                                it["count"] -= 1
+                                            else:
+                                                # Remove the item completely
+                                                player["inventory"][slot] = None
+                                            # Normalize inventory to clean up None entries
+                                            normalize_inventory()
+                                    elif item_type == "map":
                                         use_map_from_inventory()
                             # Do not interact with world when clicking UI
                             continue
