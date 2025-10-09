@@ -1079,6 +1079,31 @@ def make_ladder_texture(size):
         y += gap
     return surf
 
+# --- Snow Texture Generator ---
+def make_snow_texture(size):
+    """Generate a white snow texture with slight variations"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Base white color
+    base_color = (255, 255, 255)
+    
+    # Fill with base white
+    surf.fill(base_color)
+    
+    # Add some slight variations for texture
+    for _ in range(size // 4):  # Add some random white spots
+        x = random.randint(0, size - 1)
+        y = random.randint(0, size - 1)
+        # Slightly different white shades
+        shade = random.choice([
+            (250, 250, 255),  # Slightly blue-white
+            (255, 255, 250),  # Slightly yellow-white
+            (248, 248, 248),  # Slightly grey-white
+        ])
+        pygame.draw.circle(surf, shade, (x, y), random.randint(1, 2))
+    
+    return surf
+
 # --- Bed Texture Generator ---
 def make_bed_texture(size):
     """Procedurally draw a simple bed (wood base, mattress, pillow, blanket)."""
@@ -1854,10 +1879,33 @@ def update_clouds():
 
 # Sky background optimized for performance
 
+# Weather system variables
+current_weather = "clear"  # clear, rain, thunder, snow
+weather_timer = 0
+weather_duration = 0
+thunder_timer = 0
+snow_blocks = []  # Track snow blocks for melting
+rain_particles = []
+snow_particles = []
+
 def draw_sky_background():
-    """Draw the sky with clouds only - simple solid color for performance"""
-    # Use simple solid sky color instead of gradient (much faster!)
-    screen.fill((135, 206, 235))  # Light blue sky color
+    """Draw the sky with weather effects - simple solid color for performance"""
+    global current_weather
+    
+    # Change sky color based on weather
+    if current_weather == "clear":
+        sky_color = (135, 206, 235)  # Light blue
+    elif current_weather == "rain":
+        sky_color = (105, 105, 105)  # Dark grey
+    elif current_weather == "thunder":
+        sky_color = (50, 50, 50)     # Very dark grey
+    elif current_weather == "snow":
+        sky_color = (200, 200, 220)  # Light grey-blue
+    else:
+        sky_color = (135, 206, 235)  # Default light blue
+    
+    # Use simple solid sky color (much faster than gradient!)
+    screen.fill(sky_color)
     
     # Draw clouds (fresh each frame for proper alpha blending)
     for cloud in clouds:
@@ -1878,6 +1926,195 @@ def draw_sky_background():
         
         # Blit cloud to screen
         screen.blit(cloud_surface, (cloud['x'], cloud['y']))
+    
+    # Draw weather effects
+    draw_weather_effects()
+
+def draw_weather_effects():
+    """Draw weather effects like rain, snow, and lightning"""
+    global current_weather, thunder_timer
+    
+    if current_weather == "rain":
+        draw_rain()
+    elif current_weather == "thunder":
+        draw_rain()
+        draw_lightning()
+    elif current_weather == "snow":
+        draw_snow()
+    
+    # Update thunder timer
+    if thunder_timer > 0:
+        thunder_timer -= 1
+
+def draw_rain():
+    """Draw rain particles falling from the sky"""
+    global rain_particles
+    
+    # Add new rain particles
+    if len(rain_particles) < 100:  # Limit for performance
+        for _ in range(5):
+            rain_particles.append({
+                'x': random.randint(0, SCREEN_WIDTH),
+                'y': random.randint(-50, 0),
+                'speed': random.uniform(3, 8)
+            })
+    
+    # Update and draw rain particles
+    for particle in rain_particles[:]:
+        particle['y'] += particle['speed']
+        
+        # Draw rain drop
+        pygame.draw.line(screen, (173, 216, 230), 
+                        (particle['x'], particle['y']), 
+                        (particle['x'], particle['y'] + 8), 2)
+        
+        # Remove particles that fall off screen
+        if particle['y'] > SCREEN_HEIGHT:
+            rain_particles.remove(particle)
+
+def draw_snow():
+    """Draw snow particles falling from the sky"""
+    global snow_particles
+    
+    # Add new snow particles
+    if len(snow_particles) < 80:  # Limit for performance
+        for _ in range(3):
+            snow_particles.append({
+                'x': random.randint(0, SCREEN_WIDTH),
+                'y': random.randint(-50, 0),
+                'speed': random.uniform(1, 3),
+                'size': random.randint(2, 4)
+            })
+    
+    # Update and draw snow particles
+    for particle in snow_particles[:]:
+        particle['y'] += particle['speed']
+        particle['x'] += random.uniform(-0.5, 0.5)  # Slight horizontal drift
+        
+        # Draw snowflake
+        pygame.draw.circle(screen, (255, 255, 255), 
+                          (int(particle['x']), int(particle['y'])), 
+                          particle['size'])
+        
+        # Remove particles that fall off screen
+        if particle['y'] > SCREEN_HEIGHT:
+            snow_particles.remove(particle)
+
+def draw_lightning():
+    """Draw lightning flash effect"""
+    global thunder_timer
+    
+    # Random lightning flash
+    if random.random() < 0.02:  # 2% chance per frame
+        thunder_timer = 3  # Flash for 3 frames
+        # Lightning damage to player
+        damage_player_from_lightning()
+    
+    # Draw lightning flash
+    if thunder_timer > 0:
+        # Create bright white flash overlay
+        flash_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        flash_surface.fill((255, 255, 255))
+        flash_surface.set_alpha(100)  # Semi-transparent
+        screen.blit(flash_surface, (0, 0))
+
+def damage_player_from_lightning():
+    """Damage player when struck by lightning"""
+    global player
+    
+    # Check if player is outside (not under a roof)
+    player_x = int(player["x"])
+    player_y = int(player["y"])
+    
+    # Simple check: if there's a block above the player, they're protected
+    block_above = get_block(player_x, player_y - 1)
+    if block_above and block_above != "air":
+        return  # Player is protected
+    
+    # Damage player for 3 hearts
+    player["health"] = max(0, player["health"] - 3)
+    show_message("⚡ STRUCK BY LIGHTNING! -3 hearts!", 3000)
+    print(f"⚡ Player struck by lightning! Health: {player['health']}/10")
+    
+    # Check if player died
+    if player["health"] <= 0:
+        show_death_screen()
+
+def update_weather():
+    """Update weather system - change weather randomly"""
+    global current_weather, weather_timer, weather_duration
+    
+    weather_timer += 1
+    
+    # Change weather every 10-30 seconds (600-1800 frames at 60 FPS)
+    if weather_timer >= weather_duration:
+        # Random weather change
+        weather_chances = {
+            "clear": 0.4,   # 40% chance
+            "rain": 0.3,    # 30% chance  
+            "thunder": 0.2, # 20% chance
+            "snow": 0.1     # 10% chance
+        }
+        
+        # Choose new weather
+        rand = random.random()
+        cumulative = 0
+        for weather, chance in weather_chances.items():
+            cumulative += chance
+            if rand <= cumulative:
+                current_weather = weather
+                break
+        
+        # Set new duration
+        weather_duration = random.randint(600, 1800)  # 10-30 seconds
+        weather_timer = 0
+        
+        # Handle weather transitions
+        if current_weather == "snow":
+            start_snow_weather()
+        elif current_weather == "clear" and len(snow_blocks) > 0:
+            start_snow_melting()
+        
+        print(f"🌤️ Weather changed to: {current_weather}")
+
+def start_snow_weather():
+    """Start snow weather - cover world with snow"""
+    global snow_blocks
+    
+    print("❄️ Snow weather started - covering world with snow!")
+    
+    # Get player position for snow coverage area
+    player_x = int(player["x"])
+    player_y = int(player["y"])
+    
+    # Cover area around player with snow (50x50 blocks)
+    coverage_size = 25
+    for dx in range(-coverage_size, coverage_size):
+        for dy in range(-coverage_size, coverage_size):
+            x = player_x + dx
+            y = player_y + dy
+            
+            # Only place snow on grass, dirt, or stone
+            block = get_block(x, y)
+            if block in ["grass", "dirt", "stone"]:
+                set_block(x, y, "snow")
+                snow_blocks.append((x, y))
+
+def start_snow_melting():
+    """Start melting snow when weather changes from snow"""
+    global snow_blocks
+    
+    print("☀️ Snow melting - removing snow blocks!")
+    
+    # Melt snow blocks one by one (slower process)
+    if snow_blocks:
+        # Remove a few snow blocks per frame
+        for _ in range(min(5, len(snow_blocks))):
+            if snow_blocks:
+                x, y = snow_blocks.pop(0)
+                # Convert snow back to original block type
+                # For simplicity, convert to grass
+                set_block(x, y, "grass")
 
 # Village generation function removed - no more random NPCs
 
@@ -2106,6 +2343,7 @@ textures = {
     "water": make_beautiful_water_texture(TILE_SIZE),
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
     "sand": load_texture(os.path.join(TILE_DIR, "sand.png")),
+    "snow": make_snow_texture(TILE_SIZE),  # Generated snow texture
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
     "ladder": make_ladder_texture(TILE_SIZE),
     "door": load_texture(os.path.join(TILE_DIR, "door.png")), 
@@ -12954,6 +13192,9 @@ while running:
     
     # Update clouds every frame
     update_clouds()
+    
+    # Update weather system
+    update_weather()
     
     # Safety check: if we've been running for more than 10 seconds without user input, allow force quit
     if frame_count % 600 == 0:  # Check every 600 frames (about 10 seconds at 60 FPS)
