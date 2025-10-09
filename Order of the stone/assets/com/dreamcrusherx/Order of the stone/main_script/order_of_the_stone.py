@@ -830,16 +830,6 @@ FORTRESS_TYPES = {
         "special_blocks": ["iron", "coal"],
         "loot_tier": "basic"
     },
-    "crystal_cavern": {
-        "name": "Crystal Cavern",
-        "rarity": "legendary",
-        "spawn_chance": 0.02,
-        "min_size": 20,
-        "max_size": 25,
-        "materials": ["stone", "dirt", "grass"],
-        "special_blocks": ["diamond", "gold", "iron", "coal"],
-        "loot_tier": "legendary"
-    },
     "goblin_fortress": {
         "name": "Goblin Fortress",
         "rarity": "uncommon",
@@ -1711,10 +1701,7 @@ def generate_terrain_column(x):
     if x < 10:
         print(f"🌍 Column {x}: Biome = {biome_type}")
     
-    # CAVE SYSTEM: Generate natural caves with mountain entrances
-    if should_generate_cave(x, surface_y):
-        print(f"🕳️ Generating cave system at column {x}")
-        generate_cave_system(x, surface_y)
+    # CAVE SYSTEM REMOVED - No longer generating caves
     
     # NORMAL BIOME TREE GENERATION: Forests have lots of trees, fields have few
     if biome_type in ["forest", "field", "mixed"] and should_generate_tree(x, surface_y, biome_type):
@@ -1817,119 +1804,7 @@ def generate_terrain_column(x):
     
     print(f"✅ Generated terrain column {x}: surface at Y={surface_y}")
 
-def should_generate_cave(x, surface_y):
-    """Determine if a cave should be generated at this location"""
-    # Caves are uncommon - only 3% chance
-    if random.random() > 0.03:
-        return False
-    
-    # Caves should only generate in mountainous areas (higher surface)
-    if surface_y < 120:  # Only in higher areas
-        return False
-    
-    # Check if there's enough space for a cave entrance
-    # Look for a good spot on the mountain side
-    for check_x in range(x - 2, x + 3):
-        check_surface = calculate_surface_height(check_x)
-        if check_surface >= surface_y - 2:  # Mountain area
-            return True
-    
-    return False
-
-def generate_cave_system(x, surface_y):
-    """Generate a complete cave system with entrance and tunnels"""
-    print(f"🕳️ Creating cave system at ({x}, {surface_y})")
-    
-    # 1. Create cave entrance in the mountain
-    entrance_y = surface_y - random.randint(2, 5)  # Entrance 2-5 blocks below surface
-    entrance_width = random.randint(3, 5)  # Cave entrance 3-5 blocks wide
-    entrance_height = random.randint(2, 4)  # Cave entrance 2-4 blocks tall
-    
-    # Create the cave entrance opening
-    for entrance_x in range(x - entrance_width//2, x + entrance_width//2 + 1):
-        for entrance_y_pos in range(entrance_y, entrance_y + entrance_height):
-            set_block(entrance_x, entrance_y_pos, "air")
-            print(f"🕳️ Set cave entrance at ({entrance_x}, {entrance_y_pos})")
-    
-    # 2. Create cave tunnel system
-    tunnel_length = random.randint(15, 30)  # Cave extends 15-30 blocks deep
-    tunnel_direction = random.choice([-1, 1])  # Tunnel goes left or right
-    
-    current_x = x
-    current_y = entrance_y + entrance_height//2  # Middle of entrance
-    
-    for tunnel_step in range(tunnel_length):
-        # Create tunnel section
-        tunnel_width = random.randint(2, 4)
-        tunnel_height = random.randint(2, 4)
-        
-        # Add some vertical variation to the tunnel
-        if random.random() < 0.3:  # 30% chance to go up or down
-            current_y += random.choice([-1, 0, 1])
-        
-        # Create tunnel opening
-        for tunnel_x in range(current_x, current_x + tunnel_width):
-            for tunnel_y in range(current_y, current_y + tunnel_height):
-                if get_block(tunnel_x, tunnel_y) in ["stone", "dirt"]:
-                    set_block(tunnel_x, tunnel_y, "air")
-                    print(f"🕳️ Set cave tunnel at ({tunnel_x}, {tunnel_y})")
-        
-        # Add ores and treasures in the cave
-        if random.random() < 0.4:  # 40% chance for ores in each tunnel section
-            ore_x = current_x + random.randint(0, tunnel_width-1)
-            ore_y = current_y + random.randint(0, tunnel_height-1)
-            
-            # Choose ore type based on depth
-            depth_from_surface = surface_y - ore_y
-            if depth_from_surface > 20:  # Deep cave - rare ores
-                ore_type = random.choice(["diamond", "gold"])
-            elif depth_from_surface > 10:  # Medium depth - good ores
-                ore_type = random.choice(["iron", "gold"])
-            else:  # Shallow cave - common ores
-                ore_type = random.choice(["coal", "iron"])
-            
-            set_block(ore_x, ore_y, ore_type)
-            print(f"💎 Set cave ore ({ore_type}) at ({ore_x}, {ore_y})")
-        
-        # Add chests with treasures in caves
-        if random.random() < 0.15:  # 15% chance for treasure chest
-            chest_x = current_x + random.randint(0, tunnel_width-1)
-            chest_y = current_y + random.randint(0, tunnel_height-1)
-            set_block(chest_x, chest_y, "chest")
-            print(f"📦 Set cave treasure chest at ({chest_x}, {chest_y})")
-        
-        # Move to next tunnel section
-        current_x += tunnel_direction * random.randint(1, 3)
-        
-        # Add some branching tunnels
-        if random.random() < 0.2:  # 20% chance for side tunnel
-            side_direction = random.choice([-1, 1])
-            side_length = random.randint(5, 12)
-            
-            side_x = current_x
-            side_y = current_y
-            
-            for side_step in range(side_length):
-                side_x += side_direction
-                if random.random() < 0.3:
-                    side_y += random.choice([-1, 0, 1])
-                
-                # Create side tunnel
-                for side_tunnel_x in range(side_x, side_x + 2):
-                    for side_tunnel_y in range(side_y, side_y + 2):
-                        if get_block(side_tunnel_x, side_tunnel_y) in ["stone", "dirt"]:
-                            set_block(side_tunnel_x, side_tunnel_y, "air")
-                            print(f"🕳️ Set cave side tunnel at ({side_tunnel_x}, {side_tunnel_y})")
-                
-                # Add ores to side tunnels too
-                if random.random() < 0.3:
-                    ore_x = side_x
-                    ore_y = side_y
-                    ore_type = random.choice(["coal", "iron", "gold"])
-                    set_block(ore_x, ore_y, ore_type)
-                    print(f"💎 Set side tunnel ore ({ore_type}) at ({ore_x}, {ore_y})")
-    
-    print(f"✅ Cave system complete at ({x}, {surface_y})")
+# Cave generation functions removed
 
 def calculate_surface_height(x):
     """Calculate the surface height at a given x coordinate"""
@@ -3485,129 +3360,14 @@ def update_final_boss():
                 show_death_screen()
 
 # =============================================================================
-# CAVE GENERATION SYSTEM
+# CAVE GENERATION SYSTEM REMOVED
 # =============================================================================
 
-# Cave generation variables
-cave_entrances = []  # List of cave entrance positions
-cave_systems = []    # List of cave system data
+# Cave generation variables (removed)
+cave_entrances = []  # Empty list - caves disabled
+cave_systems = []    # Empty list - caves disabled
 
-def generate_cave_system(center_x, surface_y):
-    """Generate a cave system with rare diamonds and common iron/coal"""
-    global cave_entrances, cave_systems
-    
-    # Cave entrance size and shape
-    entrance_width = random.randint(3, 6)
-    entrance_height = random.randint(2, 4)
-    
-    # Create cave entrance
-    for x in range(center_x - entrance_width//2, center_x + entrance_width//2 + 1):
-        for y in range(surface_y - entrance_height, surface_y + 1):
-            if get_block(x, y) in ["grass", "dirt", "stone"]:
-                set_block(x, y, "air")
-    
-    # Add cave entrance to list
-    cave_entrances.append((center_x, surface_y))
-    
-    # Generate cave system underground
-    cave_data = {
-        "entrance": (center_x, surface_y),
-        "tunnels": [],
-        "rooms": [],
-        "ores": []
-    }
-    
-    # Generate main tunnel system
-    tunnel_length = random.randint(20, 40)
-    tunnel_direction = random.choice([-1, 1])  # Left or right
-    
-    current_x = center_x
-    current_y = surface_y - 2
-    
-    for i in range(tunnel_length):
-        # Create tunnel segment
-        tunnel_width = random.randint(2, 4)
-        tunnel_height = random.randint(2, 3)
-        
-        for tx in range(current_x - tunnel_width//2, current_x + tunnel_width//2 + 1):
-            for ty in range(current_y - tunnel_height, current_y + 1):
-                if get_block(tx, ty) in ["stone", "dirt", "grass"]:
-                    set_block(tx, ty, "air")
-        
-        # Add to cave data
-        cave_data["tunnels"].append((current_x, current_y, tunnel_width, tunnel_height))
-        
-        # Place ores in tunnel
-        place_cave_ores(current_x, current_y, tunnel_width, tunnel_height)
-        
-        # Move to next tunnel segment
-        current_x += tunnel_direction * random.randint(1, 3)
-        current_y += random.randint(-1, 1)
-        
-        # Occasionally change direction
-        if random.random() < 0.3:
-            tunnel_direction *= -1
-    
-    # Generate cave rooms
-    num_rooms = random.randint(2, 4)
-    for _ in range(num_rooms):
-        room_x = center_x + random.randint(-15, 15)
-        room_y = surface_y - random.randint(3, 15)
-        room_width = random.randint(5, 10)
-        room_height = random.randint(4, 8)
-        
-        # Create room
-        for rx in range(room_x - room_width//2, room_x + room_width//2 + 1):
-            for ry in range(room_y - room_height, room_y + 1):
-                if get_block(rx, ry) in ["stone", "dirt", "grass"]:
-                    set_block(rx, ry, "air")
-        
-        # Add to cave data
-        cave_data["rooms"].append((room_x, room_y, room_width, room_height))
-        
-        # Place ores in room (higher chance for rare ores)
-        place_cave_ores(room_x, room_y, room_width, room_height, is_room=True)
-    
-    cave_systems.append(cave_data)
-    print(f"🕳️ Cave system generated at ({center_x}, {surface_y}) with {len(cave_data['tunnels'])} tunnels and {len(cave_data['rooms'])} rooms")
-
-def place_cave_ores(x, y, width, height, is_room=False):
-    """Place ores in cave areas with diamonds being rare"""
-    ore_blocks = []
-    
-    # Count total air blocks in area
-    for tx in range(x - width//2, x + width//2 + 1):
-        for ty in range(y - height, y + 1):
-            if get_block(tx, ty) == "air":
-                ore_blocks.append((tx, ty))
-    
-    if not ore_blocks:
-        return
-    
-    # Place ores based on rarity
-    for tx, ty in ore_blocks:
-        ore_chance = random.random()
-        
-        if is_room:
-            # Higher ore chance in rooms
-            if ore_chance < 0.15:  # 15% chance for coal
-                set_block(tx, ty, "coal")
-            elif ore_chance < 0.25:  # 10% chance for iron
-                set_block(tx, ty, "iron")
-            elif ore_chance < 0.27:  # 2% chance for gold
-                set_block(tx, ty, "gold")
-            elif ore_chance < 0.28:  # 1% chance for diamond (very rare!)
-                set_block(tx, ty, "diamond")
-        else:
-            # Lower ore chance in tunnels
-            if ore_chance < 0.08:  # 8% chance for coal
-                set_block(tx, ty, "coal")
-            elif ore_chance < 0.12:  # 4% chance for iron
-                set_block(tx, ty, "iron")
-            elif ore_chance < 0.13:  # 1% chance for gold
-                set_block(tx, ty, "gold")
-            elif ore_chance < 0.131:  # 0.1% chance for diamond (extremely rare!)
-                set_block(tx, ty, "diamond")
+# Cave generation functions removed
 
 # =============================================================================
 # PERFORMANCE MONITORING SYSTEM
@@ -6454,16 +6214,6 @@ def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
         for dx in range(2, width - 2):
             if random.random() < 0.4:
                 set_block(origin_x + dx, ground_y - 1, "gold")
-    elif fortress_type == "crystal_cavern":
-        # Crystal Cavern - underground with crystals
-        height = 20
-        width = 25
-        floor_levels = [ground_y - 5, ground_y - 10, ground_y - 15, ground_y - 20]
-        # Add crystal blocks
-        for dx in range(3, width - 3):
-            for dy in range(1, 5):
-                if random.random() < 0.2:
-                    set_block(origin_x + dx, ground_y - dy, "diamond")
     elif fortress_type == "demon_castle":
         # Demon Castle - dark and menacing
         floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9, ground_y - 12]
@@ -7330,16 +7080,7 @@ def draw_world():
         if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
             screen.blit(img, (screen_x, screen_y))
 
-    # Draw cave entrance indicators
-    for cave_x, cave_y in cave_entrances:
-        screen_x = (cave_x * TILE_SIZE) - camera_x
-        screen_y = (cave_y * TILE_SIZE) - camera_y
-        
-        # Only draw if on screen
-        if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
-            # Draw cave entrance indicator (dark circle)
-            pygame.draw.circle(screen, (50, 50, 50), (screen_x + TILE_SIZE//2, screen_y + TILE_SIZE//2), TILE_SIZE//3)
-            pygame.draw.circle(screen, (30, 30, 30), (screen_x + TILE_SIZE//2, screen_y + TILE_SIZE//2), TILE_SIZE//4)
+    # Cave entrance indicators removed - caves are disabled
 
         # Draw Lost Ruins entrance indicators
         for ruins_x, ruins_y in lost_ruins_entrances:
@@ -11491,15 +11232,7 @@ def generate_initial_world(world_seed=None):
         if get_block(x, 10) == "grass":  # Only on clean flat ground (Y=10)
             flat_areas.append(x)
     
-    # Generate cave systems (rare but valuable)
-    cave_count = 0
-    for x in range(start_x - world_width//2, start_x + world_width//2):
-        if get_block(x, 10) == "grass" and random.random() < 0.02:  # 2% chance for cave
-            generate_cave_system(x, 10)
-            cave_count += 1
-    
-    if cave_count > 0:
-        print(f"🕳️ Generated {cave_count} cave systems in the world!")
+    # Cave generation removed - caves are disabled
     
     # Generate villages (common and useful)
     village_count = 0
