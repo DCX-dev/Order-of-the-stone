@@ -21,13 +21,25 @@ jobs:
       with:
         python-version: '3.12'
     
-    - name: Install dependencies
+    - name: Install ONLY essential dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller pygame pillow
+        pip install --no-deps pygame==2.6.1
+        pip install --no-deps Pillow==10.4.0
+        pip install pyinstaller==6.11.1
     
     - name: Build Windows executable
       run: python build_simple.py windows
+      
+    - name: Verify executable was created
+      run: |
+        if (Test-Path "releases/windows/Order_of_the_Stone.exe") {
+          Write-Host "✅ Executable created successfully!"
+          Get-Item "releases/windows/Order_of_the_Stone.exe" | Format-List
+        } else {
+          Write-Host "❌ ERROR: Executable not found!"
+          exit 1
+        }
     
     - name: Upload Windows executable
       uses: actions/upload-artifact@v4
@@ -49,13 +61,25 @@ jobs:
       with:
         python-version: '3.12'
     
-    - name: Install dependencies
+    - name: Install ONLY essential dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller pygame pillow
+        pip install --no-deps pygame==2.6.1
+        pip install --no-deps Pillow==10.4.0
+        pip install pyinstaller==6.11.1
     
     - name: Build Mac executable
       run: python build_simple.py mac
+      
+    - name: Verify executable was created
+      run: |
+        if [ -f "releases/mac/Order_of_the_Stone" ]; then
+          echo "✅ Executable created successfully!"
+          ls -lh "releases/mac/Order_of_the_Stone"
+        else
+          echo "❌ ERROR: Executable not found!"
+          exit 1
+        fi
     
     - name: Upload Mac executable
       uses: actions/upload-artifact@v4
