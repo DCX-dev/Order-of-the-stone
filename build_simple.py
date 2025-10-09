@@ -17,7 +17,7 @@ def build_executable(platform="mac"):
     main_script = Path("Order of the stone/assets/com/dreamcrusherx/Order of the stone/main_script/order_of_the_stone.py")
     
     if not main_script.exists():
-        print(f"❌ Main script not found: {main_script}")
+        print(f"[ERROR] Main script not found: {main_script}")
         return False
     
     # Get the assets directory
@@ -26,14 +26,14 @@ def build_executable(platform="mac"):
     music_dir = assets_dir / "music"
     
     if not assets_dir.exists():
-        print(f"❌ Assets directory not found: {assets_dir}")
+        print(f"[ERROR] Assets directory not found: {assets_dir}")
         return False
     
-    print(f"🔨 Building Order of the Stone executable for {platform.upper()}...")
-    print(f"📁 Main script: {main_script}")
-    print(f"📁 Assets: {assets_dir}")
-    print(f"📁 Damage sounds: {damage_dir}")
-    print(f"🎵 Music: {music_dir}")
+    print(f"Building Order of the Stone executable for {platform.upper()}...")
+    print(f"Main script: {main_script}")
+    print(f"Assets: {assets_dir}")
+    print(f"Damage sounds: {damage_dir}")
+    print(f"Music: {music_dir}")
     
     # Get the game modules directory
     game_modules = Path("Order of the stone/assets/com/dreamcrusherx/Order of the stone")
@@ -75,13 +75,13 @@ def build_executable(platform="mac"):
         str(main_script)
     ]
     
-    print(f"🚀 Running: {' '.join(cmd)}")
+    print(f"Running PyInstaller...")
     
     try:
         result = subprocess.run(cmd, check=True)
         
         if result.returncode == 0:
-            print(f"✅ Build successful for {platform.upper()}!")
+            print(f"[SUCCESS] Build successful for {platform.upper()}!")
             
             # Check if executable was created
             exe_path = Path(f"dist/{exe_name}")
@@ -92,27 +92,27 @@ def build_executable(platform="mac"):
                 output_file = output_dir / exe_name
                 shutil.copy2(exe_path, output_file)
                 
-                print(f"📦 Executable created: {output_file}")
-                print(f"🎮 {platform.upper()} executable is ready!")
+                print(f"[SUCCESS] Executable created: {output_file}")
+                print(f"[SUCCESS] {platform.upper()} executable is ready!")
                 return True
             else:
-                print(f"❌ Executable not found in dist/")
+                print(f"[ERROR] Executable not found in dist/")
                 return False
         else:
-            print("❌ Build failed!")
+            print("[ERROR] Build failed!")
             return False
             
     except subprocess.CalledProcessError as e:
-        print(f"❌ Build error: {e}")
+        print(f"[ERROR] Build error: {e}")
         return False
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"[ERROR] Unexpected error: {e}")
         return False
 
 def build_all():
     """Build executables for all platforms"""
     print("=" * 60)
-    print("🎮 Building Order of the Stone for ALL platforms")
+    print("Building Order of the Stone for ALL platforms")
     print("=" * 60)
     
     platforms = ["mac", "windows"]
@@ -135,13 +135,13 @@ def build_all():
     
     # Print summary
     print("\n" + "=" * 60)
-    print("📊 BUILD SUMMARY")
+    print("BUILD SUMMARY")
     print("=" * 60)
     for platform, success in results.items():
-        status = "✅ SUCCESS" if success else "❌ FAILED"
+        status = "[SUCCESS]" if success else "[FAILED]"
         print(f"{platform.upper()}: {status}")
     
-    print("\n📁 Executables are in the 'releases/' directory")
+    print("\nExecutables are in the 'releases/' directory")
     print("=" * 60)
     
     return all(results.values())
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         if platform in ["mac", "windows"]:
             success = build_executable(platform)
         else:
-            print(f"❌ Unknown platform: {platform}")
+            print(f"[ERROR] Unknown platform: {platform}")
             print("Usage: python build_simple.py [mac|windows|all]")
             sys.exit(1)
     else:
