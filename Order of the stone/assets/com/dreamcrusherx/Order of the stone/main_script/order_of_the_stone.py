@@ -1942,6 +1942,11 @@ def draw_weather_effects():
         draw_lightning()
     elif current_weather == "snow":
         draw_snow()
+        accumulate_snow()  # Gradually add snow to world
+    
+    # Gradually melt snow if weather is clear
+    if current_weather == "clear" and len(snow_blocks) > 0:
+        start_snow_melting()
     
     # Update thunder timer
     if thunder_timer > 0:
@@ -2178,28 +2183,46 @@ def update_weather():
         
         print(f"🌤️ Weather changed to: {current_weather}")
 
-def start_snow_weather():
-    """Start snow weather - cover world with snow"""
+def accumulate_snow():
+    """Gradually accumulate snow on surface blocks during snow weather"""
     global snow_blocks
     
-    print("❄️ Snow weather started - covering world with snow!")
+    # Only add snow occasionally for gradual accumulation
+    if random.random() > 0.95:  # 5% chance per frame
+        return
     
     # Get player position for snow coverage area
     player_x = int(player["x"])
     player_y = int(player["y"])
     
-    # Cover area around player with snow (50x50 blocks)
-    coverage_size = 25
-    for dx in range(-coverage_size, coverage_size):
-        for dy in range(-coverage_size, coverage_size):
-            x = player_x + dx
-            y = player_y + dy
-            
-            # Only place snow on grass, dirt, or stone
+    # Add snow to a few random columns around player
+    for _ in range(3):  # Add to 3 random locations per frame
+        dx = random.randint(-25, 25)
+        x = player_x + dx
+        
+        # Find the top surface block (first solid block from top)
+        for y in range(0, player_y + 50):  # Search from top down
             block = get_block(x, y)
-            if block in ["grass", "dirt", "stone"]:
-                set_block(x, y, "snow")
-                snow_blocks.append((x, y))
+            block_above = get_block(x, y - 1)
+            
+            # Check if this is a surface block (solid block with air above)
+            if block and block != "air" and (block_above == "air" or block_above is None):
+                # Only add snow on surface blocks (grass, dirt, stone, etc)
+                # Don't add snow on things like chests, doors, water, lava
+                if block in ["grass", "dirt", "stone", "sand", "oak_planks", "red_brick", "log", "leaves"]:
+                    # Place snow ON TOP of the block (not replacing it)
+                    snow_y = y - 1
+                    snow_location = (x, snow_y)
+                    
+                    # Only add if there's air above and we haven't already placed snow here
+                    if get_block(x, snow_y) == "air" and snow_location not in snow_blocks:
+                        set_block(x, snow_y, "snow")
+                        snow_blocks.append(snow_location)
+                break  # Found surface, move to next column
+
+def start_snow_weather():
+    """Start snow weather - initial message"""
+    print("❄️ Snow weather started - snow will gradually cover the world!")
 
 def start_snow_melting():
     """Start melting snow when weather changes from snow"""
@@ -2213,9 +2236,8 @@ def start_snow_melting():
         for _ in range(min(5, len(snow_blocks))):
             if snow_blocks:
                 x, y = snow_blocks.pop(0)
-                # Convert snow back to original block type
-                # For simplicity, convert to grass
-                set_block(x, y, "grass")
+                # Remove snow (turn to air) - reveals original block underneath
+                set_block(x, y, "air")
 
 # Village generation function removed - no more random NPCs
 
