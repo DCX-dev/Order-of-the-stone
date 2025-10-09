@@ -2,63 +2,64 @@ name: Build Game Executables
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allow manual trigger
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   build-windows:
+    name: Build Windows Executable
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
+        pip install pyinstaller pygame pillow
     
     - name: Build Windows executable
       run: python build_simple.py windows
     
     - name: Upload Windows executable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Order_of_the_Stone-Windows
         path: releases/windows/Order_of_the_Stone.exe
         retention-days: 90
-  
+
   build-mac:
+    name: Build Mac Executable
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
+        pip install pyinstaller pygame pillow
     
     - name: Build Mac executable
       run: python build_simple.py mac
     
     - name: Upload Mac executable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Order_of_the_Stone-Mac
         path: releases/mac/Order_of_the_Stone
         retention-days: 90
-
