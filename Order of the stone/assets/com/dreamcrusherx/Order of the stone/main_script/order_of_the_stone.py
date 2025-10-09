@@ -1872,30 +1872,25 @@ def draw_sky_background():
     # Blit cached sky gradient (much faster than drawing line by line)
     screen.blit(_cached_sky_surface, (0, 0))
     
-    # Draw clouds (these are still drawn dynamically as they move)
+    # Draw clouds (fresh each frame for proper alpha blending)
     for cloud in clouds:
-        # Use cached cloud surface if available
-        if 'surface' not in cloud:
-            # Create cloud surface with alpha (cache it)
-            cloud_surface = pygame.Surface((cloud['width'], cloud['height']), pygame.SRCALPHA)
-            
-            # Draw fluffy cloud shape using multiple circles
-            cloud_color = (255, 255, 255, cloud['opacity'])
-            
-            # Main cloud body
-            pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//2, cloud['height']//2), cloud['height']//2)
-            
-            # Cloud puffs
-            pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//3, cloud['height']//3), cloud['height']//3)
-            pygame.draw.circle(cloud_surface, cloud_color, (2*cloud['width']//3, cloud['height']//3), cloud['height']//3)
-            pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
-            pygame.draw.circle(cloud_surface, cloud_color, (3*cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
-            
-            # Cache the cloud surface
-            cloud['surface'] = cloud_surface
+        # Create cloud surface with alpha
+        cloud_surface = pygame.Surface((cloud['width'], cloud['height']), pygame.SRCALPHA)
         
-        # Blit cached cloud to screen
-        screen.blit(cloud['surface'], (cloud['x'], cloud['y']))
+        # Draw fluffy cloud shape using multiple circles
+        cloud_color = (255, 255, 255, cloud['opacity'])
+        
+        # Main cloud body
+        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//2, cloud['height']//2), cloud['height']//2)
+        
+        # Cloud puffs
+        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//3, cloud['height']//3), cloud['height']//3)
+        pygame.draw.circle(cloud_surface, cloud_color, (2*cloud['width']//3, cloud['height']//3), cloud['height']//3)
+        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
+        pygame.draw.circle(cloud_surface, cloud_color, (3*cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
+        
+        # Blit cloud to screen
+        screen.blit(cloud_surface, (cloud['x'], cloud['y']))
 
 # Village generation function removed - no more random NPCs
 
@@ -7073,47 +7068,41 @@ def calculate_armor_damage_reduction(base_damage):
         return base_damage
 
 def draw_world():
-    # OPTIMIZED: Only draw blocks that are visible on screen
-    # Calculate visible area bounds for culling
+    # OPTIMIZED: Only check blocks that could be visible on screen
+    # Calculate visible area bounds
     min_x = (camera_x // TILE_SIZE) - 1
-    max_x = ((camera_x + SCREEN_WIDTH) // TILE_SIZE) + 1
+    max_x = ((camera_x + SCREEN_WIDTH) // TILE_SIZE) + 2
     min_y = (camera_y // TILE_SIZE) - 1
-    max_y = ((camera_y + SCREEN_HEIGHT) // TILE_SIZE) + 1
+    max_y = ((camera_y + SCREEN_HEIGHT) // TILE_SIZE) + 2
     
-    # Draw blocks safely (skip None, air, or unknown keys)
-    for key, block in world_data.items():
-        if not block or block == "air":
-            continue
-        # Parse the "x,y" string key format
-        try:
-            x, y = map(int, key.split(','))
-        except (ValueError, AttributeError):
-            continue
-        
-        # OPTIMIZED: Skip blocks outside visible area (culling)
-        if x < min_x or x > max_x or y < min_y or y > max_y:
-            continue
-        
-        img = textures.get(block)
-        if img is None:
-            continue
-        
-        # Check if this is a GIF texture that should be animated
-        gif_path = None
-        if block == "carrot":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")
-        elif block == "wheat":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
-        
-        # Use static texture for now
-        animated_frame = None
-        if animated_frame:
-            img = animated_frame
-        
-        # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
-        screen_x = x * TILE_SIZE - camera_x
-        screen_y = y * TILE_SIZE - camera_y
-        if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
+    # Only iterate through potentially visible blocks (HUGE performance boost!)
+    for x in range(min_x, max_x):
+        for y in range(min_y, max_y):
+            # Get block at this position
+            block = get_block(x, y)
+            
+            if not block or block == "air":
+                continue
+            
+            img = textures.get(block)
+            if img is None:
+                continue
+            
+            # Check if this is a GIF texture that should be animated
+            gif_path = None
+            if block == "carrot":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")
+            elif block == "wheat":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+            
+            # Use static texture for now
+            animated_frame = None
+            if animated_frame:
+                img = animated_frame
+            
+            # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
+            screen_x = x * TILE_SIZE - camera_x
+            screen_y = y * TILE_SIZE - camera_y
             screen.blit(img, (screen_x, screen_y))
 
     # Cave entrance indicators removed - caves are disabled
