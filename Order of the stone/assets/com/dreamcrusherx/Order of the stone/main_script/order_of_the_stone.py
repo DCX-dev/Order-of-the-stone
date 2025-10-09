@@ -7069,11 +7069,11 @@ def calculate_armor_damage_reduction(base_damage):
 
 def draw_world():
     # OPTIMIZED: Only check blocks that could be visible on screen
-    # Calculate visible area bounds
-    min_x = (camera_x // TILE_SIZE) - 1
-    max_x = ((camera_x + SCREEN_WIDTH) // TILE_SIZE) + 2
-    min_y = (camera_y // TILE_SIZE) - 1
-    max_y = ((camera_y + SCREEN_HEIGHT) // TILE_SIZE) + 2
+    # Calculate visible area bounds (convert to integers for range())
+    min_x = int(camera_x // TILE_SIZE) - 1
+    max_x = int((camera_x + SCREEN_WIDTH) // TILE_SIZE) + 2
+    min_y = int(camera_y // TILE_SIZE) - 1
+    max_y = int((camera_y + SCREEN_HEIGHT) // TILE_SIZE) + 2
     
     # Only iterate through potentially visible blocks (HUGE performance boost!)
     for x in range(min_x, max_x):
