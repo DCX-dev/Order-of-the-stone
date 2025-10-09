@@ -21,15 +21,16 @@ jobs:
       with:
         python-version: '3.12'
     
-    - name: Install ONLY essential dependencies
+    - name: Install dependencies for Windows
       run: |
         python -m pip install --upgrade pip
-        pip install --no-deps pygame==2.6.1
-        pip install --no-deps Pillow==10.4.0
+        pip install pygame==2.6.1 Pillow==10.4.0
         pip install pyinstaller==6.11.1
+      shell: cmd
     
     - name: Build Windows executable
       run: python build_simple.py windows
+      shell: cmd
       
     - name: Verify executable was created
       run: |
