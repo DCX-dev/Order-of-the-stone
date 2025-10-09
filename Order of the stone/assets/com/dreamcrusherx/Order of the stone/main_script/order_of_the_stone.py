@@ -1852,25 +1852,12 @@ def update_clouds():
             cloud['x'] = -200
             cloud['y'] = random.randint(50, 200)
 
-# Cached sky gradient surface for performance
-_cached_sky_surface = None
+# Sky background optimized for performance
 
 def draw_sky_background():
-    """Draw the sky with clouds only - optimized version"""
-    global _cached_sky_surface
-    
-    # Create cached sky gradient only once
-    if _cached_sky_surface is None:
-        _cached_sky_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        # Draw sky gradient (light blue to darker blue)
-        for y in range(SCREEN_HEIGHT):
-            # Create gradient from light blue at top to darker blue at bottom
-            blue_intensity = int(191 - (y / SCREEN_HEIGHT) * 50)  # 191 to 141
-            sky_color = (0, blue_intensity, 255)
-            pygame.draw.line(_cached_sky_surface, sky_color, (0, y), (SCREEN_WIDTH, y))
-    
-    # Blit cached sky gradient (much faster than drawing line by line)
-    screen.blit(_cached_sky_surface, (0, 0))
+    """Draw the sky with clouds only - simple solid color for performance"""
+    # Use simple solid sky color instead of gradient (much faster!)
+    screen.fill((135, 206, 235))  # Light blue sky color
     
     # Draw clouds (fresh each frame for proper alpha blending)
     for cloud in clouds:
