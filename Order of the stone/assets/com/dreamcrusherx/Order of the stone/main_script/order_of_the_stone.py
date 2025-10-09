@@ -873,9 +873,11 @@ head_bump_effect = False
 
 # Blood particle system
 blood_particles = []
+MAX_BLOOD_PARTICLES = 200  # Limit for performance
 
 # Block breaking particle system
 block_particles = []
+MAX_BLOCK_PARTICLES = 150  # Limit for performance
 
 # Shift key state tracking for reliable movement detection
 shift_key_pressed = False
@@ -1850,34 +1852,50 @@ def update_clouds():
             cloud['x'] = -200
             cloud['y'] = random.randint(50, 200)
 
+# Cached sky gradient surface for performance
+_cached_sky_surface = None
+
 def draw_sky_background():
-    """Draw the sky with clouds only"""
-    # Draw sky gradient (light blue to darker blue)
-    for y in range(SCREEN_HEIGHT):
-        # Create gradient from light blue at top to darker blue at bottom
-        blue_intensity = int(191 - (y / SCREEN_HEIGHT) * 50)  # 191 to 141
-        sky_color = (0, blue_intensity, 255)
-        pygame.draw.line(screen, sky_color, (0, y), (SCREEN_WIDTH, y))
+    """Draw the sky with clouds only - optimized version"""
+    global _cached_sky_surface
     
-    # Draw clouds
+    # Create cached sky gradient only once
+    if _cached_sky_surface is None:
+        _cached_sky_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        # Draw sky gradient (light blue to darker blue)
+        for y in range(SCREEN_HEIGHT):
+            # Create gradient from light blue at top to darker blue at bottom
+            blue_intensity = int(191 - (y / SCREEN_HEIGHT) * 50)  # 191 to 141
+            sky_color = (0, blue_intensity, 255)
+            pygame.draw.line(_cached_sky_surface, sky_color, (0, y), (SCREEN_WIDTH, y))
+    
+    # Blit cached sky gradient (much faster than drawing line by line)
+    screen.blit(_cached_sky_surface, (0, 0))
+    
+    # Draw clouds (these are still drawn dynamically as they move)
     for cloud in clouds:
-        # Create cloud surface with alpha
-        cloud_surface = pygame.Surface((cloud['width'], cloud['height']), pygame.SRCALPHA)
+        # Use cached cloud surface if available
+        if 'surface' not in cloud:
+            # Create cloud surface with alpha (cache it)
+            cloud_surface = pygame.Surface((cloud['width'], cloud['height']), pygame.SRCALPHA)
+            
+            # Draw fluffy cloud shape using multiple circles
+            cloud_color = (255, 255, 255, cloud['opacity'])
+            
+            # Main cloud body
+            pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//2, cloud['height']//2), cloud['height']//2)
+            
+            # Cloud puffs
+            pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//3, cloud['height']//3), cloud['height']//3)
+            pygame.draw.circle(cloud_surface, cloud_color, (2*cloud['width']//3, cloud['height']//3), cloud['height']//3)
+            pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
+            pygame.draw.circle(cloud_surface, cloud_color, (3*cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
+            
+            # Cache the cloud surface
+            cloud['surface'] = cloud_surface
         
-        # Draw fluffy cloud shape using multiple circles
-        cloud_color = (255, 255, 255, cloud['opacity'])
-        
-        # Main cloud body
-        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//2, cloud['height']//2), cloud['height']//2)
-        
-        # Cloud puffs
-        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//3, cloud['height']//3), cloud['height']//3)
-        pygame.draw.circle(cloud_surface, cloud_color, (2*cloud['width']//3, cloud['height']//3), cloud['height']//3)
-        pygame.draw.circle(cloud_surface, cloud_color, (cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
-        pygame.draw.circle(cloud_surface, cloud_color, (3*cloud['width']//4, 2*cloud['height']//3), cloud['height']//4)
-        
-        # Blit cloud to screen
-        screen.blit(cloud_surface, (cloud['x'], cloud['y']))
+        # Blit cached cloud to screen
+        screen.blit(cloud['surface'], (cloud['x'], cloud['y']))
 
 # Village generation function removed - no more random NPCs
 
@@ -3887,6 +3905,10 @@ def add_blood_particle(x, y):
     """Add a single blood particle at the specified location"""
     global blood_particles
     
+    # Performance: Limit max particles
+    if len(blood_particles) >= MAX_BLOOD_PARTICLES:
+        return
+    
     # Random direction and speed for the particle
     angle = random.uniform(0, 2 * math.pi)
     speed = random.uniform(2, 6)
@@ -3978,13 +4000,16 @@ def update_blood_particles():
             blood_particles.remove(particle)
 
 def draw_blood_particles():
-    """Draw all blood particles with enhanced visibility"""
+    """Draw all blood particles with enhanced visibility - optimized"""
     for particle in blood_particles:
         # Calculate alpha based on remaining life
         alpha = int(255 * (particle['life'] / particle['max_life']))
         
-        # Create surface with alpha
-        particle_surface = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        # Use cached surface or create once
+        if 'surface' not in particle:
+            particle['surface'] = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        particle_surface = particle['surface']
+        particle_surface.fill((0, 0, 0, 0))  # Clear previous frame
         
         # Enhanced blood colors - more vibrant red with slight variation
         base_red = 255
@@ -4006,6 +4031,14 @@ def draw_blood_particles():
 def create_block_particles(x, y, block_type, count=12):
     """Create block breaking particles at the specified location"""
     global block_particles
+    
+    # Performance: Limit max particles
+    if len(block_particles) >= MAX_BLOCK_PARTICLES:
+        return
+    
+    # Reduce count if we're near the limit
+    if len(block_particles) + count > MAX_BLOCK_PARTICLES:
+        count = MAX_BLOCK_PARTICLES - len(block_particles)
     
     # Define particle colors for different block types
     particle_colors = {
@@ -4072,13 +4105,16 @@ def update_block_particles():
             block_particles.remove(particle)
 
 def draw_block_particles():
-    """Draw all block particles"""
+    """Draw all block particles - optimized"""
     for particle in block_particles:
         # Calculate alpha based on remaining life
         alpha = int(255 * (particle['life'] / particle['max_life']))
         
-        # Create surface with alpha
-        particle_surface = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        # Use cached surface or create once
+        if 'surface' not in particle:
+            particle['surface'] = pygame.Surface((particle['size'] * 2, particle['size'] * 2), pygame.SRCALPHA)
+        particle_surface = particle['surface']
+        particle_surface.fill((0, 0, 0, 0))  # Clear previous frame
         
         # Use the particle's color with alpha
         color = particle['color']
