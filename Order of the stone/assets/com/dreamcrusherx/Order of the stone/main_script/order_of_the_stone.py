@@ -785,11 +785,21 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TILE_SIZE = 32
 
 # =============================================================================
-# COOL STRUCTURES SYSTEM
+# FORTRESS SYSTEM CONFIGURATION
 # =============================================================================
 
-# Structure types with different rarities and characteristics
-STRUCTURE_TYPES = {
+# Fortress types with different rarities and characteristics
+FORTRESS_TYPES = {
+    "ancient_ruins": {
+        "name": "Ancient Ruins",
+        "rarity": "common",
+        "spawn_chance": 0.15,
+        "min_size": 8,
+        "max_size": 12,
+        "materials": ["stone", "dirt", "grass"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "basic"
+    },
     "temple": {
         "name": "Ancient Temple",
         "rarity": "uncommon",
@@ -798,8 +808,7 @@ STRUCTURE_TYPES = {
         "max_size": 18,
         "materials": ["stone", "red_brick"],
         "special_blocks": ["diamond", "gold"],
-        "loot_tier": "epic",
-        "has_puzzles": True
+        "loot_tier": "epic"
     },
     "pyramid": {
         "name": "Desert Pyramid",
@@ -809,19 +818,7 @@ STRUCTURE_TYPES = {
         "max_size": 25,
         "materials": ["sand", "stone"],
         "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "treasure",
-        "has_treasure_chamber": True
-    },
-    "ruins": {
-        "name": "Ancient Ruins",
-        "rarity": "common",
-        "spawn_chance": 0.18,
-        "min_size": 8,
-        "max_size": 14,
-        "materials": ["stone", "dirt"],
-        "special_blocks": ["iron", "coal", "gold"],
-        "loot_tier": "basic",
-        "half_destroyed": True
+        "loot_tier": "treasure"
     },
     "wizard_tower": {
         "name": "Wizard Tower",
@@ -831,8 +828,7 @@ STRUCTURE_TYPES = {
         "max_size": 12,
         "materials": ["oak_planks", "stone"],
         "special_blocks": ["diamond"],
-        "loot_tier": "magic",
-        "tall": True
+        "loot_tier": "magic"
     },
     "dungeon": {
         "name": "Underground Dungeon",
@@ -842,9 +838,47 @@ STRUCTURE_TYPES = {
         "max_size": 20,
         "materials": ["stone", "red_brick"],
         "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "epic",
-        "underground": True,
-        "has_monsters": True
+        "loot_tier": "epic"
+    },
+    "dragon_keep": {
+        "name": "Dragon Keep",
+        "rarity": "rare",
+        "spawn_chance": 0.05,
+        "min_size": 15,
+        "max_size": 20,
+        "materials": ["red_brick", "stone"],
+        "special_blocks": ["diamond", "gold", "iron", "coal"],
+        "loot_tier": "epic"
+    },
+    "bandit_camp": {
+        "name": "Bandit Camp",
+        "rarity": "common",
+        "spawn_chance": 0.12,
+        "min_size": 5,
+        "max_size": 8,
+        "materials": ["dirt", "grass", "oak_planks"],
+        "special_blocks": ["iron", "coal"],
+        "loot_tier": "basic"
+    },
+    "demon_castle": {
+        "name": "Demon Castle",
+        "rarity": "epic",
+        "spawn_chance": 0.03,
+        "min_size": 18,
+        "max_size": 22,
+        "materials": ["red_brick", "stone"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "epic"
+    },
+    "treasure_vault": {
+        "name": "Treasure Vault",
+        "rarity": "rare",
+        "spawn_chance": 0.06,
+        "min_size": 8,
+        "max_size": 12,
+        "materials": ["stone", "dirt"],
+        "special_blocks": ["diamond", "gold", "iron", "coal"],
+        "loot_tier": "treasure"
     },
     "castle_ruins": {
         "name": "Castle Ruins",
@@ -854,15 +888,15 @@ STRUCTURE_TYPES = {
         "max_size": 28,
         "materials": ["red_brick", "stone"],
         "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "epic",
-        "large": True
+        "loot_tier": "epic"
     }
 }
 
-# Discovery system - tracks which structures player has found
-discovered_structures = set()
-current_structure_discovery = None
+# Discovery system - tracks which fortresses player has found
+discovered_fortresses = set()
+current_fortress_discovery = None
 discovery_timer = 0
+fortress_discovery_animation_scale = 1.0  # Scale for big discovery animation
 
 # Collision system
 head_bump_timer = 0
@@ -3980,8 +4014,8 @@ def add_chat_message(username, message):
     print(f"💬 {username}: {message}")
 
 def draw_fortress_discovery():
-    """Draw fortress discovery UI"""
-    global discovery_timer, current_fortress_discovery
+    """Draw fortress discovery UI with big animation for new discoveries"""
+    global discovery_timer, current_fortress_discovery, fortress_discovery_animation_scale
     
     if current_fortress_discovery is None:
         return
@@ -3990,6 +4024,7 @@ def draw_fortress_discovery():
     discovery_timer -= 1
     if discovery_timer <= 0:
         current_fortress_discovery = None
+        fortress_discovery_animation_scale = 1.0
         return
     
     # Get fortress info
@@ -4008,36 +4043,60 @@ def draw_fortress_discovery():
     
     text_color = rarity_colors.get(rarity, (255, 255, 255))
     
+    # BIG ANIMATION: Start big and fade/scale down
+    # Animation lasts for first 180 frames (3 seconds), then disappears
+    max_timer = 180
+    
+    if discovery_timer > max_timer - 60:  # First second: grow in
+        # Scale from 0 to 2.5x (BIG!)
+        progress = (max_timer - discovery_timer) / 60.0
+        fortress_discovery_animation_scale = progress * 2.5
+        alpha = int(progress * 255)
+    elif discovery_timer > 60:  # Middle: stay big
+        fortress_discovery_animation_scale = 2.5
+        alpha = 255
+    else:  # Last second: fade out
+        progress = discovery_timer / 60.0
+        fortress_discovery_animation_scale = 2.5 * progress
+        alpha = int(progress * 255)
+    
     # Create discovery text
     discovery_text = f"🏰 DISCOVERED: {fortress_name}"
     rarity_text = f"Rarity: {rarity.upper()}"
     
-    # Use larger font for discovery
-    large_font = pygame.font.Font(None, 48)
-    medium_font = pygame.font.Font(None, 32)
+    # Use larger font scaled by animation
+    base_large_size = int(48 * fortress_discovery_animation_scale)
+    base_medium_size = int(32 * fortress_discovery_animation_scale)
+    large_font = pygame.font.Font(None, max(20, min(200, base_large_size)))
+    medium_font = pygame.font.Font(None, max(16, min(150, base_medium_size)))
     
     # Render text
     discovery_surface = large_font.render(discovery_text, True, text_color)
     rarity_surface = medium_font.render(rarity_text, True, text_color)
     
+    # Apply alpha
+    discovery_surface.set_alpha(alpha)
+    rarity_surface.set_alpha(alpha)
+    
     # Center the text on screen
     discovery_x = (SCREEN_WIDTH - discovery_surface.get_width()) // 2
     discovery_y = SCREEN_HEIGHT // 2 - 50
     rarity_x = (SCREEN_WIDTH - rarity_surface.get_width()) // 2
-    rarity_y = discovery_y + 50
+    rarity_y = discovery_y + discovery_surface.get_height() + 10
     
-    # Draw background
-    bg_width = max(discovery_surface.get_width(), rarity_surface.get_width()) + 40
-    bg_height = 120
+    # Draw background with scaled size
+    bg_width = int((max(discovery_surface.get_width(), rarity_surface.get_width()) + 40))
+    bg_height = int((discovery_surface.get_height() + rarity_surface.get_height() + 60))
     bg_x = (SCREEN_WIDTH - bg_width) // 2
     bg_y = discovery_y - 20
     
     bg_surface = pygame.Surface((bg_width, bg_height), pygame.SRCALPHA)
-    bg_surface.fill((0, 0, 0, 150))
+    bg_surface.fill((0, 0, 0, min(200, alpha)))
     screen.blit(bg_surface, (bg_x, bg_y))
     
-    # Draw border
-    pygame.draw.rect(screen, text_color, (bg_x, bg_y, bg_width, bg_height), 3)
+    # Draw border with pulsing effect
+    border_width = 3 + int(2 * abs(math.sin(discovery_timer * 0.1)))
+    pygame.draw.rect(screen, text_color, (bg_x, bg_y, bg_width, bg_height), border_width)
     
     # Draw text
     screen.blit(discovery_surface, (discovery_x, discovery_y))
@@ -14156,8 +14215,8 @@ while running:
         draw_inventory()
         draw_status_bars()
         draw_boss_health_bar()  # EXTREME ENGINEERING: Legendary boss health bar
-        # draw_fortress_discovery()  # REMOVED - fortress system disabled
-        # draw_fortress_minimap()  # REMOVED - fortress system disabled
+        draw_fortress_discovery()  # EXTREME ENGINEERING: Big animated fortress discovery
+        draw_fortress_minimap()  # EXTREME ENGINEERING: Fortress minimap in corner
         draw_multiplayer_chat()  # EXTREME ENGINEERING: Multiplayer chat interface
         
         # Portal and boss systems removed - using ability system instead
