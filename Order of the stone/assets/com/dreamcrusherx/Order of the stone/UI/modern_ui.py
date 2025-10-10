@@ -299,7 +299,7 @@ class ModernUI:
             "Right Click - Place Block",
             "E - Open Chests",
             "H - Chat",
-            "T - Inventory",
+            "I - Inventory",
             "L - Achievements",
             "B - Test Block Breaking",
             "N - Nuclear Option (Clear All Blocks)",
@@ -339,7 +339,7 @@ class ModernUI:
             "",
             "Features:",
             "• Procedural world generation",
-            "• Village and fortress exploration",
+            "• Fortress exploration",
             "• Beautiful modern UI",
             "",
             "Created with Python and Pygame"
