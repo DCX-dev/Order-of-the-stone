@@ -7600,29 +7600,29 @@ def draw_world():
             # Get block at this position
             block = get_block(x, y)
             
-        if not block or block == "air":
-            continue
-        
-        img = textures.get(block)
-        if img is None:
-            continue
-        
-        # Check if this is a GIF texture that should be animated
-        gif_path = None
-        if block == "carrot":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")
-        elif block == "wheat":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
-        
-        # Use static texture for now
-        animated_frame = None
-        if animated_frame:
-            img = animated_frame
-        
-        # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
-        screen_x = x * TILE_SIZE - camera_x
-        screen_y = y * TILE_SIZE - camera_y
-        screen.blit(img, (screen_x, screen_y))
+            if not block or block == "air":
+                continue
+            
+            img = textures.get(block)
+            if img is None:
+                continue
+            
+            # Check if this is a GIF texture that should be animated
+            gif_path = None
+            if block == "carrot":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")
+            elif block == "wheat":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+            
+            # Use static texture for now
+            animated_frame = None
+            if animated_frame:
+                img = animated_frame
+            
+            # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
+            screen_x = x * TILE_SIZE - camera_x
+            screen_y = y * TILE_SIZE - camera_y
+            screen.blit(img, (screen_x, screen_y))
 
     # Cave entrance indicators removed - caves are disabled
 
