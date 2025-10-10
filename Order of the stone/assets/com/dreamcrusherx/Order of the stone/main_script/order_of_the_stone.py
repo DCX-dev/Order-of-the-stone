@@ -8461,9 +8461,9 @@ def break_block(mx, my):
     else:
         add_to_inventory(block)
         
-        # Remove torch from light sources if it's a torch
-        if block == "torch":
-            remove_torch(bx, by)
+        # Remove torch from light sources if it's a torch (disabled - lighting system off)
+        # if block == "torch":
+        #     remove_torch(bx, by)
         
         # Create block breaking particles
         particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
@@ -8545,8 +8545,8 @@ def place_block(mx, my):
         print(f"📦 Placed EMPTY chest at ({bx}, {by}) - player chests start empty!")
     elif item_type == "torch":
         set_block(bx, by, "torch")
-        add_torch(bx, by)  # Add as light source
-        print(f"🔥 Placed torch at ({bx}, {by}) - lights up area!")
+        # add_torch(bx, by)  # Lighting system disabled
+        print(f"🔥 Placed torch at ({bx}, {by})!")
     else:
         set_block(bx, by, item_type)
     
@@ -11301,8 +11301,8 @@ def spawn_monsters_everywhere_at_night():
                         nearby_monster = True
                         break
             
-            # Spawn a monster if none nearby AND area is dark
-            if not nearby_monster and random.random() < 0.7 and is_area_dark(x, surface_y):  # 70% chance to spawn in dark areas
+            # Spawn a monster if none nearby
+            if not nearby_monster and random.random() < 0.7:  # 70% chance to spawn at night
                 # Randomly choose between monster and zombie (30% chance for zombie)
                 if random.random() < 0.3:  # 30% chance for zombie
                     monster_type = "zombie"
@@ -14426,7 +14426,7 @@ while running:
         update_blood_particles()  # Update blood particle effects
         update_block_particles()  # Update block breaking particle effects
         update_fireball_projectiles()  # Update fireball projectiles
-        update_light_sources()  # Update torch light sources
+        # update_light_sources()  # DISABLED - lighting system disabled
         
         # Ability system removed
         
@@ -14452,7 +14452,7 @@ while running:
             validate_world_integrity()
 
         draw_world()
-        draw_darkness_overlay()  # Draw darkness based on depth (must be after world)
+        # draw_darkness_overlay()  # DISABLED - caused glitches
         draw_map()  # Draw the map overlay if it's open
         draw_inventory()
         draw_status_bars()
