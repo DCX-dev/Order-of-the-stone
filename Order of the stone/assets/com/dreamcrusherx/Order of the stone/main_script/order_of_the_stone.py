@@ -1133,6 +1133,35 @@ def make_snow_texture(size):
     
     return surf
 
+# --- Torch Texture Generator ---
+def make_torch_texture(size):
+    """Generate a torch texture with wooden stick and fire"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Wooden stick (brown stick in center)
+    stick_width = max(4, size // 6)
+    stick_height = size // 2
+    stick_x = (size - stick_width) // 2
+    stick_y = size - stick_height
+    
+    # Draw stick
+    stick_color = (101, 67, 33)  # Brown
+    pygame.draw.rect(surf, stick_color, (stick_x, stick_y, stick_width, stick_height))
+    
+    # Fire at top (orange/yellow flame)
+    flame_size = size // 3
+    flame_x = size // 2
+    flame_y = stick_y - flame_size // 2
+    
+    # Outer orange flame
+    pygame.draw.circle(surf, (255, 140, 0), (flame_x, flame_y), flame_size)
+    # Inner yellow flame
+    pygame.draw.circle(surf, (255, 215, 0), (flame_x, flame_y), flame_size // 2)
+    # Bright white core
+    pygame.draw.circle(surf, (255, 255, 200), (flame_x, flame_y), flame_size // 4)
+    
+    return surf
+
 # --- Bed Texture Generator ---
 def make_bed_texture(size):
     """Procedurally draw a simple bed (wood base, mattress, pillow, blanket)."""
@@ -1918,6 +1947,10 @@ rain_particles = []
 snow_particles = []
 lightning_bolts = []  # Track active lightning bolts
 
+# Lighting system variables
+light_sources = []  # List of torch positions (light sources)
+monster_health_displays = []  # List of {entity, timer} for showing health bars
+
 def draw_sky_background():
     """Draw the sky with weather effects - simple solid color for performance"""
     global current_weather
@@ -2268,6 +2301,202 @@ def start_snow_melting():
                 # Remove snow (turn to air) - reveals original block underneath
                 set_block(x, y, "air")
 
+# =============================================================================
+# LIGHTING AND DARKNESS SYSTEM
+# =============================================================================
+
+def draw_darkness_overlay():
+    """Draw darkness overlay that gets darker as player goes deeper underground"""
+    global player
+    
+    player_y = int(player["y"])
+    surface_level = 50  # Approximate surface level
+    
+    # Calculate darkness based on depth
+    depth = player_y - surface_level
+    
+    if depth <= 0:
+        # Above ground - no darkness during day
+        if is_day and current_weather != "thunder":
+            return
+        # At night or during thunder, add slight darkness
+        darkness = 80
+    else:
+        # Underground - darkness increases with depth
+        # Starts at depth 5, maximum darkness at depth 50
+        darkness = min(220, int(depth * 4))
+    
+    # Create darkness overlay
+    dark_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    dark_surface.fill((0, 0, 0))
+    dark_surface.set_alpha(darkness)
+    screen.blit(dark_surface, (0, 0))
+    
+    # Draw light circles around torches
+    for torch_pos in light_sources:
+        torch_x, torch_y = torch_pos
+        
+        # Convert to screen coordinates
+        torch_screen_x = torch_x * TILE_SIZE - camera_x
+        torch_screen_y = torch_y * TILE_SIZE - camera_y
+        
+        # Only draw light if torch is on screen
+        if -100 < torch_screen_x < SCREEN_WIDTH + 100 and -100 < torch_screen_y < SCREEN_HEIGHT + 100:
+            # Create light circle (cut out darkness)
+            light_radius = 100  # Torch lights up 100 pixel radius
+            
+            # Draw gradient light circle
+            for radius in range(light_radius, 0, -10):
+                alpha = int((radius / light_radius) * darkness)
+                light_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+                pygame.draw.circle(light_surface, (0, 0, 0, alpha), (radius, radius), radius)
+                
+                # Subtract mode - removes darkness where torch is
+                screen.blit(light_surface, 
+                          (torch_screen_x + TILE_SIZE//2 - radius, 
+                           torch_screen_y + TILE_SIZE//2 - radius),
+                          special_flags=pygame.BLEND_RGBA_SUB)
+
+def is_area_dark(x, y):
+    """Check if an area is dark (for mob spawning)"""
+    global player
+    
+    player_y = int(player["y"])
+    surface_level = 50
+    
+    # Check if it's night time
+    if not is_day:
+        # Check if there's a torch nearby
+        for torch_pos in light_sources:
+            torch_x, torch_y = torch_pos
+            distance = ((x - torch_x) ** 2 + (y - torch_y) ** 2) ** 0.5
+            if distance < 3:  # Within 3 blocks of torch
+                return False
+        return True  # Dark at night without nearby torch
+    
+    # Check if underground
+    if y > surface_level + 5:
+        # Underground - check for nearby torches
+        for torch_pos in light_sources:
+            torch_x, torch_y = torch_pos
+            distance = ((x - torch_x) ** 2 + (y - torch_y) ** 2) ** 0.5
+            if distance < 3:  # Within 3 blocks of torch
+                return False
+        return True  # Dark underground without nearby torch
+    
+    return False  # Not dark during day above ground
+
+def add_torch(x, y):
+    """Add a torch as a light source"""
+    global light_sources
+    
+    # Add to light sources list
+    if (x, y) not in light_sources:
+        light_sources.append((x, y))
+        print(f"🔥 Torch placed at ({x}, {y}) - lights up area!")
+
+def remove_torch(x, y):
+    """Remove a torch light source"""
+    global light_sources
+    
+    if (x, y) in light_sources:
+        light_sources.remove((x, y))
+        print(f"🔥 Torch removed at ({x}, {y})")
+
+def update_light_sources():
+    """Update light sources - remove torches that were broken"""
+    global light_sources
+    
+    # Check each light source
+    for torch_pos in light_sources[:]:
+        torch_x, torch_y = torch_pos
+        block = get_block(torch_x, torch_y)
+        
+        # Remove if torch block is gone
+        if block != "torch":
+            light_sources.remove(torch_pos)
+
+# =============================================================================
+# MONSTER HEALTH BAR SYSTEM
+# =============================================================================
+
+def show_monster_health(entity):
+    """Show health bar for a monster when hit"""
+    global monster_health_displays
+    
+    # Add or update health display
+    found = False
+    for display in monster_health_displays:
+        if display["entity"] == entity:
+            display["timer"] = 60  # Reset timer (1 second at 60 FPS)
+            found = True
+            break
+    
+    if not found:
+        monster_health_displays.append({
+            "entity": entity,
+            "timer": 60
+        })
+
+def draw_monster_health_bars():
+    """Draw health bars above monsters that were recently hit"""
+    global monster_health_displays
+    
+    # Update and draw health bars
+    for display in monster_health_displays[:]:
+        entity = display["entity"]
+        display["timer"] -= 1
+        
+        # Remove if timer expired
+        if display["timer"] <= 0:
+            monster_health_displays.remove(display)
+            continue
+        
+        # Calculate fade alpha
+        alpha = int((display["timer"] / 60.0) * 255)
+        
+        # Get entity position on screen
+        entity_x = int(entity["x"] * TILE_SIZE) - camera_x
+        entity_y = int(entity["y"] * TILE_SIZE) - camera_y
+        
+        # Health bar dimensions
+        bar_width = 40
+        bar_height = 6
+        bar_x = entity_x + (TILE_SIZE - bar_width) // 2
+        bar_y = entity_y - 10  # Above entity
+        
+        # Calculate health percentage
+        hp = entity.get("hp", 0)
+        max_hp = entity.get("max_hp", 1)
+        health_percent = hp / max_hp if max_hp > 0 else 0
+        
+        # Draw background
+        bg_surface = pygame.Surface((bar_width, bar_height), pygame.SRCALPHA)
+        bg_surface.fill((50, 50, 50, alpha))
+        screen.blit(bg_surface, (bar_x, bar_y))
+        
+        # Draw health bar
+        health_width = int(bar_width * health_percent)
+        if health_width > 0:
+            # Color based on health percentage
+            if health_percent > 0.6:
+                health_color = (0, 255, 0)  # Green
+            elif health_percent > 0.3:
+                health_color = (255, 255, 0)  # Yellow
+            else:
+                health_color = (255, 0, 0)  # Red
+            
+            health_surface = pygame.Surface((health_width, bar_height), pygame.SRCALPHA)
+            health_surface.fill((*health_color, alpha))
+            screen.blit(health_surface, (bar_x, bar_y))
+        
+        # Draw health numbers
+        health_text = font.render(f"{hp}/{max_hp}", True, (255, 255, 255))
+        health_text.set_alpha(alpha)
+        text_x = bar_x + (bar_width - health_text.get_width()) // 2
+        text_y = bar_y - 12
+        screen.blit(health_text, (text_x, text_y))
+
 # Village generation function removed - no more random NPCs
 
 # Shop generation removed - now available in title screen
@@ -2496,6 +2725,7 @@ textures = {
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
     "sand": load_texture(os.path.join(TILE_DIR, "sand.png")),
     "snow": make_snow_texture(TILE_SIZE),  # Generated snow texture
+    "torch": make_torch_texture(TILE_SIZE),  # Generated torch texture
     "bed": load_texture(os.path.join(TILE_DIR, "bed.png")),
     "ladder": make_ladder_texture(TILE_SIZE),
     "door": load_texture(os.path.join(TILE_DIR, "door.png")), 
@@ -3009,7 +3239,7 @@ def eat_food(food_type):
         show_message(f"🍖 Ate {food_name}: {', '.join(message_parts)}!", 2000)
         print(f"🍖 Ate {food_name}: Hunger {old_hunger} → {player['hunger']}, Health {old_health} → {player['health']}")
     
-    return True
+        return True
 
 # =============================================================================
 # OXYGEN SYSTEM
@@ -7370,29 +7600,29 @@ def draw_world():
             # Get block at this position
             block = get_block(x, y)
             
-            if not block or block == "air":
-                continue
-            
-            img = textures.get(block)
-            if img is None:
-                continue
-            
-            # Check if this is a GIF texture that should be animated
-            gif_path = None
-            if block == "carrot":
-                gif_path = os.path.join(TILE_DIR, "carrot.gif")
-            elif block == "wheat":
-                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
-            
-            # Use static texture for now
-            animated_frame = None
-            if animated_frame:
-                img = animated_frame
-            
-            # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
-            screen_x = x * TILE_SIZE - camera_x
-            screen_y = y * TILE_SIZE - camera_y
-            screen.blit(img, (screen_x, screen_y))
+        if not block or block == "air":
+            continue
+        
+        img = textures.get(block)
+        if img is None:
+            continue
+        
+        # Check if this is a GIF texture that should be animated
+        gif_path = None
+        if block == "carrot":
+            gif_path = os.path.join(TILE_DIR, "carrot.gif")
+        elif block == "wheat":
+            gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+        
+        # Use static texture for now
+        animated_frame = None
+        if animated_frame:
+            img = animated_frame
+        
+        # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
+        screen_x = x * TILE_SIZE - camera_x
+        screen_y = y * TILE_SIZE - camera_y
+        screen.blit(img, (screen_x, screen_y))
 
     # Cave entrance indicators removed - caves are disabled
 
@@ -8231,6 +8461,10 @@ def break_block(mx, my):
     else:
         add_to_inventory(block)
         
+        # Remove torch from light sources if it's a torch
+        if block == "torch":
+            remove_torch(bx, by)
+        
         # Create block breaking particles
         particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
         particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
@@ -8309,6 +8543,10 @@ def place_block(mx, my):
         set_block(bx, by, "chest")
         chest_system.create_player_placed_chest((bx, by))
         print(f"📦 Placed EMPTY chest at ({bx}, {by}) - player chests start empty!")
+    elif item_type == "torch":
+        set_block(bx, by, "torch")
+        add_torch(bx, by)  # Add as light source
+        print(f"🔥 Placed torch at ({bx}, {by}) - lights up area!")
     else:
         set_block(bx, by, item_type)
     
@@ -8700,6 +8938,8 @@ def attack_monsters(mx, my):
         slash_sword_at_target(target_x, target_y)
         # Deal damage immediately for close combat
         closest_monster["hp"] = closest_monster.get("hp", 4) - 1
+        # Show health bar when hit
+        show_monster_health(closest_monster)
         if closest_monster["hp"] <= 0:
             # Track monster kill
             track_monster_kill()
@@ -11061,8 +11301,8 @@ def spawn_monsters_everywhere_at_night():
                         nearby_monster = True
                         break
             
-            # Spawn a monster if none nearby
-            if not nearby_monster and random.random() < 0.7:  # 70% chance to spawn
+            # Spawn a monster if none nearby AND area is dark
+            if not nearby_monster and random.random() < 0.7 and is_area_dark(x, surface_y):  # 70% chance to spawn in dark areas
                 # Randomly choose between monster and zombie (30% chance for zombie)
                 if random.random() < 0.3:  # 30% chance for zombie
                     monster_type = "zombie"
@@ -14186,6 +14426,7 @@ while running:
         update_blood_particles()  # Update blood particle effects
         update_block_particles()  # Update block breaking particle effects
         update_fireball_projectiles()  # Update fireball projectiles
+        update_light_sources()  # Update torch light sources
         
         # Ability system removed
         
@@ -14211,9 +14452,11 @@ while running:
             validate_world_integrity()
 
         draw_world()
+        draw_darkness_overlay()  # Draw darkness based on depth (must be after world)
         draw_map()  # Draw the map overlay if it's open
         draw_inventory()
         draw_status_bars()
+        draw_monster_health_bars()  # Show health bars for hit monsters
         draw_boss_health_bar()  # EXTREME ENGINEERING: Legendary boss health bar
         draw_fortress_discovery()  # EXTREME ENGINEERING: Big animated fortress discovery
         draw_fortress_minimap()  # EXTREME ENGINEERING: Fortress minimap in corner

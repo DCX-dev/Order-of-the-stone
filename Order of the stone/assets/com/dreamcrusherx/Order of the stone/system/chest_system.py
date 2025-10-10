@@ -23,6 +23,7 @@ class ChestSystem:
                 # GUARANTEED ESSENTIAL ITEMS (always included)
                 {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
                 {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "torch", "count": (8, 16), "chance": 1.0, "guaranteed": True},  # TORCHES for lighting!
                 
                 # STARTER ITEMS (high chance for new players)
                 {"item": "bread", "count": (2, 4), "chance": 1.0, "guaranteed": True},
@@ -45,6 +46,7 @@ class ChestSystem:
                 # GUARANTEED ITEMS (always included)
                 {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
                 {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "torch", "count": (4, 12), "chance": 1.0, "guaranteed": True},  # TORCHES!
                 
                 # COMMON ITEMS (high chance)
                 {"item": "bread", "count": (1, 3), "chance": 0.9},
@@ -76,6 +78,7 @@ class ChestSystem:
                 # GUARANTEED ITEMS (always included)
                 {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
                 {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "torch", "count": (6, 16), "chance": 1.0, "guaranteed": True},  # TORCHES!
                 
                 # COMMON ITEMS (high chance)
                 {"item": "iron", "count": (2, 4), "chance": 0.9},
@@ -101,6 +104,7 @@ class ChestSystem:
                 # GUARANTEED ITEMS (always included)
                 {"item": "sword", "count": (1, 1), "chance": 1.0, "guaranteed": True},
                 {"item": "pickaxe", "count": (1, 1), "chance": 1.0, "guaranteed": True},
+                {"item": "torch", "count": (10, 20), "chance": 1.0, "guaranteed": True},  # LOTS of torches for dungeons!
                 
                 # COMMON ITEMS (high chance)
                 {"item": "diamond", "count": (2, 5), "chance": 0.9},
