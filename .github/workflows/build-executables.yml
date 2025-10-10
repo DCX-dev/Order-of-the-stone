@@ -29,7 +29,7 @@ jobs:
       shell: cmd
     
     - name: Build Windows executable
-      run: python build_simple.py windows
+      run: python "Order of the stone/assets/com/dreamcrusherx/Order of the stone/executable_builder/build_simple.py" windows
       shell: cmd
       
     - name: Verify executable was created
@@ -70,7 +70,7 @@ jobs:
         pip install pyinstaller==6.11.1
     
     - name: Build Mac executable
-      run: python build_simple.py mac
+      run: python "Order of the stone/assets/com/dreamcrusherx/Order of the stone/executable_builder/build_simple.py" mac
       
     - name: Verify executable was created
       run: |
