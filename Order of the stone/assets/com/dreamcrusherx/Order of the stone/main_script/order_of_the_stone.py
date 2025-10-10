@@ -785,86 +785,83 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TILE_SIZE = 32
 
 # =============================================================================
-# FORTRESS SYSTEM CONFIGURATION
+# COOL STRUCTURES SYSTEM
 # =============================================================================
 
-# Fortress types with different rarities and characteristics
-FORTRESS_TYPES = {
-    "ancient_ruins": {
+# Structure types with different rarities and characteristics
+STRUCTURE_TYPES = {
+    "temple": {
+        "name": "Ancient Temple",
+        "rarity": "uncommon",
+        "spawn_chance": 0.12,
+        "min_size": 12,
+        "max_size": 18,
+        "materials": ["stone", "red_brick"],
+        "special_blocks": ["diamond", "gold"],
+        "loot_tier": "epic",
+        "has_puzzles": True
+    },
+    "pyramid": {
+        "name": "Desert Pyramid",
+        "rarity": "rare",
+        "spawn_chance": 0.08,
+        "min_size": 15,
+        "max_size": 25,
+        "materials": ["sand", "stone"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "treasure",
+        "has_treasure_chamber": True
+    },
+    "ruins": {
         "name": "Ancient Ruins",
         "rarity": "common",
-        "spawn_chance": 0.15,
+        "spawn_chance": 0.18,
         "min_size": 8,
-        "max_size": 12,
-        "materials": ["stone", "dirt", "grass"],
-        "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "basic"
-    },
-    "dragon_keep": {
-        "name": "Dragon Keep",
-        "rarity": "rare",
-        "spawn_chance": 0.05,
-        "min_size": 15,
-        "max_size": 20,
-        "materials": ["red_brick", "stone", "dirt"],
-        "special_blocks": ["diamond", "gold", "iron", "coal"],
-        "loot_tier": "epic"
+        "max_size": 14,
+        "materials": ["stone", "dirt"],
+        "special_blocks": ["iron", "coal", "gold"],
+        "loot_tier": "basic",
+        "half_destroyed": True
     },
     "wizard_tower": {
         "name": "Wizard Tower",
         "rarity": "uncommon",
-        "spawn_chance": 0.08,
-        "min_size": 6,
-        "max_size": 10,
-        "materials": ["stone", "dirt", "grass"],
-        "special_blocks": ["diamond", "gold"],
-        "loot_tier": "magic"
-    },
-    "bandit_camp": {
-        "name": "Bandit Camp",
-        "rarity": "common",
-        "spawn_chance": 0.12,
-        "min_size": 5,
-        "max_size": 8,
-        "materials": ["dirt", "grass", "wood"],
-        "special_blocks": ["iron", "coal"],
-        "loot_tier": "basic"
-    },
-    "goblin_fortress": {
-        "name": "Goblin Fortress",
-        "rarity": "uncommon",
         "spawn_chance": 0.10,
+        "min_size": 6,
+        "max_size": 12,
+        "materials": ["oak_planks", "stone"],
+        "special_blocks": ["diamond"],
+        "loot_tier": "magic",
+        "tall": True
+    },
+    "dungeon": {
+        "name": "Underground Dungeon",
+        "rarity": "rare",
+        "spawn_chance": 0.07,
         "min_size": 10,
-        "max_size": 15,
-        "materials": ["dirt", "grass", "wood"],
-        "special_blocks": ["iron", "coal"],
-        "loot_tier": "basic"
-    },
-    "demon_castle": {
-        "name": "Demon Castle",
-        "rarity": "epic",
-        "spawn_chance": 0.03,
-        "min_size": 18,
-        "max_size": 22,
-        "materials": ["red_brick", "stone", "dirt"],
+        "max_size": 20,
+        "materials": ["stone", "red_brick"],
         "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "epic"
+        "loot_tier": "epic",
+        "underground": True,
+        "has_monsters": True
     },
-    "treasure_vault": {
-        "name": "Treasure Vault",
+    "castle_ruins": {
+        "name": "Castle Ruins",
         "rarity": "rare",
         "spawn_chance": 0.06,
-        "min_size": 8,
-        "max_size": 12,
-        "materials": ["stone", "dirt"],
-        "special_blocks": ["diamond", "gold", "iron", "coal"],
-        "loot_tier": "treasure"
+        "min_size": 18,
+        "max_size": 28,
+        "materials": ["red_brick", "stone"],
+        "special_blocks": ["diamond", "gold", "iron"],
+        "loot_tier": "epic",
+        "large": True
     }
 }
 
-# Discovery system - tracks which fortresses player has found
-discovered_fortresses = set()
-current_fortress_discovery = None
+# Discovery system - tracks which structures player has found
+discovered_structures = set()
+current_structure_discovery = None
 discovery_timer = 0
 
 # Collision system
@@ -3091,130 +3088,16 @@ def generate_beach(center_x, surface_y):
     print(f"🏖️ Beach generated at ({center_x}, {surface_y}) with water and sand!")
 
 # =============================================================================
-# BOSS AND FORTRESS SYSTEM
+# COOL STRUCTURES GENERATION
 # =============================================================================
 
-# Boss and fortress variables
-fortresses = []  # List of fortress data
+# Structure variables
+structures = []  # List of generated structures
 bosses = []  # List of boss entities
 
-def generate_fortress(center_x, surface_y):
-    """Generate an underground fortress with a boss"""
-    global fortresses
-    
-    # Fortress dimensions
-    fortress_width = random.randint(15, 25)
-    fortress_height = random.randint(8, 12)
-    
-    # Underground position - spawn 10-15 blocks below surface
-    underground_y = surface_y + random.randint(10, 15)
-    
-    # Create fortress data
-    fortress_data = {
-        "center": (center_x, underground_y),
-        "size": (fortress_width, fortress_height),
-        "boss": None,
-        "chests": []
-    }
-    
-    # Generate fortress structure underground
-    for x in range(center_x - fortress_width//2, center_x + fortress_width//2 + 1):
-        for y in range(underground_y - fortress_height, underground_y + 1):
-            # Create fortress walls
-            if x == center_x - fortress_width//2 or x == center_x + fortress_width//2 or y == underground_y - fortress_height:
-                set_block(x, y, "stone")  # Stone walls
-            elif y == underground_y:
-                set_block(x, y, "stone")  # Stone floor
-            else:
-                set_block(x, y, "air")  # Interior space
-    
-    # Add entrance door on one side of the fortress
-    door_side = random.choice(["left", "right"])
-    if door_side == "left":
-        door_x = center_x - fortress_width//2
-    else:
-        door_x = center_x + fortress_width//2
-    
-    # Place door at ground level of the fortress
-    door_y = underground_y
-    set_block(door_x, door_y, "door")
-    
-    # Add exit door on the opposite side
-    if door_side == "left":
-        exit_door_x = center_x + fortress_width//2
-    else:
-        exit_door_x = center_x - fortress_width//2
-    
-    set_block(exit_door_x, door_y, "door")
-    
-    # Fill area around fortress with stone (except interior)
-    for x in range(center_x - fortress_width//2 - 3, center_x + fortress_width//2 + 4):
-        for y in range(underground_y - fortress_height - 3, underground_y + 4):
-            # Only place stone if it's not already part of the fortress
-            if not (center_x - fortress_width//2 <= x <= center_x + fortress_width//2 and 
-                   underground_y - fortress_height <= y <= underground_y):
-                # Check if this position is empty or replaceable
-                current_block = get_block(x, y)
-                if current_block is None or current_block == "air":
-                    set_block(x, y, "stone")  # Surround fortress with stone
-    
-    # Add boss room in the center (underground)
-    boss_room_size = 5
-    boss_x = center_x
-    boss_y = underground_y - fortress_height//2
-    
-    # Create boss room
-    for x in range(boss_x - boss_room_size//2, boss_x + boss_room_size//2 + 1):
-        for y in range(boss_y - boss_room_size//2, boss_y + boss_room_size//2 + 1):
-            if x == boss_x - boss_room_size//2 or x == boss_x + boss_room_size//2 or y == boss_y - boss_room_size//2 or y == boss_y + boss_room_size//2:
-                set_block(x, y, "red_brick")  # Red brick walls
-            else:
-                set_block(x, y, "air")
-    
-    # Add door to boss room (on the side facing the fortress entrance)
-    boss_door_x = boss_x + (1 if door_side == "right" else -1) * (boss_room_size//2)
-    set_block(boss_door_x, boss_y, "door")
-    
-    # Spawn fortress boss
-    boss_data = spawn_fortress_boss(boss_x, boss_y)
-    fortress_data["boss"] = boss_data
-    
-    # Add treasure chests
-    num_chests = random.randint(2, 4)
-    for i in range(num_chests):
-        chest_x = boss_x + random.randint(-boss_room_size//2 + 1, boss_room_size//2 - 1)
-        chest_y = boss_y + random.randint(-boss_room_size//2 + 1, boss_room_size//2 - 1)
-        
-        if get_block(chest_x, chest_y) == "air":
-            set_block(chest_x, chest_y, "chest")
-            fortress_data["chests"].append((chest_x, chest_y))
-    
-    fortresses.append(fortress_data)
-    print(f"🏰 Fortress generated at ({center_x}, {surface_y}) with boss!")
+# Fortress functions removed - replaced with cool structures system
 
-def spawn_fortress_boss(boss_x, boss_y):
-    """Spawn a fortress boss"""
-    boss_data = {
-        "type": "fortress_boss",
-        "x": float(boss_x),
-        "y": float(boss_y),
-        "image": boss_image,
-        "hp": 50,
-        "max_hp": 50,
-        "attack_timer": 0,
-        "attack_cooldown": 120,  # 2 seconds
-        "movement_timer": 0,
-        "target_x": boss_x,
-        "target_y": boss_y
-    }
-    
-    # Add to entities
-    entities.append(boss_data)
-    print(f"👹 Fortress Boss spawned at ({boss_x}, {boss_y})")
-    
-    return boss_data
-
-def update_fortress_bosses():
+def update_fortress_bosses_removed():
     """Update fortress boss AI and behavior"""
     for boss in entities:
         if boss["type"] == "fortress_boss":
@@ -11626,15 +11509,8 @@ def generate_initial_world(world_seed=None):
     if beach_count > 0:
         print(f"🏖️ Generated {beach_count} beaches in the world!")
     
-    # Generate fortresses (rare but dangerous)
-    fortress_count = 0
-    for x in range(start_x - world_width//2, start_x + world_width//2):
-        if get_block(x, 10) == "grass" and random.random() < 0.02:  # 2% chance for fortress
-            generate_fortress(x, 10)
-            fortress_count += 1
-    
-    if fortress_count > 0:
-        print(f"🏰 Generated {fortress_count} fortresses in the world!")
+    # Fortress generation removed - will be replaced with cool structures
+    print("🏗️ Structure generation disabled (fortresses removed)")
     
     # Generate Lost Ruins (very rare but important)
     ruins_count = 0
@@ -14174,8 +14050,8 @@ while running:
         chunk_right = right_edge // 50
         for ch in range(chunk_left, chunk_right + 1):
             base_x = ch * 50
-            # Generate structures for chunk
-            maybe_generate_fortress_for_chunk(ch, base_x)
+            # Generate structures for chunk - DISABLED (fortress system removed)
+            # maybe_generate_fortress_for_chunk(ch, base_x)
         for x in range(left_edge, right_edge):
             # CRITICAL FIX: Only generate terrain for columns that have NEVER been generated
             # This prevents broken blocks from being replaced by terrain regeneration
@@ -14239,7 +14115,7 @@ while running:
         update_world_interactions()
         update_monsters()
         update_villagers()
-        update_fortress_bosses()  # Update fortress bosses
+        # update_fortress_bosses()  # REMOVED - fortress system disabled
         update_oxygen_system()  # Update oxygen system
         update_night_overlay()  # Update nighttime visual effects
         update_pickaxe_animation()
@@ -14280,8 +14156,8 @@ while running:
         draw_inventory()
         draw_status_bars()
         draw_boss_health_bar()  # EXTREME ENGINEERING: Legendary boss health bar
-        draw_fortress_discovery()  # EXTREME ENGINEERING: Fortress discovery UI
-        draw_fortress_minimap()  # EXTREME ENGINEERING: Fortress minimap
+        # draw_fortress_discovery()  # REMOVED - fortress system disabled
+        # draw_fortress_minimap()  # REMOVED - fortress system disabled
         draw_multiplayer_chat()  # EXTREME ENGINEERING: Multiplayer chat interface
         
         # Portal and boss systems removed - using ability system instead
