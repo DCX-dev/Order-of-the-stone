@@ -1951,24 +1951,71 @@ lightning_bolts = []  # Track active lightning bolts
 light_sources = []  # List of torch positions (light sources)
 monster_health_displays = []  # List of {entity, timer} for showing health bars
 
+# Day/Night transition variables
+day_transition_progress = 1.0  # 0.0 = night, 1.0 = day
+transitioning_to_day = True
+sun_position = 0  # Position of sun (0-1, where 0.5 is middle of sky)
+moon_position = 0.5  # Position of moon (opposite of sun)
+
 def draw_sky_background():
-    """Draw the sky with weather effects - simple solid color for performance"""
-    global current_weather
+    """Draw the sky with sun/moon and smooth day/night transitions"""
+    global current_weather, day_transition_progress, sun_position, moon_position
     
-    # Change sky color based on weather
-    if current_weather == "clear":
-        sky_color = (135, 206, 235)  # Light blue
-    elif current_weather == "rain":
-        sky_color = (105, 105, 105)  # Dark grey
+    # Calculate sky color based on day/night transition
+    day_color = (135, 206, 235)  # Light blue day
+    night_color = (25, 25, 60)   # Dark blue night
+    
+    # Modify colors based on weather
+    if current_weather == "rain":
+        day_color = (105, 105, 105)
+        night_color = (30, 30, 30)
     elif current_weather == "thunder":
-        sky_color = (50, 50, 50)     # Very dark grey
+        day_color = (50, 50, 50)
+        night_color = (20, 20, 20)
     elif current_weather == "snow":
-        sky_color = (200, 200, 220)  # Light grey-blue
-    else:
-        sky_color = (135, 206, 235)  # Default light blue
+        day_color = (200, 200, 220)
+        night_color = (40, 40, 70)
     
-    # Use simple solid sky color (much faster than gradient!)
+    # Interpolate between day and night colors
+    r = int(day_color[0] * day_transition_progress + night_color[0] * (1 - day_transition_progress))
+    g = int(day_color[1] * day_transition_progress + night_color[1] * (1 - day_transition_progress))
+    b = int(day_color[2] * day_transition_progress + night_color[2] * (1 - day_transition_progress))
+    
+    sky_color = (r, g, b)
     screen.fill(sky_color)
+    
+    # Draw sun during day (when transition > 0.3)
+    if day_transition_progress > 0.3:
+        sun_size = 50
+        sun_x = SCREEN_WIDTH // 2 + int((sun_position - 0.5) * SCREEN_WIDTH * 0.8)
+        sun_y = 100 + int((1 - day_transition_progress) * 200)  # Sun rises/sets
+        
+        # Sun glow
+        glow_size = sun_size + 20
+        glow_surface = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+        pygame.draw.circle(glow_surface, (255, 255, 200, 100), (glow_size, glow_size), glow_size)
+        screen.blit(glow_surface, (sun_x - glow_size, sun_y - glow_size))
+        
+        # Sun
+        pygame.draw.circle(screen, (255, 255, 100), (sun_x, sun_y), sun_size)
+        pygame.draw.circle(screen, (255, 255, 200), (sun_x, sun_y), sun_size - 10)
+    
+    # Draw moon during night (when transition < 0.7)
+    if day_transition_progress < 0.7:
+        moon_size = 40
+        moon_x = SCREEN_WIDTH // 2 + int((moon_position - 0.5) * SCREEN_WIDTH * 0.8)
+        moon_y = 100 + int(day_transition_progress * 200)  # Moon rises/sets opposite to sun
+        
+        # Moon glow
+        glow_surface = pygame.Surface((moon_size * 2 + 20, moon_size * 2 + 20), pygame.SRCALPHA)
+        pygame.draw.circle(glow_surface, (200, 200, 255, 80), (moon_size + 10, moon_size + 10), moon_size + 10)
+        screen.blit(glow_surface, (moon_x - moon_size - 10, moon_y - moon_size - 10))
+        
+        # Moon
+        pygame.draw.circle(screen, (220, 220, 240), (moon_x, moon_y), moon_size)
+        # Moon craters
+        pygame.draw.circle(screen, (200, 200, 220), (moon_x - 10, moon_y - 5), 8)
+        pygame.draw.circle(screen, (200, 200, 220), (moon_x + 8, moon_y + 8), 6)
     
     # Draw clouds (fresh each frame for proper alpha blending)
     for cloud in clouds:
@@ -10792,21 +10839,57 @@ def use_map_from_inventory():
 
 # --- Missing Update Functions ---
 def update_daylight():
-    global is_day, day_start_time, paused_time, day_count
+    global is_day, day_start_time, paused_time, day_count, day_transition_progress, transitioning_to_day, sun_position, moon_position
     # Only update time when in the game state
     if game_state == GameState.GAME:
-        # Change to 2 minutes (120 seconds) for day/night cycle
-        if time.time() - day_start_time - paused_time >= 120:  # 2 minutes = 120 seconds
+        # Check if it's time to start transitioning
+        time_elapsed = time.time() - day_start_time - paused_time
+        
+        # Day/Night cycle is 2 minutes (120 seconds)
+        # Last 20 seconds of each cycle is transition time
+        if time_elapsed >= 100 and time_elapsed < 120:
+            # In transition period (20 seconds)
+            transition_amount = (time_elapsed - 100) / 20.0  # 0.0 to 1.0 over 20 seconds
+            
+            if is_day:
+                # Transitioning to night (sun setting)
+                transitioning_to_day = False
+                day_transition_progress = 1.0 - transition_amount  # 1.0 -> 0.0
+                sun_position = 0.2 + (transition_amount * 0.6)  # Sun moves across sky 0.2 -> 0.8
+                moon_position = sun_position + 0.5  # Moon opposite to sun
+            else:
+                # Transitioning to day (sun rising)
+                transitioning_to_day = True
+                day_transition_progress = transition_amount  # 0.0 -> 1.0
+                sun_position = 0.2 + (transition_amount * 0.6)  # Sun rises 0.2 -> 0.8
+                moon_position = sun_position + 0.5  # Moon opposite to sun
+        
+        elif time_elapsed >= 120:
+            # Transition complete, flip day/night
             is_day = not is_day
             day_start_time = time.time()
-            paused_time = 0  # Reset paused time after day/night change
+            paused_time = 0
             
-            # Increment day counter when switching to day
+            # Set final states
             if is_day:
+                day_transition_progress = 1.0
+                sun_position = 0.5  # Sun at zenith
+                moon_position = 0.0  # Moon below horizon
                 day_count += 1
                 print(f"🌅 Day {day_count} has begun!")
             else:
+                day_transition_progress = 0.0
+                sun_position = 0.8  # Sun below horizon
+                moon_position = 0.5  # Moon at zenith
                 print(f"🌙 Night {day_count} has fallen!")
+        else:
+            # Not in transition - maintain full day or night
+            if is_day:
+                day_transition_progress = 1.0
+                sun_position = 0.5  # Sun at zenith
+            else:
+                day_transition_progress = 0.0
+                moon_position = 0.5  # Moon at zenith
 
 # --- Bed sleep: fade to black -> set day -> fade in ---
 def sleep_in_bed():
