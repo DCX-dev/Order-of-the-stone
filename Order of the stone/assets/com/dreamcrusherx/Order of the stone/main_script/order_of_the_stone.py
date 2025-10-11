@@ -3316,9 +3316,7 @@ CRAFTING_RECIPES = {
 crafting_mode = False
 selected_crafting_materials = {}  # {item_type: count}
 crafting_result = None
-last_click_time = 0
-last_clicked_item = None
-double_click_threshold = 0.3  # 300ms for double click
+# Removed double-click variables - now using right-click for crafting selection
 
 def check_can_craft(materials_dict):
     """Check what can be crafted with the given materials"""
@@ -9826,7 +9824,7 @@ def draw_backpack_ui():
     screen.blit(craft_title, (crafting_x + 20, crafting_y + 20))
     
     # Instructions
-    inst_text = small_font.render("Double-click items to select", True, (200, 200, 200))
+    inst_text = small_font.render("Right-click items to select", True, (200, 200, 200))
     screen.blit(inst_text, (crafting_x + 10, crafting_y + 50))
     
     # Selected materials display
@@ -10718,7 +10716,7 @@ def handle_inventory_click(mouse_pos):
 def handle_backpack_click(mouse_pos):
     """Handle clicks in the backpack interface"""
     global backpack_close_button, inventory_drag_item, inventory_drag_from
-    global selected_crafting_materials, last_click_time, last_clicked_item
+    global selected_crafting_materials
     
     # Check if close button was clicked
     if backpack_close_button and backpack_close_button.collidepoint(mouse_pos):
@@ -10794,43 +10792,20 @@ def handle_backpack_click(mouse_pos):
                 slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
                 
                 if slot_rect.collidepoint(mouse_pos):
-                    # Check for double-click to select for crafting
-                    if slot_idx < len(player["backpack"]) and player["backpack"][slot_idx]:
-                        item = player["backpack"][slot_idx]
-                        if isinstance(item, dict) and "type" in item:
-                            item_type = item.get("type")
-                            current_time = time.time()
-                            
-                            # Check if this is a double-click
-                            if (last_clicked_item == (slot_idx, item_type) and 
-                                current_time - last_click_time < double_click_threshold):
-                                # DOUBLE CLICK - Select for crafting!
-                                count_to_add = 1
-                                selected_crafting_materials[item_type] = selected_crafting_materials.get(item_type, 0) + count_to_add
-                                print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}")
-                                show_message(f"🔨 Selected {item_type} for crafting!", 1000)
-                                
-                                # Reset double-click tracking
-                                last_clicked_item = None
-                                last_click_time = 0
-                                return
-                            else:
-                                # First click - track it
-                                last_clicked_item = (slot_idx, item_type)
-                                last_click_time = current_time
-                    
-                    # Normal single click - drag and drop
+                    # Normal left-click - drag and drop
                     handle_inventory_slot_click("backpack", slot_idx, mouse_pos)
                     return
 
 def handle_inventory_right_click(mouse_pos):
-    """Handle right-click on inventory items to eat food"""
+    """Handle right-click on inventory items to select for crafting or eat food"""
+    global selected_crafting_materials
+    
     # Get backpack UI position
     backpack_width, backpack_height = 700, 600
     backpack_x = center_x(backpack_width)
     backpack_y = (SCREEN_HEIGHT - backpack_height) // 2
     
-    # Check hotbar slots (3x3 grid)
+    # Check hotbar slots (3x3 grid) - can be used for eating food
     hotbar_x = backpack_x + 50
     hotbar_y = backpack_y + 130
     
@@ -10842,28 +10817,20 @@ def handle_inventory_right_click(mouse_pos):
             slot_rect = pygame.Rect(slot_x, slot_y, 50, 50)
             
             if slot_rect.collidepoint(mouse_pos):
-                # Try to eat food from hotbar
+                # Try to eat food from hotbar OR select for crafting
                 if slot_idx < len(player["inventory"]) and player["inventory"][slot_idx]:
                     item = player["inventory"][slot_idx]
                     if isinstance(item, dict) and "type" in item:
                         item_type = item["type"]
-                        if item_type in FOOD_ITEMS:
-                            # Eat the food
-                            if eat_food(item_type):
-                                # Remove one from stack or delete item
-                                if "count" in item and item["count"] > 1:
-                                    item["count"] -= 1
-                                else:
-                                    # Remove the item completely
-                                    player["inventory"][slot_idx] = None
-                                # Normalize inventory to clean up None entries
-                                normalize_inventory()
-                            return
-                        else:
-                            show_message(f"❌ {item_type.replace('_', ' ').title()} is not edible!", 1500)
+                        # Select item for crafting
+                        count_to_add = 1
+                        selected_crafting_materials[item_type] = selected_crafting_materials.get(item_type, 0) + count_to_add
+                        print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}")
+                        show_message(f"🔨 Selected {item_type} for crafting!", 1000)
+                        return
                 return
     
-    # Check backpack slots (6x6 grid for 36 slots)
+    # Check backpack slots (6x6 grid for 36 slots) - select for crafting
     backpack_slots_x = backpack_x + 50
     backpack_slots_y = backpack_y + 320
     slot_size = 50
@@ -10878,25 +10845,17 @@ def handle_inventory_right_click(mouse_pos):
             slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
             
             if slot_rect.collidepoint(mouse_pos):
-                # Try to eat food from backpack
+                # RIGHT CLICK - Select for crafting from backpack
                 if slot_idx < len(player["backpack"]) and player["backpack"][slot_idx]:
                     item = player["backpack"][slot_idx]
                     if isinstance(item, dict) and "type" in item:
                         item_type = item["type"]
-                        if item_type in FOOD_ITEMS:
-                            # Eat the food
-                            if eat_food(item_type):
-                                # Remove one from stack or delete item
-                                if "count" in item and item["count"] > 1:
-                                    item["count"] -= 1
-                                else:
-                                    # Remove the item completely
-                                    player["backpack"][slot_idx] = None
-                                # Normalize backpack to clean up None entries
-                                normalize_backpack()
-                            return
-                        else:
-                            show_message(f"❌ {item_type.replace('_', ' ').title()} is not edible!", 1500)
+                        # Select item for crafting
+                        count_to_add = 1
+                        selected_crafting_materials[item_type] = selected_crafting_materials.get(item_type, 0) + count_to_add
+                        print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}")
+                        show_message(f"🔨 Selected {item_type} for crafting!", 1000)
+                        return
         return
 
 def handle_inventory_slot_click(slot_type, slot_idx, mouse_pos):
