@@ -165,8 +165,8 @@ class ModernUI:
         angle = -18 + math.sin(time.time() * 2) * 4  # Wiggle between -22 and -14 degrees
         rotated_splash = pygame.transform.rotate(splash_surface, angle)
         
-        # Position closer to the title, slightly overlapping on the side
-        splash_x = title_x + title.get_width() - 30
+        # Position directly overlapping on the game title
+        splash_x = title_x + title.get_width() - 80
         splash_y = 55
         
         # Add bright glow effect to make it pop
