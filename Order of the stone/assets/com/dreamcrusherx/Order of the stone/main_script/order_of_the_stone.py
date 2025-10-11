@@ -3249,6 +3249,146 @@ FOOD_ITEMS = {
     "honey_jar": {"hunger": 2, "health": 3, "rarity": 0.06}         # Sweet honey (best healing!)
 }
 
+# =============================================================================
+# CRAFTING SYSTEM
+# =============================================================================
+
+# Crafting recipes - {result: {materials: {item: count}, output_count: num}}
+CRAFTING_RECIPES = {
+    "pickaxe": {
+        "materials": {"oak_planks": 2},
+        "output_count": 1,
+        "description": "Basic tool for mining"
+    },
+    "sword": {
+        "materials": {"oak_planks": 3},
+        "output_count": 1,
+        "description": "Wooden sword for combat"
+    },
+    "stone_sword": {
+        "materials": {"stone": 3, "oak_planks": 1},
+        "output_count": 1,
+        "description": "Stronger stone sword"
+    },
+    "chest": {
+        "materials": {"oak_planks": 4},
+        "output_count": 1,
+        "description": "Storage container"
+    },
+    "door": {
+        "materials": {"oak_planks": 10},
+        "output_count": 1,
+        "description": "Wooden door"
+    },
+    "bed": {
+        "materials": {"oak_planks": 3, "leaves": 2},
+        "output_count": 1,
+        "description": "Sleep through the night"
+    },
+    "ladder": {
+        "materials": {"oak_planks": 5},
+        "output_count": 3,
+        "description": "Climb up and down"
+    },
+    "torch": {
+        "materials": {"coal": 1, "oak_planks": 1},
+        "output_count": 4,
+        "description": "Light source"
+    },
+    "oak_planks": {
+        "materials": {"log": 1},
+        "output_count": 4,
+        "description": "Building material"
+    },
+    "bread": {
+        "materials": {"wheat": 3},
+        "output_count": 1,
+        "description": "Basic food"
+    },
+    "red_brick": {
+        "materials": {"stone": 2, "coal": 1},
+        "output_count": 4,
+        "description": "Decorative building block"
+    }
+}
+
+# Crafting UI state
+crafting_mode = False
+selected_crafting_materials = {}  # {item_type: count}
+crafting_result = None
+
+def check_can_craft(materials_dict):
+    """Check what can be crafted with the given materials"""
+    possible_recipes = []
+    
+    for recipe_name, recipe in CRAFTING_RECIPES.items():
+        can_craft = True
+        required = recipe["materials"]
+        
+        # Check if player has all required materials
+        for material, needed_count in required.items():
+            player_has = materials_dict.get(material, 0)
+            if player_has < needed_count:
+                can_craft = False
+                break
+        
+        if can_craft:
+            possible_recipes.append(recipe_name)
+    
+    return possible_recipes
+
+def craft_item(recipe_name):
+    """Craft an item from selected materials"""
+    global selected_crafting_materials, crafting_result
+    
+    if recipe_name not in CRAFTING_RECIPES:
+        print(f"❌ Unknown recipe: {recipe_name}")
+        return False
+    
+    recipe = CRAFTING_RECIPES[recipe_name]
+    
+    # Verify player has materials
+    for material, count in recipe["materials"].items():
+        if selected_crafting_materials.get(material, 0) < count:
+            show_message(f"❌ Not enough {material}!", 2000)
+            return False
+    
+    # Consume materials
+    for material, count in recipe["materials"].items():
+        selected_crafting_materials[material] -= count
+        if selected_crafting_materials[material] <= 0:
+            del selected_crafting_materials[material]
+        
+        # Remove from actual inventory
+        remove_from_inventory(material, count)
+    
+    # Add crafted item to inventory
+    output_count = recipe.get("output_count", 1)
+    add_to_inventory(recipe_name, output_count)
+    
+    show_message(f"✅ Crafted {output_count}x {recipe_name.replace('_', ' ').title()}!", 2000)
+    print(f"🔨 Crafted {output_count}x {recipe_name}")
+    
+    crafting_result = None
+    return True
+
+def remove_from_inventory(item_type, count):
+    """Remove count of item_type from inventory"""
+    remaining = count
+    
+    for item in player["inventory"]:
+        if item and item.get("type") == item_type:
+            if item.get("count", 1) >= remaining:
+                item["count"] -= remaining
+                if item["count"] <= 0:
+                    player["inventory"][player["inventory"].index(item)] = None
+                return
+            else:
+                remaining -= item.get("count", 1)
+                player["inventory"][player["inventory"].index(item)] = None
+    
+    normalize_inventory()
+
 def eat_food(food_type):
     """Eat a food item and restore hunger/health"""
     if food_type not in FOOD_ITEMS:
