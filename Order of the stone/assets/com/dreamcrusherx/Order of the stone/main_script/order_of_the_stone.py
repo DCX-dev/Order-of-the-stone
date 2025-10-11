@@ -3316,6 +3316,9 @@ CRAFTING_RECIPES = {
 crafting_mode = False
 selected_crafting_materials = {}  # {item_type: count}
 crafting_result = None
+last_click_time = 0
+last_clicked_item = None
+double_click_threshold = 0.3  # 300ms for double click
 
 def check_can_craft(materials_dict):
     """Check what can be crafted with the given materials"""
@@ -9802,6 +9805,93 @@ def draw_backpack_ui():
                         count_text = font.render(str(count), True, (255, 255, 0))
                         screen.blit(count_text, (slot_x + slot_size - 15, slot_y + slot_size - 15))
     
+    # CRAFTING PANEL (right side of backpack)
+    crafting_x = backpack_x + backpack_width + 20
+    crafting_y = backpack_y
+    crafting_width = 280
+    crafting_height = 600
+    
+    # Draw crafting panel background
+    pygame.draw.rect(screen, (50, 50, 70), (crafting_x, crafting_y, crafting_width, crafting_height))
+    pygame.draw.rect(screen, (150, 150, 200), (crafting_x, crafting_y, crafting_width, crafting_height), 3)
+    
+    # Crafting title
+    craft_title = font.render("🔨 Crafting", True, (255, 215, 0))
+    screen.blit(craft_title, (crafting_x + 20, crafting_y + 20))
+    
+    # Instructions
+    inst_text = small_font.render("Double-click items to select", True, (200, 200, 200))
+    screen.blit(inst_text, (crafting_x + 10, crafting_y + 50))
+    
+    # Selected materials display
+    materials_y = crafting_y + 80
+    materials_title = font.render("Materials:", True, (255, 255, 255))
+    screen.blit(materials_title, (crafting_x + 10, materials_y))
+    
+    # Show selected materials
+    mat_y = materials_y + 30
+    if selected_crafting_materials:
+        for material, count in selected_crafting_materials.items():
+            mat_text = small_font.render(f"{count}x {material.replace('_', ' ').title()}", True, (200, 255, 200))
+            screen.blit(mat_text, (crafting_x + 15, mat_y))
+            mat_y += 25
+    else:
+        no_mat_text = small_font.render("No materials selected", True, (150, 150, 150))
+        screen.blit(no_mat_text, (crafting_x + 15, mat_y))
+    
+    # Check what can be crafted
+    possible_recipes = check_can_craft(selected_crafting_materials)
+    
+    # Available recipes display
+    recipes_y = crafting_y + 250
+    recipes_title = font.render("Can Craft:", True, (255, 255, 255))
+    screen.blit(recipes_title, (crafting_x + 10, recipes_y))
+    
+    recipe_y = recipes_y + 30
+    if possible_recipes:
+        for recipe_name in possible_recipes[:8]:  # Show up to 8 recipes
+            recipe = CRAFTING_RECIPES[recipe_name]
+            
+            # Draw recipe button
+            recipe_rect = pygame.Rect(crafting_x + 10, recipe_y, crafting_width - 20, 35)
+            mouse_pos = pygame.mouse.get_pos()
+            is_hovered = recipe_rect.collidepoint(mouse_pos)
+            
+            button_color = (80, 150, 80) if is_hovered else (60, 100, 60)
+            pygame.draw.rect(screen, button_color, recipe_rect)
+            pygame.draw.rect(screen, (100, 200, 100), recipe_rect, 2)
+            
+            # Draw item texture preview
+            if recipe_name in textures:
+                icon = pygame.transform.scale(textures[recipe_name], (28, 28))
+                screen.blit(icon, (crafting_x + 15, recipe_y + 4))
+            
+            # Draw recipe name and output count
+            recipe_text = small_font.render(f"{recipe['output_count']}x {recipe_name.replace('_', ' ').title()}", True, (255, 255, 255))
+            screen.blit(recipe_text, (crafting_x + 50, recipe_y + 10))
+            
+            # Store recipe button for clicking
+            if not hasattr(draw_backpack_ui, 'recipe_buttons'):
+                draw_backpack_ui.recipe_buttons = {}
+            draw_backpack_ui.recipe_buttons[recipe_name] = recipe_rect
+            
+            recipe_y += 40
+    else:
+        no_recipes_text = small_font.render("Select materials to see recipes", True, (150, 150, 150))
+        screen.blit(no_recipes_text, (crafting_x + 15, recipe_y))
+    
+    # Clear materials button
+    clear_btn = pygame.Rect(crafting_x + 10, crafting_y + crafting_height - 100, crafting_width - 20, 35)
+    pygame.draw.rect(screen, (150, 50, 50), clear_btn)
+    pygame.draw.rect(screen, (200, 100, 100), clear_btn, 2)
+    clear_text = font.render("Clear Selection", True, (255, 255, 255))
+    screen.blit(clear_text, (clear_btn.x + 50, clear_btn.y + 10))
+    
+    if not hasattr(draw_backpack_ui, 'clear_button'):
+        draw_backpack_ui.clear_button = clear_btn
+    else:
+        draw_backpack_ui.clear_button = clear_btn
+    
     # Close button
     close_button = pygame.Rect(backpack_x + backpack_width - 120, backpack_y + 20, 100, 30)
     pygame.draw.rect(screen, (200, 50, 50), close_button)
@@ -10628,12 +10718,26 @@ def handle_inventory_click(mouse_pos):
 def handle_backpack_click(mouse_pos):
     """Handle clicks in the backpack interface"""
     global backpack_close_button, inventory_drag_item, inventory_drag_from
+    global selected_crafting_materials, last_click_time, last_clicked_item
     
     # Check if close button was clicked
     if backpack_close_button and backpack_close_button.collidepoint(mouse_pos):
         game_state = GameState.GAME
         update_pause_state()  # Resume time when closing backpack
         return
+    
+    # Check if clear crafting materials button was clicked
+    if hasattr(draw_backpack_ui, 'clear_button') and draw_backpack_ui.clear_button.collidepoint(mouse_pos):
+        selected_crafting_materials = {}
+        print("🧹 Cleared crafting materials")
+        return
+    
+    # Check if a recipe button was clicked
+    if hasattr(draw_backpack_ui, 'recipe_buttons'):
+        for recipe_name, rect in draw_backpack_ui.recipe_buttons.items():
+            if rect.collidepoint(mouse_pos):
+                craft_item(recipe_name)
+                return
     
     # Calculate backpack UI position
     backpack_width, backpack_height = 700, 600
@@ -10690,6 +10794,32 @@ def handle_backpack_click(mouse_pos):
                 slot_rect = pygame.Rect(slot_x, slot_y, slot_size, slot_size)
                 
                 if slot_rect.collidepoint(mouse_pos):
+                    # Check for double-click to select for crafting
+                    if slot_idx < len(player["backpack"]) and player["backpack"][slot_idx]:
+                        item = player["backpack"][slot_idx]
+                        if isinstance(item, dict) and "type" in item:
+                            item_type = item.get("type")
+                            current_time = time.time()
+                            
+                            # Check if this is a double-click
+                            if (last_clicked_item == (slot_idx, item_type) and 
+                                current_time - last_click_time < double_click_threshold):
+                                # DOUBLE CLICK - Select for crafting!
+                                count_to_add = 1
+                                selected_crafting_materials[item_type] = selected_crafting_materials.get(item_type, 0) + count_to_add
+                                print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}")
+                                show_message(f"🔨 Selected {item_type} for crafting!", 1000)
+                                
+                                # Reset double-click tracking
+                                last_clicked_item = None
+                                last_click_time = 0
+                                return
+                            else:
+                                # First click - track it
+                                last_clicked_item = (slot_idx, item_type)
+                                last_click_time = current_time
+                    
+                    # Normal single click - drag and drop
                     handle_inventory_slot_click("backpack", slot_idx, mouse_pos)
                     return
 
