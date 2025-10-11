@@ -10796,6 +10796,23 @@ def handle_backpack_click(mouse_pos):
                     handle_inventory_slot_click("backpack", slot_idx, mouse_pos)
                     return
 
+def count_item_in_inventory(item_type):
+    """Count how many of a specific item type the player has in inventory and backpack"""
+    total_count = 0
+    
+    # Count in hotbar/inventory (3x3 grid = 9 slots)
+    for i in range(min(9, len(player["inventory"]))):
+        item = player["inventory"][i]
+        if item and isinstance(item, dict) and item.get("type") == item_type:
+            total_count += item.get("count", 1)
+    
+    # Count in backpack (36 slots)
+    for item in player.get("backpack", []):
+        if item and isinstance(item, dict) and item.get("type") == item_type:
+            total_count += item.get("count", 1)
+    
+    return total_count
+
 def handle_inventory_right_click(mouse_pos):
     """Handle right-click on inventory items to select for crafting or eat food"""
     global selected_crafting_materials
@@ -10822,11 +10839,19 @@ def handle_inventory_right_click(mouse_pos):
                     item = player["inventory"][slot_idx]
                     if isinstance(item, dict) and "type" in item:
                         item_type = item["type"]
+                        # Check how many we have vs how many already selected
+                        total_available = count_item_in_inventory(item_type)
+                        already_selected = selected_crafting_materials.get(item_type, 0)
+                        
+                        if already_selected >= total_available:
+                            show_message(f"❌ You've already put all {item_type.replace('_', ' ')} in crafting!", 1500)
+                            return
+                        
                         # Select item for crafting
                         count_to_add = 1
-                        selected_crafting_materials[item_type] = selected_crafting_materials.get(item_type, 0) + count_to_add
-                        print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}")
-                        show_message(f"🔨 Selected {item_type} for crafting!", 1000)
+                        selected_crafting_materials[item_type] = already_selected + count_to_add
+                        print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}/{total_available}")
+                        show_message(f"🔨 Selected {item_type} ({selected_crafting_materials[item_type]}/{total_available})", 1000)
                         return
                 return
     
@@ -10850,11 +10875,19 @@ def handle_inventory_right_click(mouse_pos):
                     item = player["backpack"][slot_idx]
                     if isinstance(item, dict) and "type" in item:
                         item_type = item["type"]
+                        # Check how many we have vs how many already selected
+                        total_available = count_item_in_inventory(item_type)
+                        already_selected = selected_crafting_materials.get(item_type, 0)
+                        
+                        if already_selected >= total_available:
+                            show_message(f"❌ You've already put all {item_type.replace('_', ' ')} in crafting!", 1500)
+                            return
+                        
                         # Select item for crafting
                         count_to_add = 1
-                        selected_crafting_materials[item_type] = selected_crafting_materials.get(item_type, 0) + count_to_add
-                        print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}")
-                        show_message(f"🔨 Selected {item_type} for crafting!", 1000)
+                        selected_crafting_materials[item_type] = already_selected + count_to_add
+                        print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}/{total_available}")
+                        show_message(f"🔨 Selected {item_type} ({selected_crafting_materials[item_type]}/{total_available})", 1000)
                         return
         return
 
