@@ -51,6 +51,34 @@ class ModernUI:
         # Animation state
         self.animation_time = 0
         self.hover_effects = {}
+        
+        # Splash text - fun random messages!
+        self.splash_texts = [
+            "Order Up!",
+            "Made in California!",
+            "Now with weather!",
+            "Dig deep!",
+            "Build high!",
+            "Explore everywhere!",
+            "Epic adventures await!",
+            "Craft amazing things!",
+            "Mine diamonds!",
+            "Fight monsters!",
+            "Team Banana Labs!",
+            "Beta version!",
+            "Torches light the way!",
+            "Watch out for lightning!",
+            "Snow is coming!",
+            "Sunset is beautiful!",
+            "Moonlight shines!",
+            "Discover fortresses!",
+            "Eat to survive!",
+            "Build your dream!",
+            "Unlimited creativity!",
+            "Made with love!"
+        ]
+        import random
+        self.current_splash = random.choice(self.splash_texts)
     
     def update(self, dt: float):
         """Update UI animations"""
@@ -125,6 +153,29 @@ class ModernUI:
         subtitle = self.title_font.render("Your Adventure Awaits", True, self.colors["text_secondary"])
         subtitle_x = (self.screen.get_width() - subtitle.get_width()) // 2
         self.screen.blit(subtitle, (subtitle_x, 120))
+        
+        # Animated splash text (yellow, tilted, pulsing) - BIG and visible!
+        import math
+        pulse = abs(math.sin(time.time() * 3))  # Pulse between 0 and 1 (3x per second)
+        splash_size = int(36 + pulse * 16)  # Size pulses between 36 and 52 (MUCH BIGGER!)
+        splash_font = pygame.font.Font(None, splash_size)
+        splash_surface = splash_font.render(self.current_splash, True, (255, 215, 0))  # Bright yellow/gold
+        
+        # Rotate the splash text (tilted)
+        angle = -18 + math.sin(time.time() * 2) * 4  # Wiggle between -22 and -14 degrees
+        rotated_splash = pygame.transform.rotate(splash_surface, angle)
+        
+        # Position to the right of title
+        splash_x = title_x + title.get_width() + 20
+        splash_y = 40
+        
+        # Add bright glow effect to make it pop
+        glow_splash = splash_font.render(self.current_splash, True, (255, 255, 100))  # Brighter glow
+        rotated_glow = pygame.transform.rotate(glow_splash, angle)
+        self.screen.blit(rotated_glow, (splash_x + 3, splash_y + 3))
+        
+        # Draw the splash text
+        self.screen.blit(rotated_splash, (splash_x, splash_y))
         
         # Buttons with enhanced styling
         button_states = {}
