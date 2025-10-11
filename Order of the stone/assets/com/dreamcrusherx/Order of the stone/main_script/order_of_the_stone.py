@@ -9644,20 +9644,18 @@ def draw_full_inventory_ui():
         pygame.draw.rect(screen, (120, 120, 120), (output_x, output_y, slot_size, slot_size))
         pygame.draw.rect(screen, (200, 200, 200), (output_x, output_y, slot_size, slot_size), 3)
         
-        # Check recipe and show output
-        recipe_name = check_crafting_recipe(crafting_materials)
-        if recipe_name:
-            recipe = CRAFTING_RECIPES[recipe_name]
-            output_type = recipe["output"]["type"]
-            if output_type in textures:
-                screen.blit(textures[output_type], (output_x + 2, output_y + 2))
+        # Old crafting UI removed - using new backpack crafting system
+        # recipe_name = check_crafting_recipe(crafting_materials)
+        # if recipe_name:
+        #     recipe = CRAFTING_RECIPES[recipe_name]
+        #     ...
             
-            # Craft button
-            craft_btn = pygame.Rect(output_x - 10, output_y + 60, 70, 30)
-            pygame.draw.rect(screen, (100, 255, 100), craft_btn)
-            pygame.draw.rect(screen, (255, 255, 255), craft_btn, 2)
-            craft_text = font.render("CRAFT", True, (0, 0, 0))
-            screen.blit(craft_text, (craft_btn.x + 10, craft_btn.y + 8))
+        # Craft button
+        craft_btn = pygame.Rect(output_x - 10, output_y + 60, 70, 30)
+        pygame.draw.rect(screen, (100, 255, 100), craft_btn)
+        pygame.draw.rect(screen, (255, 255, 255), craft_btn, 2)
+        craft_text = font.render("CRAFT", True, (0, 0, 0))
+        screen.blit(craft_text, (craft_btn.x + 10, craft_btn.y + 8))
         
         # Clear button
         clear_btn = pygame.Rect(crafting_x + 200, crafting_y + 100, 70, 30)
@@ -10608,15 +10606,10 @@ def handle_inventory_click(mouse_pos):
     
     # Check crafting buttons if in crafting tab
     if current_inventory_tab == "crafting":
-        # Check craft button
-        craft_btn = pygame.Rect(inv_x + 700, inv_y + 220, 70, 30)
-        if craft_btn.collidepoint(mouse_pos):
-            recipe_name = check_crafting_recipe(crafting_materials)
-            if recipe_name:
-                if craft_item(recipe_name):
-                    print(f"⚒️ Successfully crafted {recipe_name}!")
-                else:
-                    print(f"❌ Failed to craft {recipe_name}")
+        # Old crafting system removed - using new backpack crafting
+        # craft_btn = pygame.Rect(inv_x + 700, inv_y + 220, 70, 30)
+        # if craft_btn.collidepoint(mouse_pos):
+        #     ... old crafting code ...
             return
         
         # Check clear button
@@ -13478,38 +13471,7 @@ def save_game_fallback():
         print(f"💥 Fallback save failed: {e}")
         return False
 
-# Crafting system functions
-def check_crafting_recipe(materials):
-    """Check if the given materials match any crafting recipe"""
-    # Convert materials to a recipe key
-    recipe_key = []
-    for material in materials:
-        if material:
-            recipe_key.append(material.get("type", ""))
-        else:
-            recipe_key.append("")
-    
-    # Check against recipes
-    for recipe_name, recipe in CRAFTING_RECIPES.items():
-        if recipe["materials"] == recipe_key:
-            return recipe_name
-    return None
-
-def craft_item(recipe_name):
-    """Craft an item using the given recipe"""
-    if recipe_name not in CRAFTING_RECIPES:
-        return False
-    
-    recipe = CRAFTING_RECIPES[recipe_name]
-    output = recipe["output"]
-    
-    # Add crafted item to inventory
-    add_to_inventory(output["type"], output["count"])
-    
-    # Clear crafting materials
-    clear_crafting()
-    
-    return True
+# Old crafting system functions removed - using new simplified system above
 
 def add_to_crafting(material, slot_index=None):
     """Add a material to the crafting grid"""
@@ -13589,88 +13551,7 @@ def update_player_animation():
     player["last_x"] = player["x"]
     player["last_y"] = player["y"]
 
-# Crafting recipes
-CRAFTING_RECIPES = {
-# Tools & Weapons - REALISTIC ONLY
-"iron_sword": {
-"materials": ["iron", "", "", "iron", "", "", "stick", "", ""],
-        "output": {"type": "sword", "count": 1}
-    },
-"iron_pickaxe": {
-        "materials": ["iron", "iron", "iron", "", "stick", "", "", "stick", ""],
-        "output": {"type": "pickaxe", "count": 1}
-    },
-"stone_sword": {
-"materials": ["stone", "", "", "stone", "", "", "stick", "", ""],
-"output": {"type": "stone_sword", "count": 1}
-},
-    "diamond_sword": {
-        "materials": ["diamond", "", "", "diamond", "", "", "stick", "", ""],
-        "output": {"type": "diamond_sword", "count": 1}
-    },
-    "gold_sword": {
-        "materials": ["gold", "", "", "gold", "", "", "stick", "", ""],
-        "output": {"type": "gold_sword", "count": 1}
-    },
-    "enchanted_sword": {
-        "materials": ["diamond", "gold", "diamond", "gold", "diamond", "gold", "stick", "", ""],
-        "output": {"type": "enchanted_sword", "count": 1}
-},
-"stone_pickaxe": {
-"materials": ["stone", "stone", "stone", "", "stick", "", "", "stick", ""],
-"output": {"type": "pickaxe", "count": 1}
-},
-    
-# Food - REALISTIC ONLY
-    "bread": {
-        "materials": ["wheat", "wheat", "wheat", "", "", "", "", "", ""],
-        "output": {"type": "bread", "count": 1}
-    },
-    
-# Armor - REALISTIC CRAFTED ITEMS
-    "iron_helmet": {
-        "materials": ["iron", "iron", "iron", "iron", "", "iron", "", "", ""],
-        "output": {"type": "iron_helmet", "count": 1}
-    },
-    "iron_chestplate": {
-        "materials": ["iron", "", "iron", "iron", "iron", "iron", "iron", "iron", "iron"],
-        "output": {"type": "iron_chestplate", "count": 1}
-    },
-    "iron_leggings": {
-        "materials": ["iron", "iron", "iron", "iron", "", "iron", "iron", "", "iron"],
-        "output": {"type": "iron_leggings", "count": 1}
-    },
-    "iron_boots": {
-        "materials": ["iron", "", "iron", "", "", "", "iron", "", "iron"],
-        "output": {"type": "iron_boots", "count": 1}
-},
-    
-# Building Materials - REALISTIC PROCESSING ONLY
-"oak_planks": {
-"materials": ["log", "", "", "", "", "", "", "", ""],
-"output": {"type": "oak_planks", "count": 4}
-},
-"stick": {
-"materials": ["oak_planks", "", "", "oak_planks", "", "", "", "", ""],
-"output": {"type": "stick", "count": 4}
-},
-    
-# Advanced Recipes - REALISTIC CONSTRUCTION
-"chest": {
-"materials": ["oak_planks", "oak_planks", "oak_planks", "oak_planks", "", "oak_planks", "oak_planks", "oak_planks", "oak_planks"],
-"output": {"type": "chest", "count": 1}
-},
-"door": {
-"materials": ["oak_planks", "oak_planks", "", "oak_planks", "oak_planks", "", "oak_planks", "oak_planks", ""],
-"output": {"type": "door", "count": 3}
-},
-    
-# Smelting-like recipes (realistic material processing)
-"iron_ingot": {
-"materials": ["iron", "", "", "", "", "", "", "", ""],
-"output": {"type": "iron", "count": 1}
-    }
-}
+# Old crafting recipes removed - using new simplified system above
 
 def load_game():
     """Load game using improved world generation system"""
