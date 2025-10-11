@@ -10610,7 +10610,7 @@ def handle_inventory_click(mouse_pos):
         # craft_btn = pygame.Rect(inv_x + 700, inv_y + 220, 70, 30)
         # if craft_btn.collidepoint(mouse_pos):
         #     ... old crafting code ...
-            return
+        #     return
         
         # Check clear button
         clear_btn = pygame.Rect(inv_x + 700, inv_y + 260, 70, 30)
@@ -10619,7 +10619,7 @@ def handle_inventory_click(mouse_pos):
             print("🧹 Cleared crafting grid")
             return
         
-# ENHANCED CRAFTING: Check crafting grid slots for drag-and-drop
+        # ENHANCED CRAFTING: Check crafting grid slots for drag-and-drop
         for row in range(3):
             for col in range(3):
                 slot_x = inv_x + 500 + col * 60
