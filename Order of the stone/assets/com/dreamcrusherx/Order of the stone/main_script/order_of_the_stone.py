@@ -1938,9 +1938,9 @@ def update_clouds():
 # Sky background optimized for performance
 
 # Weather system variables
-current_weather = "clear"  # clear, rain, thunder, snow
+current_weather = "clear"  # Start with beautiful sunny weather!
 weather_timer = 0
-weather_duration = 0
+weather_duration = 72000  # Start with 20 minutes of sunny weather (1200 seconds * 60 FPS)
 thunder_timer = 0
 snow_blocks = []  # Track snow blocks for melting
 rain_particles = []
@@ -2261,14 +2261,14 @@ def update_weather():
     
     weather_timer += 1
     
-    # Change weather every 10-30 seconds (600-1800 frames at 60 FPS)
+    # Change weather every 10-30 MINUTES (36000-108000 frames at 60 FPS)
     if weather_timer >= weather_duration:
         # Random weather change
         weather_chances = {
-            "clear": 0.4,   # 40% chance
-            "rain": 0.3,    # 30% chance  
-            "thunder": 0.2, # 20% chance
-            "snow": 0.1     # 10% chance
+            "clear": 0.5,   # 50% chance (more sunny days!)
+            "rain": 0.25,   # 25% chance  
+            "thunder": 0.15, # 15% chance
+            "snow": 0.10    # 10% chance
         }
         
         # Choose new weather
@@ -2280,8 +2280,8 @@ def update_weather():
                 current_weather = weather
                 break
         
-        # Set new duration
-        weather_duration = random.randint(600, 1800)  # 10-30 seconds
+        # Set new duration: 10-30 minutes (600-1800 seconds = 36000-108000 frames at 60 FPS)
+        weather_duration = random.randint(36000, 108000)  # 10-30 minutes
         weather_timer = 0
         
         # Handle weather transitions
@@ -2296,38 +2296,39 @@ def accumulate_snow():
     """Gradually accumulate snow on surface blocks during snow weather"""
     global snow_blocks
     
-    # Only add snow occasionally for gradual accumulation
-    if random.random() > 0.95:  # 5% chance per frame
+    # Add snow more frequently for better coverage
+    if random.random() > 0.3:  # 30% chance per frame (more snow!)
         return
     
     # Get player position for snow coverage area
     player_x = int(player["x"])
     player_y = int(player["y"])
     
-    # Add snow to a few random columns around player
-    for _ in range(3):  # Add to 3 random locations per frame
-        dx = random.randint(-25, 25)
+    # Add snow to more locations around player
+    for _ in range(5):  # Add to 5 random locations per frame
+        dx = random.randint(-30, 30)
         x = player_x + dx
         
-        # Find the top surface block (first solid block from top)
-        for y in range(0, player_y + 50):  # Search from top down
-            block = get_block(x, y)
-            block_above = get_block(x, y - 1)
+        # Find the top surface block by searching from a high point downward
+        for search_y in range(max(0, player_y - 30), player_y + 30):
+            block = get_block(x, search_y)
+            block_above = get_block(x, search_y - 1)
             
             # Check if this is a surface block (solid block with air above)
-            if block and block != "air" and (block_above == "air" or block_above is None):
-                # Only add snow on surface blocks (grass, dirt, stone, etc)
-                # Don't add snow on things like chests, doors, water, lava
-                if block in ["grass", "dirt", "stone", "sand", "oak_planks", "red_brick", "log", "leaves"]:
-                    # Place snow ON TOP of the block (not replacing it)
-                    snow_y = y - 1
-                    snow_location = (x, snow_y)
-                    
-                    # Only add if there's air above and we haven't already placed snow here
-                    if get_block(x, snow_y) == "air" and snow_location not in snow_blocks:
-                        set_block(x, snow_y, "snow")
-                        snow_blocks.append(snow_location)
-                break  # Found surface, move to next column
+            if block and block != "air" and block != "snow":
+                if block_above == "air" or block_above is None:
+                    # Only add snow on surface blocks (grass, dirt, stone, etc)
+                    # Don't add snow on things like chests, doors, water, lava
+                    if block in ["grass", "dirt", "stone", "sand", "oak_planks", "red_brick", "leaves", "coal", "iron", "gold", "diamond"]:
+                        # Place snow ON TOP of the block (not replacing it)
+                        snow_y = search_y - 1
+                        snow_location = (x, snow_y)
+                        
+                        # Only add if there's air above and we haven't already placed snow here
+                        if get_block(x, snow_y) == "air" and snow_location not in snow_blocks:
+                            set_block(x, snow_y, "snow")
+                            snow_blocks.append(snow_location)
+                    break  # Found surface, move to next column
 
 def start_snow_weather():
     """Start snow weather - initial message"""
