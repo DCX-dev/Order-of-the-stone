@@ -1539,6 +1539,42 @@ def make_zombie_texture(size):
     pygame.draw.rect(surf, (0, 0, 0, 180), (0, 0, size, size), 1)
     return surf
 
+def make_slime_texture(size):
+    """Create a cute, bouncy slime texture"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Slime body - translucent green blob
+    slime_color = (100, 255, 100, 200)  # Light green with transparency
+    darker_green = (80, 200, 80, 230)
+    
+    # Main slime blob (rounded square)
+    blob_rect = pygame.Rect(size//8, size//4, size*3//4, size*3//4)
+    pygame.draw.ellipse(surf, slime_color, blob_rect)
+    
+    # Add darker bottom for depth
+    bottom_rect = pygame.Rect(size//8, size//2, size*3//4, size//3)
+    pygame.draw.ellipse(surf, darker_green, bottom_rect)
+    
+    # Cute eyes (big and friendly)
+    eye_size = size//6
+    left_eye_x = size//3
+    right_eye_x = size*2//3
+    eye_y = size//3
+    
+    # Eye whites
+    pygame.draw.circle(surf, (255, 255, 255), (left_eye_x, eye_y), eye_size)
+    pygame.draw.circle(surf, (255, 255, 255), (right_eye_x, eye_y), eye_size)
+    
+    # Eye pupils (black)
+    pygame.draw.circle(surf, (0, 0, 0), (left_eye_x, eye_y), eye_size//2)
+    pygame.draw.circle(surf, (0, 0, 0), (right_eye_x, eye_y), eye_size//2)
+    
+    # Shiny highlight on slime
+    highlight_size = size//4
+    pygame.draw.circle(surf, (200, 255, 200, 150), (size//4, size//4), highlight_size//2)
+    
+    return surf
+
 def make_potion_texture(size):
     """Procedurally draw a potion texture (upside down)."""
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -2833,6 +2869,9 @@ try:
     textures["zombie"] = load_texture(os.path.join(MOB_DIR, "zombie.png"))
 except Exception:
     textures["zombie"] = make_zombie_texture(TILE_SIZE)
+
+# --- Slime texture (procedurally generated) ---
+textures["slime"] = make_slime_texture(TILE_SIZE)
 
 # Shopkeeper texture removed
 
@@ -7877,6 +7916,30 @@ def draw_world():
             monster_gif_path = os.path.join(MOB_DIR, "monster.gif")
             # Use static monster image
             screen.blit(entity["image"], (ex, ey))
+        elif entity["type"] == "slime":
+            # Draw slime with cute bouncing animation
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            # OPTIMIZED: Skip entities outside screen
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
+            # Bounce animation
+            bounce_offset = math.sin(entity.get("bounce_offset", 0)) * 5  # Bounce up to 5 pixels
+            bounce_y = ey + int(bounce_offset)
+            
+            # Make aggressive slimes look angry (slightly red tint)
+            if entity.get("aggressive", False):
+                # Create a red-tinted version for aggressive slimes
+                slime_image = entity["image"].copy()
+                red_overlay = pygame.Surface(slime_image.get_size(), pygame.SRCALPHA)
+                red_overlay.fill((255, 50, 50, 100))  # Red tint
+                slime_image.blit(red_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                screen.blit(slime_image, (ex, bounce_y))
+            else:
+                # Normal peaceful slime
+                screen.blit(entity["image"], (ex, bounce_y))
         elif entity["type"] == "final_boss":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
@@ -9147,12 +9210,12 @@ def attack_monsters(mx, my):
         print("🗡️ Sword is already thrown! Wait for it to return.")
         return
     
-    # Find closest monster to click location
+    # Find closest monster to click location (including slimes)
     closest_monster = None
     closest_distance = float('inf')
     
     for mob in entities[:]:
-        if mob["type"] in ["monster", "zombie"]:
+        if mob["type"] in ["monster", "zombie", "slime"]:
             mob_x, mob_y = mob["x"], mob["y"]
             click_distance = math.hypot(target_x - mob_x, target_y - mob_y)
             if click_distance < closest_distance:
@@ -11657,8 +11720,13 @@ def update_monsters():
         night_monsters_spawned = False  # Reset for next night
         cleanup_night_monsters()
     
+    # Spawn slimes randomly during both day and night (harmless until approached)
+    spawn_slimes_randomly()
+    
     # Update monster movement and combat
     update_monster_movement_and_combat()
+    # Update slime behavior
+    update_slime_behavior()
 
 def cleanup_night_monsters():
     """Remove night-spawned monsters when it becomes day"""
@@ -11842,13 +11910,125 @@ def find_ground_level(x):
 def find_surface_level(x):
     """Find the surface level at a given x coordinate (top of the world)"""
     # Look for the highest solid block at this x position from the top down
-    for y in range(0, -200, -1):  # Check from surface down to bedrock
+    # Surface is typically between y=90 and y=130
+    for y in range(90, 250):  # Check from expected surface upwards, then down to bedrock
         pos_key = f"{x},{y}"
         if pos_key in world_data:
             block_type = world_data[pos_key]
-            if block_type in ["grass", "dirt", "stone", "sand", "gravel", "leaves", "log"]:
-                return y
+            if block_type not in ["air", None]:  # Found a solid block
+                # Return the position above this block (where monster should spawn)
+                return y - 1
     return None
+
+# Slime spawning system
+slime_spawn_timer = 0
+slime_spawn_cooldown = 600  # 10 seconds at 60 FPS
+max_slimes = 100  # Maximum slimes in the world
+slime_aggro_distance = 3  # Distance at which slimes become aggressive
+
+def spawn_slimes_randomly():
+    """Spawn slimes randomly across the world (harmless until approached)"""
+    global entities, slime_spawn_timer
+    
+    slime_spawn_timer += 1
+    
+    # Check if it's time to try spawning a slime
+    if slime_spawn_timer >= slime_spawn_cooldown:
+        # Count existing slimes
+        slime_count = sum(1 for mob in entities if mob["type"] == "slime")
+        
+        # Spawn a slime if under the limit
+        if slime_count < max_slimes and random.random() < 0.7:  # 70% chance
+            # Spawn near player but not too close
+            spawn_distance = random.uniform(10, 30)  # 10-30 blocks away
+            spawn_angle = random.uniform(0, 2 * math.pi)
+            
+            spawn_x = player["x"] + math.cos(spawn_angle) * spawn_distance
+            spawn_y_surface = find_surface_level(int(spawn_x))
+            
+            if spawn_y_surface is not None:
+                entities.append({
+                    "type": "slime",
+                    "x": float(spawn_x),
+                    "y": float(spawn_y_surface),
+                    "hp": 3,  # Weak enemy
+                    "cooldown": 0,
+                    "image": textures["slime"],
+                    "aggressive": False,  # Harmless until approached
+                    "bounce_offset": random.uniform(0, math.pi * 2),  # For bounce animation
+                    "wander_target": None  # For wandering behavior
+                })
+                print(f"🟢 Slime spawned at ({int(spawn_x)}, {int(spawn_y_surface)})")
+        
+        slime_spawn_timer = 0  # Reset timer
+
+def update_slime_behavior():
+    """Update slime behavior - harmless until player gets close"""
+    player_x = player["x"]
+    player_y = player["y"]
+    
+    for slime in entities[:]:
+        if slime["type"] != "slime":
+            continue
+        
+        # Calculate distance to player
+        dx = player_x - slime["x"]
+        dy = player_y - slime["y"]
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        # Become aggressive if player is too close
+        if distance < slime_aggro_distance:
+            slime["aggressive"] = True
+        elif distance > slime_aggro_distance * 2:
+            # Calm down if player moves away
+            slime["aggressive"] = False
+        
+        # Behavior based on state
+        if slime["aggressive"]:
+            # Chase player slowly (slimes are slow!)
+            if distance > 0.1:
+                speed = 0.02  # Very slow movement
+                slime["x"] += (dx / distance) * speed
+                slime["y"] += (dy / distance) * speed
+            
+            # Attack player if very close
+            if slime["cooldown"] <= 0 and distance < 1.5:
+                # Weak attack (1 damage)
+                player["health"] -= 1
+                slime["cooldown"] = 120  # 2 second cooldown
+                print(f"🟢 Slime attacked! Health: {player['health']}/{player['max_health']}")
+        else:
+            # Wander around peacefully
+            if slime["wander_target"] is None or random.random() < 0.01:
+                # Pick a new wander target occasionally
+                wander_distance = random.uniform(2, 5)
+                wander_angle = random.uniform(0, 2 * math.pi)
+                slime["wander_target"] = (
+                    slime["x"] + math.cos(wander_angle) * wander_distance,
+                    slime["y"] + math.sin(wander_angle) * wander_distance
+                )
+            
+            # Move towards wander target slowly
+            if slime["wander_target"]:
+                target_x, target_y = slime["wander_target"]
+                dx = target_x - slime["x"]
+                dy = target_y - slime["y"]
+                dist = math.sqrt(dx*dx + dy*dy)
+                
+                if dist > 0.5:
+                    speed = 0.01  # Very slow wandering
+                    slime["x"] += (dx / dist) * speed
+                    slime["y"] += (dy / dist) * speed
+                else:
+                    # Reached target, pick a new one
+                    slime["wander_target"] = None
+        
+        # Update cooldown
+        if slime["cooldown"] > 0:
+            slime["cooldown"] -= 1
+        
+        # Bounce animation (update offset for cute bouncing)
+        slime["bounce_offset"] = (slime["bounce_offset"] + 0.1) % (math.pi * 2)
 
 def update_monster_movement_and_combat():
     """Update monster movement and combat (separated for performance)"""
