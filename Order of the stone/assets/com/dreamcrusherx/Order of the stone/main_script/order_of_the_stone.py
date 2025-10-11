@@ -9844,7 +9844,7 @@ def draw_backpack_ui():
     # Recipe list area
     recipe_list_y = recipes_y + 30
     recipe_list_height = 280  # Fixed height for recipe list area
-    max_visible_recipes = 7  # How many recipes fit in the visible area
+    max_visible_recipes = 5  # How many recipes fit in the visible area (reduced to show scrollbar sooner)
     
     recipe_y = recipe_list_y
     if possible_recipes:
@@ -9891,8 +9891,8 @@ def draw_backpack_ui():
             
             recipe_y += 40
         
-        # Draw scrollbar if needed
-        if total_recipes > max_visible_recipes:
+        # Draw scrollbar if needed (show when more than 4 recipes)
+        if total_recipes > 4:
             scrollbar_x = crafting_x + crafting_width - 30
             scrollbar_y = recipe_list_y
             scrollbar_width = 20
