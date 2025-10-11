@@ -9843,7 +9843,7 @@ def draw_backpack_ui():
     
     # Recipe list area
     recipe_list_y = recipes_y + 30
-    recipe_list_height = 280  # Fixed height for recipe list area
+    recipe_list_height = 200  # Reduced height to make room for clear button
     max_visible_recipes = 5  # How many recipes fit in the visible area (reduced to show scrollbar sooner)
     
     recipe_y = recipe_list_y
@@ -9903,8 +9903,8 @@ def draw_backpack_ui():
             pygame.draw.rect(screen, (30, 30, 40), track_rect)
             pygame.draw.rect(screen, (100, 100, 120), track_rect, 2)  # Border around track
             
-            # Scrollbar thumb (slider)
-            thumb_height = max(40, int(scrollbar_height * (max_visible_recipes / total_recipes)))
+            # Scrollbar thumb (slider) - size based on visible vs total ratio
+            thumb_height = max(20, int(scrollbar_height * (max_visible_recipes / total_recipes)))
             scroll_percentage = crafting_scroll_offset / max_scroll if max_scroll > 0 else 0
             thumb_y = scrollbar_y + int((scrollbar_height - thumb_height) * scroll_percentage)
             
@@ -9937,8 +9937,8 @@ def draw_backpack_ui():
         no_recipes_text = small_font.render("Select materials to see recipes", True, (150, 150, 150))
         screen.blit(no_recipes_text, (crafting_x + 15, recipe_y))
     
-    # Clear materials button
-    clear_btn = pygame.Rect(crafting_x + 10, crafting_y + crafting_height - 100, crafting_width - 20, 35)
+    # Clear materials button (moved down to not block scrollbar)
+    clear_btn = pygame.Rect(crafting_x + 10, crafting_y + crafting_height - 80, crafting_width - 40, 35)
     pygame.draw.rect(screen, (150, 50, 50), clear_btn)
     pygame.draw.rect(screen, (200, 100, 100), clear_btn, 2)
     clear_text = font.render("Clear Selection", True, (255, 255, 255))
@@ -14621,7 +14621,14 @@ while running:
         elif event.type == pygame.MOUSEWHEEL:
             # Mouse wheel scrolling for crafting recipes when backpack is open
             if game_state == GameState.BACKPACK:
-                crafting_scroll_offset = max(0, crafting_scroll_offset - event.y)  # event.y is negative for scroll down
+                # Get current possible recipes to calculate scroll bounds
+                possible_recipes = check_can_craft(selected_crafting_materials)
+                total_recipes = len(possible_recipes)
+                max_visible_recipes = 5
+                max_scroll = max(0, total_recipes - max_visible_recipes)
+                
+                # Update scroll with proper bounds
+                crafting_scroll_offset = max(0, min(max_scroll, crafting_scroll_offset - event.y))
         
         # EXTREME ENGINEERING: Handle multiplayer chat input
         if multiplayer_mode:
