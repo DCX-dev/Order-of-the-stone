@@ -1865,19 +1865,8 @@ def generate_terrain_column(x):
             if get_block(x, surface_y - 1) is None:
                 set_block(x, surface_y - 1, "carrot")
         
-        # Chests - 5% chance (uncommon but visible)
-        # GRASS RULE: Chests can only be placed on grass blocks during world generation
-        if random.random() < 0.05:
-            # Check if we can place a chest according to the grass rule
-            # Place chest ABOVE the grass block (surface_y - 1)
-            chest_y = surface_y - 1
-            if can_place_chest_on_grass(x, chest_y) and get_block(x, chest_y) is None:
-                set_block(x, chest_y, "chest")
-                if chest_system:
-                    generate_chest_with_shopkeeper_loot(x, chest_y, "village")
-                print(f"📦 Chest placed on grass at ({x}, {chest_y})")
-            else:
-                print(f"❌ Cannot place chest at ({x}, {chest_y}) - grass rule: {can_place_chest_on_grass(x, chest_y)}, block exists: {get_block(x, chest_y) is not None}")
+        # Chests removed from natural spawning - only spawn in fortresses and structures now
+        # (Chest generation in fortresses is handled separately)
     
     # Safety check: Ensure at least the surface block was placed
     if get_block(x, surface_y) is None:
@@ -12108,19 +12097,8 @@ def generate_initial_world(world_seed=None):
                 if get_block(x, ground_y - 1) is None:
                     set_block(x, ground_y - 1, "carrot")
 
-        # Clean chest placement (only on grass, no messy spawning) - CHECK FOR EXISTING BLOCKS
-        # GRASS RULE: Chests can only be placed on grass blocks during world generation
-        if can_place_surface_item(x, ground_y) and world_rng.random() < 0.05:  # 5% chance - uncommon but visible
-            # Check if we can place a chest according to the grass rule
-            # Place chest ABOVE the grass block (ground_y - 1)
-            chest_y = ground_y - 1
-            if can_place_chest_on_grass(x, chest_y) and get_block(x, chest_y) is None:
-                set_block(x, chest_y, "chest")
-                if chest_system:
-                    generate_chest_with_shopkeeper_loot(x, chest_y, "village")
-                print(f"📦 Chest placed on grass at ({x}, {chest_y})")
-            else:
-                print(f"❌ Cannot place chest at ({x}, {chest_y}) - grass rule: {can_place_chest_on_grass(x, chest_y)}, block exists: {get_block(x, chest_y) is not None}")
+        # Chests removed from natural spawning - only spawn in fortresses and structures now
+        # (Chest generation in fortresses is handled separately)
         
         # Carbine fields - groups of carrots with 10% chance
         if can_place_surface_item(x, ground_y) and world_rng.random() < 0.1:  # 10% chance for carbine field
