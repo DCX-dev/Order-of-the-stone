@@ -10845,8 +10845,11 @@ def handle_backpack_click(mouse_pos):
         global crafting_scroll_offset
         scrollbar_info = draw_backpack_ui.scrollbar
         
+        print(f"🔍 Scrollbar click check: mouse_pos={mouse_pos}, scrollbar_rect={scrollbar_info['rect']}")
+        
         # Check if clicked on the scrollbar track (jump to position)
         if scrollbar_info['rect'].collidepoint(mouse_pos):
+            print(f"🔍 Scrollbar clicked! Mouse Y: {mouse_pos[1]}")
             # Calculate new scroll position based on click
             click_y = mouse_pos[1]
             track_y = scrollbar_info['recipe_list_y']
@@ -10857,7 +10860,9 @@ def handle_backpack_click(mouse_pos):
             click_percentage = max(0, min(1, click_percentage))
             
             # Set scroll to that position
+            old_offset = crafting_scroll_offset
             crafting_scroll_offset = int(click_percentage * scrollbar_info['max_scroll'])
+            print(f"🔍 Scrollbar jump: {old_offset} -> {crafting_scroll_offset} (click_percentage: {click_percentage:.2f})")
             return
     
     # Calculate backpack UI position
@@ -14704,7 +14709,9 @@ while running:
                 max_scroll = max(0, total_recipes - max_visible_recipes)
                 
                 # Update scroll with proper bounds
+                old_offset = crafting_scroll_offset
                 crafting_scroll_offset = max(0, min(max_scroll, crafting_scroll_offset - event.y))
+                print(f"🔍 Mouse wheel: {old_offset} -> {crafting_scroll_offset} (event.y={event.y}, max_scroll={max_scroll})")
         
         # EXTREME ENGINEERING: Handle multiplayer chat input
         if multiplayer_mode:
