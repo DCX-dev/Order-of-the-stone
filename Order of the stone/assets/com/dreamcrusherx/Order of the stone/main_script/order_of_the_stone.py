@@ -14607,7 +14607,6 @@ while running:
         
         elif event.type == pygame.MOUSEWHEEL:
             # Mouse wheel scrolling for crafting recipes when backpack is open
-            global crafting_scroll_offset
             if game_state == GameState.BACKPACK:
                 crafting_scroll_offset = max(0, crafting_scroll_offset - event.y)  # event.y is negative for scroll down
         
