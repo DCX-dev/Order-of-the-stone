@@ -9711,6 +9711,9 @@ def draw_backpack_ui():
     """Draw the backpack interface with hotbar display"""
     global backpack_close_button
     
+    # Get mouse position
+    mouse_pos = pygame.mouse.get_pos()
+    
     # Dim background
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     overlay.set_alpha(160)
@@ -9859,7 +9862,6 @@ def draw_backpack_ui():
             
             # Draw recipe button
             recipe_rect = pygame.Rect(crafting_x + 10, recipe_y, crafting_width - 20, 35)
-            mouse_pos = pygame.mouse.get_pos()
             is_hovered = recipe_rect.collidepoint(mouse_pos)
             
             button_color = (80, 150, 80) if is_hovered else (60, 100, 60)
