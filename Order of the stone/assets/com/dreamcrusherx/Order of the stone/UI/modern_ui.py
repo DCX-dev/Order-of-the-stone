@@ -390,13 +390,12 @@ class ModernUI:
             "",
             "Features:",
             "• Procedural world generation",
-            "• Fortress exploration",
-            "• Beautiful modern UI",
-            "",
-            "Created with Python and Pygame"
+            "• Fortress exploration & weather system",
+            "• Crafting system (see recipes below)",
+            "• Beautiful modern UI"
         ]
         
-        y_start = 150
+        y_start = 120
         for i, text in enumerate(about_texts):
             if text.startswith("•"):
                 color = self.colors["accent"]
@@ -406,10 +405,43 @@ class ModernUI:
                 color = self.colors["text_secondary"]
             
             text_surface = self.font.render(text, True, color)
-            self.screen.blit(text_surface, (100, y_start + i * 30))
+            self.screen.blit(text_surface, (50, y_start + i * 25))
+        
+        # Crafting Recipes Section
+        recipes_y = y_start + len(about_texts) * 25 + 20
+        recipes_title = self.font.render("🔨 Crafting Recipes:", True, self.colors["accent"])
+        self.screen.blit(recipes_title, (50, recipes_y))
+        
+        # Display all recipes in compact format
+        recipes = [
+            "2 Oak Planks → Pickaxe",
+            "3 Oak Planks → Sword",
+            "3 Stone + 1 Oak Plank → Stone Sword",
+            "4 Oak Planks → Chest",
+            "10 Oak Planks → Door",
+            "3 Oak Planks + 2 Leaves → Bed",
+            "5 Oak Planks → 3 Ladders",
+            "1 Coal + 1 Oak Plank → 4 Torches",
+            "1 Log → 4 Oak Planks",
+            "3 Wheat → Bread",
+            "2 Stone + 1 Coal → 4 Red Bricks"
+        ]
+        
+        recipe_y = recipes_y + 30
+        for i, recipe in enumerate(recipes):
+            # Split into two columns for space
+            if i < 6:
+                x_pos = 50
+                y_pos = recipe_y + i * 22
+            else:
+                x_pos = 420
+                y_pos = recipe_y + (i - 6) * 22
+            
+            recipe_text = self.small_font.render(recipe, True, self.colors["text_secondary"])
+            self.screen.blit(recipe_text, (x_pos, y_pos))
         
         # Back button
-        back_btn = self.draw_modern_button("⬅️ Back to Title", 500, mouse_pos, self.colors["button"])
+        back_btn = self.draw_modern_button("⬅️ Back to Title", 540, mouse_pos, self.colors["button"])
         
         return {"back": back_btn}
 
