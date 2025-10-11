@@ -154,10 +154,10 @@ class ModernUI:
         subtitle_x = (self.screen.get_width() - subtitle.get_width()) // 2
         self.screen.blit(subtitle, (subtitle_x, 120))
         
-        # Animated splash text (yellow, tilted, pulsing) - BIG and visible!
+        # Animated splash text (yellow, tilted, pulsing) - positioned next to title
         import math
         pulse = abs(math.sin(time.time() * 3))  # Pulse between 0 and 1 (3x per second)
-        splash_size = int(36 + pulse * 16)  # Size pulses between 36 and 52 (MUCH BIGGER!)
+        splash_size = int(28 + pulse * 10)  # Size pulses between 28 and 38 (smaller)
         splash_font = pygame.font.Font(None, splash_size)
         splash_surface = splash_font.render(self.current_splash, True, (255, 215, 0))  # Bright yellow/gold
         
@@ -165,9 +165,9 @@ class ModernUI:
         angle = -18 + math.sin(time.time() * 2) * 4  # Wiggle between -22 and -14 degrees
         rotated_splash = pygame.transform.rotate(splash_surface, angle)
         
-        # Position to the right of title
-        splash_x = title_x + title.get_width() + 20
-        splash_y = 40
+        # Position closer to the title, slightly overlapping on the side
+        splash_x = title_x + title.get_width() - 30
+        splash_y = 55
         
         # Add bright glow effect to make it pop
         glow_splash = splash_font.render(self.current_splash, True, (255, 255, 100))  # Brighter glow
