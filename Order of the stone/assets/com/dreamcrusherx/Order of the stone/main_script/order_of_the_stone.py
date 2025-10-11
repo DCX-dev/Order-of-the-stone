@@ -1788,8 +1788,40 @@ def generate_terrain_column(x):
     
     # CAVE SYSTEM REMOVED - No longer generating caves
     
+    # DESERT BIOME TERRAIN: Replace grass with sand in desert biomes
+    if biome_type == "desert":
+        # Replace surface grass with sand
+        if get_block(x, surface_y) == "grass":
+            set_block(x, surface_y, "sand")
+        # Replace underground dirt with sand too (desert sand goes deeper)
+        for depth in range(1, min(8, surface_y + 1)):
+            if get_block(x, surface_y - depth) == "dirt":
+                set_block(x, surface_y - depth, "sand")
+        
+        # Deserts have very few trees (cacti would be better, but we don't have that texture)
+        # So we'll just have sparse trees
+        if random.random() < 0.02 and should_generate_tree(x, surface_y, biome_type):  # Very rare trees in desert
+            # Same tree generation as other biomes
+            if get_block(x, surface_y - 1) is None and (surface_y - 1) < surface_y:
+                set_block(x, surface_y - 1, "log")
+                if get_block(x, surface_y - 2) is None and (surface_y - 2) < surface_y:
+                    set_block(x, surface_y - 2, "log")
+                
+                # Leaves
+                if get_block(x - 1, surface_y - 3) is None and (surface_y - 3) < surface_y:
+                    set_block(x - 1, surface_y - 3, "leaves")
+                if get_block(x, surface_y - 3) is None and (surface_y - 3) < surface_y:
+                    set_block(x, surface_y - 3, "leaves")
+                if get_block(x + 1, surface_y - 3) is None and (surface_y - 3) < surface_y:
+                    set_block(x + 1, surface_y - 3, "leaves")
+                
+                if get_block(x - 1, surface_y - 2) is None and (surface_y - 2) < surface_y:
+                    set_block(x - 1, surface_y - 2, "leaves")
+                if get_block(x + 1, surface_y - 2) is None and (surface_y - 2) < surface_y:
+                    set_block(x + 1, surface_y - 2, "leaves")
+    
     # NORMAL BIOME TREE GENERATION: Forests have lots of trees, fields have few
-    if biome_type in ["forest", "field", "mixed"] and should_generate_tree(x, surface_y, biome_type):
+    elif biome_type in ["forest", "field", "mixed"] and should_generate_tree(x, surface_y, biome_type):
         # ABSOLUTE RULE: Trees can ONLY spawn ABOVE surface (y < surface_y) - NEVER underground!
         # Tree trunk: 2 stacked logs - CHECK FOR EXISTING BLOCKS
         # CRITICAL: Trees can NEVER EVER spawn underground or at ground level
@@ -7076,20 +7108,27 @@ def can_place_surface_item(x: int, ground_y: int) -> bool:
     return True
 
 def get_biome_type(x):
-    """Determine biome type based on position - creates forest, field, and mixed biomes"""
+    """Determine biome type based on position - creates forest, field, mixed, and desert biomes"""
     # Use sine waves to create natural biome boundaries
     import math
+    
+    # Distance from spawn (x=0) - deserts spawn further away
+    distance_from_spawn = abs(x)
     
     # Large-scale biome variation
     forest_noise = math.sin(x * 0.02) + math.sin(x * 0.05) * 0.5
     field_noise = math.sin(x * 0.03) + math.sin(x * 0.07) * 0.3
+    desert_noise = math.sin(x * 0.01) + math.sin(x * 0.04) * 0.6
     
     # Add some randomness for natural variation
     forest_noise += random.uniform(-0.3, 0.3)
     field_noise += random.uniform(-0.2, 0.2)
+    desert_noise += random.uniform(-0.4, 0.4)
     
-    # Determine biome based on noise values
-    if forest_noise > 0.3:
+    # Desert biomes spawn far from spawn (distance > 200) with high desert noise
+    if distance_from_spawn > 200 and desert_noise > 0.4:
+        return "desert"
+    elif forest_noise > 0.3:
         return "forest"
     elif field_noise > 0.2:
         return "field"
@@ -9904,9 +9943,15 @@ def draw_backpack_ui():
             pygame.draw.rect(screen, (100, 100, 120), track_rect, 2)  # Border around track
             
             # Scrollbar thumb (slider) - size based on visible vs total ratio
-            thumb_height = max(20, int(scrollbar_height * (max_visible_recipes / total_recipes)))
+            # Make thumb size more dramatic - smaller when there are many recipes
+            visible_ratio = max_visible_recipes / total_recipes
+            thumb_height = max(15, int(scrollbar_height * visible_ratio))
             scroll_percentage = crafting_scroll_offset / max_scroll if max_scroll > 0 else 0
             thumb_y = scrollbar_y + int((scrollbar_height - thumb_height) * scroll_percentage)
+            
+            # Debug info (remove this later)
+            if total_recipes > 6:
+                print(f"🔍 Scrollbar Debug: {total_recipes} recipes, thumb height: {thumb_height}, ratio: {visible_ratio:.2f}")
             
             thumb_rect = pygame.Rect(scrollbar_x + 2, thumb_y, scrollbar_width - 4, thumb_height)
             is_thumb_hovered = thumb_rect.collidepoint(mouse_pos)
@@ -12140,9 +12185,36 @@ def generate_initial_world(world_seed=None):
             if get_block(x, y) is not None:
                 world_data.pop((x, y), None)  # Remove any blocks below bedrock
         
-        # BIOME-BASED TREE GENERATION: Forests have lots of trees, fields have few
+        # BIOME-BASED TERRAIN: Handle desert biomes
         biome_type = get_biome_type(x)
-        if should_generate_tree(x, ground_y, biome_type):
+        
+        # DESERT BIOME TERRAIN: Replace grass with sand in desert biomes
+        if biome_type == "desert":
+            # Replace surface grass with sand
+            if get_block(x, ground_y) == "grass":
+                set_block(x, ground_y, "sand")
+            # Replace underground dirt with sand too (desert sand goes deeper)
+            for depth in range(1, min(8, ground_y + 1)):
+                if get_block(x, ground_y + depth) == "dirt":
+                    set_block(x, ground_y + depth, "sand")
+        
+        # BIOME-BASED TREE GENERATION: Forests have lots of trees, fields have few
+        if biome_type == "desert":
+            # Deserts have very few trees
+            if random.random() < 0.02 and should_generate_tree(x, ground_y, biome_type):
+                # Same tree generation as other biomes
+                if get_block(x, ground_y - 1) is None and (ground_y - 1) < ground_y:
+                    set_block(x, ground_y - 1, "log")
+                    if get_block(x, ground_y - 2) is None and (ground_y - 2) < ground_y:
+                        set_block(x, ground_y - 2, "log")
+                    
+                    # Leaves
+                    for dx in [-1, 0, 1]:
+                        for dy in [-3, -4]:
+                            leaf_x, leaf_y = x + dx, ground_y + dy
+                            if leaf_y < ground_y and get_block(leaf_x, leaf_y) is None:
+                                set_block(leaf_x, leaf_y, "leaves")
+        elif should_generate_tree(x, ground_y, biome_type):
             # ABSOLUTE RULE: Trees can ONLY spawn ABOVE surface (y < ground_y) - NEVER underground!
             # CRITICAL: Trees can NEVER EVER spawn underground or at ground level
             # Only place trees if there's clean space
