@@ -9943,15 +9943,15 @@ def draw_backpack_ui():
             pygame.draw.rect(screen, (100, 100, 120), track_rect, 2)  # Border around track
             
             # Scrollbar thumb (slider) - size based on visible vs total ratio
-            # Make thumb size more dramatic - smaller when there are many recipes
+            # Make thumb size MUCH more dramatic - smaller when there are many recipes
             visible_ratio = max_visible_recipes / total_recipes
-            thumb_height = max(15, int(scrollbar_height * visible_ratio))
+            # Make the sizing much more dramatic - smaller minimum and bigger scaling
+            thumb_height = max(10, int(scrollbar_height * visible_ratio * 0.8))  # 0.8 makes it even smaller
             scroll_percentage = crafting_scroll_offset / max_scroll if max_scroll > 0 else 0
             thumb_y = scrollbar_y + int((scrollbar_height - thumb_height) * scroll_percentage)
             
             # Debug info (remove this later)
-            if total_recipes > 6:
-                print(f"🔍 Scrollbar Debug: {total_recipes} recipes, thumb height: {thumb_height}, ratio: {visible_ratio:.2f}")
+            print(f"🔍 Scrollbar Debug: {total_recipes} recipes, thumb height: {thumb_height}, ratio: {visible_ratio:.2f}, scrollbar_height: {scrollbar_height}")
             
             thumb_rect = pygame.Rect(scrollbar_x + 2, thumb_y, scrollbar_width - 4, thumb_height)
             is_thumb_hovered = thumb_rect.collidepoint(mouse_pos)
@@ -9969,6 +9969,10 @@ def draw_backpack_ui():
                 # Can scroll down - show down arrow
                 down_arrow = arrow_font.render("▼", True, (200, 200, 255))
                 screen.blit(down_arrow, (scrollbar_x + 3, scrollbar_y + scrollbar_height + 5))
+            
+            # Show total recipe count for debugging
+            count_text = small_font.render(f"{total_recipes} recipes", True, (255, 255, 255))
+            screen.blit(count_text, (scrollbar_x - 80, scrollbar_y + scrollbar_height // 2))
             
             # Store scrollbar info for interaction
             draw_backpack_ui.scrollbar = {
