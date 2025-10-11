@@ -9936,28 +9936,31 @@ def draw_backpack_ui():
             recipe_y += 40
         
         # Show "View All" / "View Less" button when there are more recipes than can fit
+        print(f"🔍 Debug: total_recipes={total_recipes}, max_visible_recipes={max_visible_recipes}")
         if total_recipes > max_visible_recipes:
-            view_all_btn = pygame.Rect(crafting_x + crafting_width - 120, recipe_list_y + recipe_list_height + 10, 110, 30)
+            # Position button more visibly - in the recipe area, not below it
+            view_all_btn = pygame.Rect(crafting_x + 10, recipe_list_y + recipe_list_height - 40, 120, 35)
             is_hovered = view_all_btn.collidepoint(mouse_pos)
             
-            # Button colors
-            btn_color = (80, 150, 220) if is_hovered else (60, 120, 180)
-            border_color = (120, 180, 255) if is_hovered else (100, 160, 220)
+            # Make button much more visible with bright colors
+            btn_color = (100, 200, 100) if is_hovered else (80, 180, 80)  # Bright green
+            border_color = (150, 255, 150) if is_hovered else (120, 220, 120)  # Bright green border
             
-            # Draw button
-            pygame.draw.rect(screen, btn_color, view_all_btn, border_radius=5)
-            pygame.draw.rect(screen, border_color, view_all_btn, 2, border_radius=5)
+            # Draw button with stronger visibility
+            pygame.draw.rect(screen, btn_color, view_all_btn, border_radius=8)
+            pygame.draw.rect(screen, border_color, view_all_btn, 3, border_radius=8)
             
             # Button text - changes based on current view
             if show_all_recipes:
-                btn_text = small_font.render("View Less", True, (255, 255, 255))
+                btn_text = small_font.render("View Less", True, (0, 0, 0))  # Black text for contrast
             else:
-                btn_text = small_font.render(f"View All ({total_recipes})", True, (255, 255, 255))
+                btn_text = small_font.render(f"View All ({total_recipes})", True, (0, 0, 0))  # Black text
             
             text_x = view_all_btn.x + (view_all_btn.width - btn_text.get_width()) // 2
             text_y = view_all_btn.y + (view_all_btn.height - btn_text.get_height()) // 2
             screen.blit(btn_text, (text_x, text_y))
             
+            print(f"🔍 View All button drawn at {view_all_btn}")
             # Store button for click detection
             draw_backpack_ui.view_all_button = view_all_btn
     else:
