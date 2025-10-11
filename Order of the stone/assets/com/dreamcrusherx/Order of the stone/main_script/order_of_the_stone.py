@@ -7917,7 +7917,7 @@ def draw_world():
             # Use static monster image
             screen.blit(entity["image"], (ex, ey))
         elif entity["type"] == "slime":
-            # Draw slime with cute bouncing animation
+            # Draw slime with Terraria-style bouncing and squishing
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
             
@@ -7925,21 +7925,31 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            # Bounce animation
-            bounce_offset = math.sin(entity.get("bounce_offset", 0)) * 5  # Bounce up to 5 pixels
-            bounce_y = ey + int(bounce_offset)
+            # Get slime image
+            slime_image = entity["image"].copy()
             
-            # Make aggressive slimes look angry (slightly red tint)
+            # Apply squish effect when landing
+            squish = entity.get("squish_amount", 0)
+            if squish > 0:
+                # Squish horizontally and shrink vertically
+                width_scale = 1.0 + squish  # Wider when squished
+                height_scale = 1.0 - squish * 0.5  # Shorter when squished
+                
+                new_width = int(TILE_SIZE * width_scale)
+                new_height = int(TILE_SIZE * height_scale)
+                slime_image = pygame.transform.scale(slime_image, (new_width, new_height))
+                
+                # Center the squished slime
+                ex = ex - (new_width - TILE_SIZE) // 2
+                ey = ey + (TILE_SIZE - new_height)  # Keep bottom aligned
+            
+            # Make aggressive slimes look angry (red tint)
             if entity.get("aggressive", False):
-                # Create a red-tinted version for aggressive slimes
-                slime_image = entity["image"].copy()
                 red_overlay = pygame.Surface(slime_image.get_size(), pygame.SRCALPHA)
-                red_overlay.fill((255, 50, 50, 100))  # Red tint
+                red_overlay.fill((255, 50, 50, 100))
                 slime_image.blit(red_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                screen.blit(slime_image, (ex, bounce_y))
-            else:
-                # Normal peaceful slime
-                screen.blit(entity["image"], (ex, bounce_y))
+            
+            screen.blit(slime_image, (ex, ey))
         elif entity["type"] == "final_boss":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
@@ -11955,17 +11965,21 @@ def spawn_slimes_randomly():
                     "cooldown": 0,
                     "image": textures["slime"],
                     "aggressive": False,  # Harmless until approached
-                    "bounce_offset": random.uniform(0, math.pi * 2),  # For bounce animation
-                    "wander_target": None  # For wandering behavior
+                    "vel_y": 0,  # Vertical velocity for jumping/falling
+                    "on_ground": True,  # Is slime on ground
+                    "jump_cooldown": 0,  # Cooldown between jumps
+                    "squish_amount": 0,  # For squish animation on landing
                 })
                 print(f"🟢 Slime spawned at ({int(spawn_x)}, {int(spawn_y_surface)})")
         
         slime_spawn_timer = 0  # Reset timer
 
 def update_slime_behavior():
-    """Update slime behavior - harmless until player gets close"""
+    """Update slime behavior - Terraria-style bouncing physics"""
     player_x = player["x"]
     player_y = player["y"]
+    
+    gravity = 0.015  # Gravity for slimes
     
     for slime in entities[:]:
         if slime["type"] != "slime":
@@ -11980,55 +11994,73 @@ def update_slime_behavior():
         if distance < slime_aggro_distance:
             slime["aggressive"] = True
         elif distance > slime_aggro_distance * 2:
-            # Calm down if player moves away
             slime["aggressive"] = False
         
-        # Behavior based on state
-        if slime["aggressive"]:
-            # Chase player slowly (slimes are slow!)
-            if distance > 0.1:
-                speed = 0.02  # Very slow movement
-                slime["x"] += (dx / distance) * speed
-                slime["y"] += (dy / distance) * speed
+        # Apply gravity (always falling unless on ground)
+        if not slime.get("on_ground", False):
+            slime["vel_y"] = slime.get("vel_y", 0) + gravity
+            slime["y"] += slime["vel_y"]
+        
+        # Check if slime hit ground
+        slime_block_y = int(slime["y"])
+        slime_block_x = int(slime["x"])
+        block_below = get_block(slime_block_x, slime_block_y + 1)
+        
+        if block_below and block_below != "air":
+            # Slime is on ground
+            slime["on_ground"] = True
+            slime["vel_y"] = 0
+            slime["y"] = float(slime_block_y)  # Snap to ground
             
-            # Attack player if very close
-            if slime["cooldown"] <= 0 and distance < 1.5:
-                # Weak attack (1 damage)
-                player["health"] -= 1
-                slime["cooldown"] = 120  # 2 second cooldown
-                print(f"🟢 Slime attacked! Health: {player['health']}/{player['max_health']}")
+            # Squish effect on landing
+            if slime.get("vel_y", 0) > 0.1:
+                slime["squish_amount"] = min(slime.get("vel_y", 0) * 10, 0.3)
         else:
-            # Wander around peacefully
-            if slime["wander_target"] is None or random.random() < 0.01:
-                # Pick a new wander target occasionally
-                wander_distance = random.uniform(2, 5)
-                wander_angle = random.uniform(0, 2 * math.pi)
-                slime["wander_target"] = (
-                    slime["x"] + math.cos(wander_angle) * wander_distance,
-                    slime["y"] + math.sin(wander_angle) * wander_distance
-                )
+            slime["on_ground"] = False
+        
+        # Update squish animation
+        if slime.get("squish_amount", 0) > 0:
+            slime["squish_amount"] = max(0, slime["squish_amount"] - 0.02)
+        
+        # Jump behavior (only when on ground)
+        if slime.get("on_ground", False):
+            slime["jump_cooldown"] = slime.get("jump_cooldown", 0) - 1
             
-            # Move towards wander target slowly
-            if slime["wander_target"]:
-                target_x, target_y = slime["wander_target"]
-                dx = target_x - slime["x"]
-                dy = target_y - slime["y"]
-                dist = math.sqrt(dx*dx + dy*dy)
-                
-                if dist > 0.5:
-                    speed = 0.01  # Very slow wandering
-                    slime["x"] += (dx / dist) * speed
-                    slime["y"] += (dy / dist) * speed
+            if slime["jump_cooldown"] <= 0:
+                # Time to jump!
+                if slime.get("aggressive", False):
+                    # Aggressive: jump towards player
+                    if distance > 1.5:
+                        # Calculate jump direction
+                        jump_direction_x = dx / distance if distance > 0 else 0
+                        
+                        # Jump with horizontal and vertical velocity
+                        slime["x"] += jump_direction_x * 0.4  # Horizontal jump
+                        slime["vel_y"] = -0.25  # Jump strength (negative = up)
+                        slime["on_ground"] = False
+                        slime["jump_cooldown"] = random.randint(30, 60)  # 0.5-1 second between jumps
+                    
+                    # Attack player if very close
+                    if slime["cooldown"] <= 0 and distance < 1.5:
+                        player["health"] -= 1
+                        slime["cooldown"] = 120
+                        print(f"🟢 Slime attacked! Health: {player['health']}/10")
+                        # Jump back after attack
+                        slime["vel_y"] = -0.2
+                        slime["on_ground"] = False
+                        slime["jump_cooldown"] = 60
                 else:
-                    # Reached target, pick a new one
-                    slime["wander_target"] = None
+                    # Peaceful: random small jumps for wandering
+                    if random.random() < 0.02:  # 2% chance per frame to jump
+                        random_direction = random.choice([-1, 1])
+                        slime["x"] += random_direction * 0.2
+                        slime["vel_y"] = -0.15  # Smaller jump when peaceful
+                        slime["on_ground"] = False
+                        slime["jump_cooldown"] = random.randint(60, 120)  # 1-2 seconds
         
         # Update cooldown
         if slime["cooldown"] > 0:
             slime["cooldown"] -= 1
-        
-        # Bounce animation (update offset for cute bouncing)
-        slime["bounce_offset"] = (slime["bounce_offset"] + 0.1) % (math.pi * 2)
 
 def update_monster_movement_and_combat():
     """Update monster movement and combat (separated for performance)"""
