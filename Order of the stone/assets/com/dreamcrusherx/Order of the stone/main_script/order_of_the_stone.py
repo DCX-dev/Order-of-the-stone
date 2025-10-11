@@ -2788,7 +2788,7 @@ textures = {
     "red_brick": load_texture(os.path.join(TILE_DIR, "red_brick.png")),
     "oak_planks": load_texture(os.path.join(TILE_DIR, "oak_planks.png")),
     "sword": load_texture(os.path.join(ITEM_DIR, "sword.png")),
-"stone_sword": make_stone_sword_texture(TILE_SIZE),  # Generated stone sword texture
+    "stone_sword": load_texture(os.path.join(ITEM_DIR, "stone_sword.png")),  # Using actual stone sword texture
     "pickaxe": load_texture(os.path.join(ITEM_DIR, "pickaxe.png")),
     "water": make_beautiful_water_texture(TILE_SIZE),
     "lava": load_texture(os.path.join(TILE_DIR, "lava.png")),
@@ -9090,29 +9090,35 @@ def draw_thrown_sword_entities():
             
             # Only draw if sword is on screen
             if -TILE_SIZE < screen_x < SCREEN_WIDTH and -TILE_SIZE < screen_y < SCREEN_HEIGHT:
-                # Draw sword image
-                sword_image = pygame.image.load("../../../../items/sword.png").convert_alpha()
-                sword_image = pygame.transform.scale(sword_image, (TILE_SIZE, TILE_SIZE))
-                
-                # Rotate sword based on direction
-                if sword["returning"]:
-                    # Point towards player
-                    dx = player["x"] - sword["x"]
-                    dy = player["y"] - sword["y"]
-                    if dx != 0 or dy != 0:
-                        angle = math.degrees(math.atan2(dy, dx))
-                        sword_image = pygame.transform.rotate(sword_image, -angle)
-                else:
-                    # Point towards target
-                    if sword["target"] and sword["target"] in entities:
-                        target = sword["target"]
-                        dx = target["x"] - sword["x"]
-                        dy = target["y"] - sword["y"]
+                # Draw sword image - use the correct texture based on sword type
+                sword_type = sword.get("sword_type", "sword")
+                sword_image = textures.get(sword_type, textures.get("sword"))
+                if sword_image:
+                    sword_image = sword_image.copy()  # Copy to avoid modifying the cached texture
+                    
+                    # Rotate sword based on direction
+                    if sword["returning"]:
+                        # Point towards player
+                        dx = player["x"] - sword["x"]
+                        dy = player["y"] - sword["y"]
                         if dx != 0 or dy != 0:
                             angle = math.degrees(math.atan2(dy, dx))
                             sword_image = pygame.transform.rotate(sword_image, -angle)
-                
-                screen.blit(sword_image, (screen_x, screen_y))
+                    else:
+                        # Point towards target
+                        if sword["target"] and sword["target"] in entities:
+                            target = sword["target"]
+                            dx = target["x"] - sword["x"]
+                            dy = target["y"] - sword["y"]
+                            if dx != 0 or dy != 0:
+                                angle = math.degrees(math.atan2(dy, dx))
+                                sword_image = pygame.transform.rotate(sword_image, -angle)
+                    
+                    screen.blit(sword_image, (screen_x, screen_y))
+                else:
+                    # Fallback: draw a simple sword shape if texture not found
+                    pygame.draw.rect(screen, (200, 200, 200), (screen_x + 12, screen_y + 8, 8, 16))
+                    pygame.draw.rect(screen, (139, 69, 19), (screen_x + 14, screen_y + 20, 4, 8))  # Handle
                 
                 # Draw sword trail effect
                 trail_alpha = 100
