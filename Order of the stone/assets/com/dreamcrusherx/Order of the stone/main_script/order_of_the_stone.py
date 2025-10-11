@@ -3326,7 +3326,12 @@ def check_can_craft(materials_dict):
     
     for recipe_name, recipe in CRAFTING_RECIPES.items():
         can_craft = True
-        required = recipe["materials"]
+        required = recipe.get("materials", {})
+        
+        # Make sure required is a dict
+        if not isinstance(required, dict):
+            print(f"⚠️ Warning: Recipe {recipe_name} has invalid materials format")
+            continue
         
         # Check if player has all required materials
         for material, needed_count in required.items():
