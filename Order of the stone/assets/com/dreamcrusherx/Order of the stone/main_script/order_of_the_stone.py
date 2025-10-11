@@ -9893,24 +9893,37 @@ def draw_backpack_ui():
         
         # Draw scrollbar if needed
         if total_recipes > max_visible_recipes:
-            scrollbar_x = crafting_x + crafting_width - 25
+            scrollbar_x = crafting_x + crafting_width - 30
             scrollbar_y = recipe_list_y
-            scrollbar_width = 15
+            scrollbar_width = 20
             scrollbar_height = recipe_list_height
             
-            # Scrollbar background
-            pygame.draw.rect(screen, (40, 40, 60), (scrollbar_x, scrollbar_y, scrollbar_width, scrollbar_height))
+            # Scrollbar background (dark track)
+            track_rect = pygame.Rect(scrollbar_x, scrollbar_y, scrollbar_width, scrollbar_height)
+            pygame.draw.rect(screen, (30, 30, 40), track_rect)
+            pygame.draw.rect(screen, (100, 100, 120), track_rect, 2)  # Border around track
             
-            # Scrollbar thumb
-            thumb_height = max(30, int(scrollbar_height * (max_visible_recipes / total_recipes)))
+            # Scrollbar thumb (slider)
+            thumb_height = max(40, int(scrollbar_height * (max_visible_recipes / total_recipes)))
             scroll_percentage = crafting_scroll_offset / max_scroll if max_scroll > 0 else 0
             thumb_y = scrollbar_y + int((scrollbar_height - thumb_height) * scroll_percentage)
             
-            thumb_rect = pygame.Rect(scrollbar_x, thumb_y, scrollbar_width, thumb_height)
+            thumb_rect = pygame.Rect(scrollbar_x + 2, thumb_y, scrollbar_width - 4, thumb_height)
             is_thumb_hovered = thumb_rect.collidepoint(mouse_pos)
-            thumb_color = (120, 120, 160) if is_thumb_hovered else (80, 80, 120)
-            pygame.draw.rect(screen, thumb_color, thumb_rect)
-            pygame.draw.rect(screen, (150, 150, 200), thumb_rect, 2)
+            thumb_color = (180, 180, 220) if is_thumb_hovered else (120, 140, 180)
+            pygame.draw.rect(screen, thumb_color, thumb_rect, border_radius=4)
+            pygame.draw.rect(screen, (200, 200, 255), thumb_rect, 2, border_radius=4)  # Bright border
+            
+            # Draw scroll indicators (up/down arrows)
+            arrow_font = pygame.font.Font(None, 24)
+            if crafting_scroll_offset > 0:
+                # Can scroll up - show up arrow
+                up_arrow = arrow_font.render("▲", True, (200, 200, 255))
+                screen.blit(up_arrow, (scrollbar_x + 3, scrollbar_y - 20))
+            if crafting_scroll_offset < max_scroll:
+                # Can scroll down - show down arrow
+                down_arrow = arrow_font.render("▼", True, (200, 200, 255))
+                screen.blit(down_arrow, (scrollbar_x + 3, scrollbar_y + scrollbar_height + 5))
             
             # Store scrollbar info for interaction
             draw_backpack_ui.scrollbar = {
