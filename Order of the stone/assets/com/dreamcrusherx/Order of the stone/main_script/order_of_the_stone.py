@@ -11623,6 +11623,7 @@ def update_monsters():
     if not is_day:  # Only spawn monsters at night
         # Spawn monsters everywhere when night first falls
         if not night_monsters_spawned:
+            print(f"🔍 DEBUG: is_day={is_day}, spawning monsters everywhere!")
             spawn_monsters_everywhere_at_night()
             night_monsters_spawned = True
             print("🌙 Night has fallen! Monsters are spawning everywhere!")
