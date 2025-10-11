@@ -3338,6 +3338,7 @@ crafting_mode = False
 selected_crafting_materials = {}  # {item_type: count}
 crafting_result = None
 crafting_scroll_offset = 0  # For scrolling through recipes
+show_all_recipes = False  # Whether to show all recipes or just the limited view
 # Removed double-click variables - now using right-click for crafting selection
 
 def check_can_craft(materials_dict):
@@ -9894,10 +9895,14 @@ def draw_backpack_ui():
         max_scroll = max(0, total_recipes - max_visible_recipes)
         crafting_scroll_offset = max(0, min(crafting_scroll_offset, max_scroll))
         
-        # Get visible recipes based on scroll
-        visible_start = crafting_scroll_offset
-        visible_end = min(visible_start + max_visible_recipes, total_recipes)
-        visible_recipes = possible_recipes[visible_start:visible_end]
+        # Get visible recipes - either all or limited based on show_all_recipes
+        global show_all_recipes
+        if show_all_recipes:
+            visible_recipes = possible_recipes  # Show all recipes
+        else:
+            visible_start = crafting_scroll_offset
+            visible_end = min(visible_start + max_visible_recipes, total_recipes)
+            visible_recipes = possible_recipes[visible_start:visible_end]
         
         # Draw visible recipes
         if not hasattr(draw_backpack_ui, 'recipe_buttons'):
@@ -9930,58 +9935,31 @@ def draw_backpack_ui():
             
             recipe_y += 40
         
-        # Draw scrollbar if needed (show when more than 4 recipes)
-        if total_recipes > 4:
-            scrollbar_x = crafting_x + crafting_width - 30
-            scrollbar_y = recipe_list_y
-            scrollbar_width = 20
-            scrollbar_height = recipe_list_height
+        # Show "View All" / "View Less" button when there are more recipes than can fit
+        if total_recipes > max_visible_recipes:
+            view_all_btn = pygame.Rect(crafting_x + crafting_width - 120, recipe_list_y + recipe_list_height + 10, 110, 30)
+            is_hovered = view_all_btn.collidepoint(mouse_pos)
             
-            # Scrollbar background (dark track)
-            track_rect = pygame.Rect(scrollbar_x, scrollbar_y, scrollbar_width, scrollbar_height)
-            pygame.draw.rect(screen, (30, 30, 40), track_rect)
-            pygame.draw.rect(screen, (100, 100, 120), track_rect, 2)  # Border around track
+            # Button colors
+            btn_color = (80, 150, 220) if is_hovered else (60, 120, 180)
+            border_color = (120, 180, 255) if is_hovered else (100, 160, 220)
             
-            # Scrollbar thumb (slider) - size based on visible vs total ratio
-            # Make thumb size MUCH more dramatic - smaller when there are many recipes
-            visible_ratio = max_visible_recipes / total_recipes
-            # Make the sizing much more dramatic - smaller minimum and bigger scaling
-            thumb_height = max(10, int(scrollbar_height * visible_ratio * 0.8))  # 0.8 makes it even smaller
-            scroll_percentage = crafting_scroll_offset / max_scroll if max_scroll > 0 else 0
-            thumb_y = scrollbar_y + int((scrollbar_height - thumb_height) * scroll_percentage)
+            # Draw button
+            pygame.draw.rect(screen, btn_color, view_all_btn, border_radius=5)
+            pygame.draw.rect(screen, border_color, view_all_btn, 2, border_radius=5)
             
-            # Debug info (remove this later)
-            print(f"🔍 Scrollbar Debug: {total_recipes} recipes, thumb height: {thumb_height}, ratio: {visible_ratio:.2f}, scrollbar_height: {scrollbar_height}")
+            # Button text - changes based on current view
+            if show_all_recipes:
+                btn_text = small_font.render("View Less", True, (255, 255, 255))
+            else:
+                btn_text = small_font.render(f"View All ({total_recipes})", True, (255, 255, 255))
             
-            thumb_rect = pygame.Rect(scrollbar_x + 2, thumb_y, scrollbar_width - 4, thumb_height)
-            is_thumb_hovered = thumb_rect.collidepoint(mouse_pos)
-            thumb_color = (180, 180, 220) if is_thumb_hovered else (120, 140, 180)
-            pygame.draw.rect(screen, thumb_color, thumb_rect, border_radius=4)
-            pygame.draw.rect(screen, (200, 200, 255), thumb_rect, 2, border_radius=4)  # Bright border
+            text_x = view_all_btn.x + (view_all_btn.width - btn_text.get_width()) // 2
+            text_y = view_all_btn.y + (view_all_btn.height - btn_text.get_height()) // 2
+            screen.blit(btn_text, (text_x, text_y))
             
-            # Draw scroll indicators (up/down arrows)
-            arrow_font = pygame.font.Font(None, 24)
-            if crafting_scroll_offset > 0:
-                # Can scroll up - show up arrow
-                up_arrow = arrow_font.render("▲", True, (200, 200, 255))
-                screen.blit(up_arrow, (scrollbar_x + 3, scrollbar_y - 20))
-            if crafting_scroll_offset < max_scroll:
-                # Can scroll down - show down arrow
-                down_arrow = arrow_font.render("▼", True, (200, 200, 255))
-                screen.blit(down_arrow, (scrollbar_x + 3, scrollbar_y + scrollbar_height + 5))
-            
-            # Show total recipe count for debugging
-            count_text = small_font.render(f"{total_recipes} recipes", True, (255, 255, 255))
-            screen.blit(count_text, (scrollbar_x - 80, scrollbar_y + scrollbar_height // 2))
-            
-            # Store scrollbar info for interaction
-            draw_backpack_ui.scrollbar = {
-                'rect': pygame.Rect(scrollbar_x, scrollbar_y, scrollbar_width, scrollbar_height),
-                'thumb_rect': thumb_rect,
-                'max_scroll': max_scroll,
-                'recipe_list_y': recipe_list_y,
-                'recipe_list_height': recipe_list_height
-            }
+            # Store button for click detection
+            draw_backpack_ui.view_all_button = view_all_btn
     else:
         no_recipes_text = small_font.render("Select materials to see recipes", True, (150, 150, 150))
         screen.blit(no_recipes_text, (crafting_x + 15, recipe_y))
@@ -10840,29 +10818,12 @@ def handle_backpack_click(mouse_pos):
                 craft_item(recipe_name)
                 return
     
-    # Check if scrollbar was clicked
-    if hasattr(draw_backpack_ui, 'scrollbar'):
-        global crafting_scroll_offset
-        scrollbar_info = draw_backpack_ui.scrollbar
-        
-        print(f"🔍 Scrollbar click check: mouse_pos={mouse_pos}, scrollbar_rect={scrollbar_info['rect']}")
-        
-        # Check if clicked on the scrollbar track (jump to position)
-        if scrollbar_info['rect'].collidepoint(mouse_pos):
-            print(f"🔍 Scrollbar clicked! Mouse Y: {mouse_pos[1]}")
-            # Calculate new scroll position based on click
-            click_y = mouse_pos[1]
-            track_y = scrollbar_info['recipe_list_y']
-            track_height = scrollbar_info['recipe_list_height']
-            
-            # Calculate percentage of where we clicked
-            click_percentage = (click_y - track_y) / track_height
-            click_percentage = max(0, min(1, click_percentage))
-            
-            # Set scroll to that position
-            old_offset = crafting_scroll_offset
-            crafting_scroll_offset = int(click_percentage * scrollbar_info['max_scroll'])
-            print(f"🔍 Scrollbar jump: {old_offset} -> {crafting_scroll_offset} (click_percentage: {click_percentage:.2f})")
+    # Check if View All button was clicked
+    if hasattr(draw_backpack_ui, 'view_all_button'):
+        global show_all_recipes
+        if draw_backpack_ui.view_all_button.collidepoint(mouse_pos):
+            show_all_recipes = not show_all_recipes
+            print(f"🔍 View All button clicked! Now showing all recipes: {show_all_recipes}")
             return
     
     # Calculate backpack UI position
@@ -14700,18 +14661,8 @@ while running:
             mouse_pos = event.pos
         
         elif event.type == pygame.MOUSEWHEEL:
-            # Mouse wheel scrolling for crafting recipes when backpack is open
-            if game_state == GameState.BACKPACK:
-                # Get current possible recipes to calculate scroll bounds
-                possible_recipes = check_can_craft(selected_crafting_materials)
-                total_recipes = len(possible_recipes)
-                max_visible_recipes = 5
-                max_scroll = max(0, total_recipes - max_visible_recipes)
-                
-                # Update scroll with proper bounds
-                old_offset = crafting_scroll_offset
-                crafting_scroll_offset = max(0, min(max_scroll, crafting_scroll_offset - event.y))
-                print(f"🔍 Mouse wheel: {old_offset} -> {crafting_scroll_offset} (event.y={event.y}, max_scroll={max_scroll})")
+            # Mouse wheel scrolling removed - now using View All button instead
+            pass
         
         # EXTREME ENGINEERING: Handle multiplayer chat input
         if multiplayer_mode:
