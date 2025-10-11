@@ -9936,7 +9936,6 @@ def draw_backpack_ui():
             recipe_y += 40
         
         # Show "View All" / "View Less" button when there are more recipes than can fit
-        print(f"🔍 Debug: total_recipes={total_recipes}, max_visible_recipes={max_visible_recipes}")
         if total_recipes > max_visible_recipes:
             # Position button more visibly - in the recipe area, not below it
             view_all_btn = pygame.Rect(crafting_x + 10, recipe_list_y + recipe_list_height - 40, 120, 35)
@@ -9960,7 +9959,6 @@ def draw_backpack_ui():
             text_y = view_all_btn.y + (view_all_btn.height - btn_text.get_height()) // 2
             screen.blit(btn_text, (text_x, text_y))
             
-            print(f"🔍 View All button drawn at {view_all_btn}")
             # Store button for click detection
             draw_backpack_ui.view_all_button = view_all_btn
     else:
@@ -10826,7 +10824,6 @@ def handle_backpack_click(mouse_pos):
         global show_all_recipes
         if draw_backpack_ui.view_all_button.collidepoint(mouse_pos):
             show_all_recipes = not show_all_recipes
-            print(f"🔍 View All button clicked! Now showing all recipes: {show_all_recipes}")
             return
     
     # Calculate backpack UI position
