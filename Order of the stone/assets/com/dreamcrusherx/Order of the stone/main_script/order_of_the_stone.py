@@ -12765,8 +12765,8 @@ def draw_world_selection_screen():
 
 # --- World Naming Screen Drawing Function ---
 def draw_world_naming_screen():
-    """Draw the world naming screen with on-screen keyboard"""
-    global world_name_input, world_name_cursor_pos, world_name_cursor_blink
+    """Draw the world naming screen with keyboard input (NO mobile keyboard!)"""
+    global world_name_input, world_name_cursor_pos, world_name_cursor_blink, world_seed_input
     global world_name_buttons, world_name_confirm_btn, world_name_cancel_btn, world_name_skip_btn
     
     # Update cursor blink
