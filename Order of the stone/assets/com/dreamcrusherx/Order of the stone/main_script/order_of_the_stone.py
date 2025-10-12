@@ -5800,8 +5800,13 @@ def update_world_generation():
     
     if world_generation_progress >= world_generation_total:
         # World generation complete
-        world_generation_status = "World generation complete!"
+        world_generation_status = "Spawning wildlife..."
         print("🌍 World generation complete!")
+        
+        # Spawn 1000 pigeons across the world
+        spawn_initial_pigeons()
+        
+        world_generation_status = "World generation complete!"
         
         # Switch to game state
         game_state = GameState.GAME
@@ -7937,29 +7942,29 @@ def draw_world():
             # Get block at this position
             block = get_block(x, y)
             
-        if not block or block == "air":
-            continue
-        
-        img = textures.get(block)
-        if img is None:
-            continue
-        
-        # Check if this is a GIF texture that should be animated
-        gif_path = None
-        if block == "carrot":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")
-        elif block == "wheat":
-            gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
-        
-        # Use static texture for now
-        animated_frame = None
-        if animated_frame:
-            img = animated_frame
-        
-        # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
-        screen_x = x * TILE_SIZE - camera_x
-        screen_y = y * TILE_SIZE - camera_y
-        screen.blit(img, (screen_x, screen_y))
+            if not block or block == "air":
+                continue
+            
+            img = textures.get(block)
+            if img is None:
+                continue
+            
+            # Check if this is a GIF texture that should be animated
+            gif_path = None
+            if block == "carrot":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")
+            elif block == "wheat":
+                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+            
+            # Use static texture for now
+            animated_frame = None
+            if animated_frame:
+                img = animated_frame
+            
+            # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
+            screen_x = x * TILE_SIZE - camera_x
+            screen_y = y * TILE_SIZE - camera_y
+            screen.blit(img, (screen_x, screen_y))
 
     # Cave entrance indicators removed - caves are disabled
 
@@ -11902,16 +11907,16 @@ def cleanup_distant_entities():
     player_y = player["y"]
     cleanup_distance = 100  # Remove entities 100+ blocks away
     
-    # Clean up far entities (except important ones like bosses, cows, and tamed pigeons)
+    # Clean up far entities (except important ones like bosses, cows, and all pigeons)
     entities_removed = 0
     for entity in entities[:]:
-        # Don't remove cows or tamed pigeons
-        if entity["type"] == "mad_pigeon" and entity.get("tamed", False):
+        # Don't remove cows or any pigeons (need to keep all 1000 pigeons)
+        if entity["type"] == "mad_pigeon":
             continue
         if entity["type"] == "cow":
             continue
             
-        if entity["type"] in ["monster", "zombie", "slime", "mad_pigeon"]:
+        if entity["type"] in ["monster", "zombie", "slime"]:
             dx = abs(entity["x"] - player_x)
             dy = abs(entity["y"] - player_y)
             distance = math.sqrt(dx*dx + dy*dy)
@@ -12389,7 +12394,53 @@ def update_cow_behavior():
 # Mad Pigeon spawning system  
 pigeon_spawn_timer = 0
 pigeon_spawn_cooldown = 1800  # 30 seconds at 60 FPS
-max_pigeons = 15
+max_pigeons = 1500  # Allow up to 1500 pigeons (1000 initial + natural spawning)
+
+def spawn_initial_pigeons():
+    """Spawn 1000 pigeons across all trees in the world when creating a new world"""
+    global entities
+    
+    print("🐦 Spawning initial 1000 pigeons across the world...")
+    pigeons_spawned = 0
+    target_pigeons = 1000
+    
+    # Search across the entire generated world
+    search_range = 2000  # Search a wide area
+    attempts = 0
+    max_attempts = 10000  # Try many times to place 1000 pigeons
+    
+    while pigeons_spawned < target_pigeons and attempts < max_attempts:
+        attempts += 1
+        
+        # Random X position across the world
+        search_x = random.randint(-search_range, search_range)
+        
+        # Find surface and check for trees
+        for y in range(90, 130):
+            block = get_block(search_x, y)
+            if block == "leaves":
+                # Found leaves! Spawn pigeon here
+                entities.append({
+                    "type": "mad_pigeon",
+                    "x": float(search_x),
+                    "y": float(y),
+                    "hp": 4,
+                    "image": textures["mad_pigeon"],
+                    "aggressive": False,
+                    "tamed": False,
+                    "cooldown": 0,
+                    "fly_target": None,
+                    "perched": True  # Start perched on tree
+                })
+                pigeons_spawned += 1
+                
+                # Print progress every 100 pigeons
+                if pigeons_spawned % 100 == 0:
+                    print(f"🐦 Spawned {pigeons_spawned}/{target_pigeons} pigeons...")
+                
+                break  # Move to next attempt
+    
+    print(f"✅ Spawned {pigeons_spawned} pigeons across the world!")
 
 def spawn_pigeons_on_trees():
     """Spawn mad pigeons on tree leaves"""
