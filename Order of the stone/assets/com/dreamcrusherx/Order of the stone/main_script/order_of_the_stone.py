@@ -12311,6 +12311,7 @@ def update_slime_behavior():
                     # Attack player if very close
                     if slime["cooldown"] <= 0 and distance < 1.5:
                         player["health"] -= 1
+                        play_damage_sound()
                         slime["cooldown"] = 120
                         print(f"🟢 Slime attacked! Health: {player['health']}/10")
                         # Jump back after attack
@@ -12645,6 +12646,7 @@ def update_pigeon_behavior():
             # Peck player if very close
             if pigeon["cooldown"] <= 0 and distance < 1.5:
                 player["health"] -= 2
+                play_damage_sound()
                 pigeon["cooldown"] = 60
                 print(f"🐦 Mad Pigeon pecked you! Health: {player['health']}/10")
         elif not pigeon.get("perched", False):
@@ -15117,42 +15119,27 @@ while running:
                     if tamed_pigeon:
                         continue
                     
-                    # Log interaction: right-click to carve into oak planks (4 carves = 4 planks, then log disappears)
+                    # Log interaction: right-click to carve into oak planks (1 carve = 4 planks, log disappears)
                     if block_at_pos == "log":
                         # Check if player is within range
                         px, py = int(player["x"]), int(player["y"])
                         if abs(bx - px) <= 2 and abs(by - py) <= 2:
                             block_key = f"{bx},{by}"
                             
-                            # Initialize or get carve count for this log
-                            if not hasattr(player, "log_carve_counts"):
-                                player["log_carve_counts"] = {}
-                            
-                            carve_count = player["log_carve_counts"].get(block_key, 0)
-                            carve_count += 1
-                            player["log_carve_counts"][block_key] = carve_count
-                            
-                            # Drop 1 oak plank
-                            drop_item("oak_planks", bx, by, 1)
+                            # Drop 4 oak planks at once
+                            drop_item("oak_planks", bx, by, 4)
                             
                             # Create carving particles
                             particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
                             particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-                            create_block_particles(particle_x, particle_y, "log", 8)
+                            create_block_particles(particle_x, particle_y, "log", 12)
                             
-                            # Check if log should disappear (carved 4 times)
-                            if carve_count >= 4:
-                                # Remove block completely from world data (turns into air)
-                                if block_key in world_data:
-                                    del world_data[block_key]
-                                # Clean up carve count
-                                if block_key in player["log_carve_counts"]:
-                                    del player["log_carve_counts"][block_key]
-                                show_message(f"🪵 Carved log 4/4 times - Log is gone!", 1500)
-                                print("🪵 Log fully carved and removed!")
-                            else:
-                                show_message(f"🪵 Carved log {carve_count}/4 times - Got 1 Oak Plank!", 1500)
-                                print(f"🪵 Carved log {carve_count}/4 times!")
+                            # Remove log completely from world data (turns into air)
+                            if block_key in world_data:
+                                del world_data[block_key]
+                            
+                            show_message("🪵 Log carved into 4 Oak Planks!", 1500)
+                            print("🪵 Log carved into 4 oak planks!")
                         continue
                     
                     # Try to place a block FIRST (this handles air placement)
