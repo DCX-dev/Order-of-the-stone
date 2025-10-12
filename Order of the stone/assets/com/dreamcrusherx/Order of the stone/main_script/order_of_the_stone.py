@@ -1943,8 +1943,6 @@ def generate_terrain_column(x):
     
     # Mark as generated
     generated_terrain_columns.add(x)
-    
-    print(f"✅ Generated terrain column {x}: surface at Y={surface_y}")
 
 # Cave generation functions removed
 
@@ -13552,12 +13550,6 @@ def draw_world_selection_screen():
     world_delete_btn = button_states.get("delete_world")
     world_create_btn = button_states.get("create_world")
     world_back_btn = button_states.get("back")
-    
-    # Debug: Check if play button exists
-    if world_play_btn is None:
-        print("⚠️ Play World button is None!")
-    else:
-        print(f"✅ Play World button exists: {world_play_btn}")
 
 # --- World Naming Screen Drawing Function ---
 def draw_world_naming_screen():
@@ -14816,6 +14808,15 @@ while running:
                     if require_username_check():
                         print("🚫 Username required before playing - redirecting to username creation")
                     else:
+                        # If no world selected but worlds exist, auto-select the first one
+                        if not world_name:
+                            worlds = world_system.get_world_list()
+                            if worlds:
+                                world_ui.selected_world_index = 0
+                                selected_world = world_ui.get_selected_world()
+                                world_name = selected_world["name"] if selected_world else None
+                                print(f"🎯 Auto-selected first world: {world_name}")
+                        
                         if world_name:
                             print(f"🌍 Loading world: {world_name}")
                             if world_system.load_world(world_name):
