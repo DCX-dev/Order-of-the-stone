@@ -3236,6 +3236,7 @@ FALL_DAMAGE_MULTIPLIER = 1.5  # Damage per block above threshold
 # World and camera
 world_data = {}
 entities = []
+dropped_items = []  # List of dropped items with physics
 camera_x = 0
 camera_y = 0  # Vertical camera position
 fall_start_y = None
@@ -7335,6 +7336,26 @@ def show_death_screen():
     """EXTREME ENGINEERING: Enhanced death screen with escape options to prevent infinite death loops"""
     global game_state
     
+    # Drop all items when player dies
+    death_x = player["x"]
+    death_y = player["y"]
+    
+    # Drop all hotbar items
+    for i in range(len(player["inventory"])):
+        if player["inventory"][i] is not None:
+            item = player["inventory"][i]
+            drop_item(item["type"], death_x + random.uniform(-0.5, 0.5), death_y, item["count"])
+            player["inventory"][i] = None
+    
+    # Drop all backpack items
+    for i in range(len(player["backpack"])):
+        if player["backpack"][i] is not None:
+            item = player["backpack"][i]
+            drop_item(item["type"], death_x + random.uniform(-0.5, 0.5), death_y, item["count"])
+            player["backpack"][i] = None
+    
+    print("💀 All items dropped on death!")
+    
     # Set game state to paused to prevent further game logic
     game_state = GameState.PAUSED
     
@@ -11352,6 +11373,164 @@ def sleep_in_bed():
         pygame.display.flip()
         clock.tick(60)
 
+def drop_item(item_type, x, y, count=1):
+    """Drop an item at a position with physics"""
+    global dropped_items
+    
+    # Create a dropped item entity
+    dropped_items.append({
+        "type": item_type,
+        "count": count,
+        "x": x,
+        "y": y,
+        "vel_x": random.uniform(-0.1, 0.1),  # Random horizontal velocity
+        "vel_y": -0.2,  # Initial upward velocity
+        "on_ground": False,
+        "lifetime": 0,  # How long the item has existed (for despawn)
+    })
+    print(f"📦 Dropped {count}x {item_type} at ({x:.1f}, {y:.1f})")
+
+def update_dropped_items():
+    """Update physics for all dropped items"""
+    global dropped_items
+    
+    gravity = 0.02  # Gravity for items
+    friction = 0.95  # Ground friction
+    air_resistance = 0.98  # Slow down in air
+    
+    for item in dropped_items[:]:
+        # Apply gravity
+        if not item.get("on_ground", False):
+            item["vel_y"] += gravity
+            item["vel_x"] *= air_resistance
+        else:
+            # Apply friction when on ground
+            item["vel_x"] *= friction
+            if abs(item["vel_x"]) < 0.01:
+                item["vel_x"] = 0
+        
+        # Update position
+        item["x"] += item["vel_x"]
+        item["y"] += item["vel_y"]
+        
+        # Check collision with blocks
+        item_x = int(item["x"])
+        item_y = int(item["y"])
+        
+        # Check block below
+        block_below = get_block(item_x, item_y + 1)
+        if block_below and block_below != "air":
+            item["on_ground"] = True
+            item["vel_y"] = 0
+            item["y"] = float(item_y)
+            
+            # Bounce a little on landing
+            if item.get("vel_y", 0) > 0.05:
+                item["vel_y"] = -item["vel_y"] * 0.3  # Small bounce
+                item["on_ground"] = False
+        else:
+            item["on_ground"] = False
+        
+        # Check collision with player (push items)
+        dx = player["x"] - item["x"]
+        dy = player["y"] - item["y"]
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance < 0.8:  # Player is close to item
+            # Push item away from player
+            if distance > 0.1:
+                push_force = 0.05
+                item["vel_x"] -= (dx / distance) * push_force
+                item["vel_y"] -= (dy / distance) * push_force * 0.5
+                item["on_ground"] = False
+        
+        # Check if item should fall off edge
+        if item.get("on_ground", False):
+            block_below_forward = get_block(item_x + (1 if item["vel_x"] > 0 else -1), item_y + 1)
+            if not block_below_forward or block_below_forward == "air":
+                # Item is at edge, let it fall
+                if abs(item["vel_x"]) > 0.01:
+                    item["on_ground"] = False
+        
+        # Update lifetime
+        item["lifetime"] = item.get("lifetime", 0) + 1
+        
+        # Despawn after 5 minutes (18000 frames at 60 FPS)
+        if item["lifetime"] > 18000:
+            dropped_items.remove(item)
+
+def pickup_dropped_item(item):
+    """Try to pickup a dropped item"""
+    global dropped_items
+    
+    # Try to add to inventory
+    added = False
+    
+    # Check if we have space in hotbar
+    for i in range(9):
+        if player["inventory"][i] is None:
+            player["inventory"][i] = {"type": item["type"], "count": item["count"]}
+            added = True
+            break
+        elif player["inventory"][i]["type"] == item["type"]:
+            # Stack with existing item
+            player["inventory"][i]["count"] += item["count"]
+            added = True
+            break
+    
+    # If hotbar is full, try backpack
+    if not added:
+        for i in range(27):
+            if player["backpack"][i] is None:
+                player["backpack"][i] = {"type": item["type"], "count": item["count"]}
+                added = True
+                break
+            elif player["backpack"][i]["type"] == item["type"]:
+                player["backpack"][i]["count"] += item["count"]
+                added = True
+                break
+    
+    if added:
+        dropped_items.remove(item)
+        print(f"✅ Picked up {item['count']}x {item['type']}")
+        return True
+    else:
+        print("⚠️ Inventory full!")
+        return False
+
+def draw_dropped_items():
+    """Draw all dropped items with mini textures"""
+    for item in dropped_items:
+        # Calculate screen position
+        screen_x = int(item["x"] * TILE_SIZE) - camera_x
+        screen_y = int(item["y"] * TILE_SIZE) - camera_y
+        
+        # Skip if off screen
+        if screen_x < -TILE_SIZE or screen_x > SCREEN_WIDTH or screen_y < -TILE_SIZE or screen_y > SCREEN_HEIGHT:
+            continue
+        
+        # Get item texture
+        item_texture = textures.get(item["type"])
+        if item_texture:
+            # Scale down to make it look like a dropped item (half size)
+            mini_size = TILE_SIZE // 2
+            mini_texture = pygame.transform.scale(item_texture, (mini_size, mini_size))
+            
+            # Draw with slight bobbing animation
+            bob_offset = math.sin(item.get("lifetime", 0) * 0.1) * 2
+            draw_y = screen_y + int(bob_offset)
+            
+            # Center the mini texture
+            draw_x = screen_x + (TILE_SIZE - mini_size) // 2
+            draw_y = draw_y + (TILE_SIZE - mini_size) // 2
+            
+            screen.blit(mini_texture, (draw_x, draw_y))
+            
+            # Draw count if more than 1
+            if item["count"] > 1:
+                count_text = small_font.render(str(item["count"]), True, (255, 255, 255))
+                screen.blit(count_text, (draw_x + mini_size - 10, draw_y + mini_size - 10))
+
 def update_player():
     keys = pygame.key.get_pressed()
     
@@ -14141,6 +14320,30 @@ while running:
             
             # A and D keys now work through the movement system for both movement and character flipping
             
+            # Drop item with Q key
+            if event.key == pygame.K_q and game_state == GameState.GAME:
+                # Drop currently selected item
+                selected_slot = player["selected"]
+                if selected_slot < len(player["inventory"]) and player["inventory"][selected_slot]:
+                    item = player["inventory"][selected_slot]
+                    # Drop the item at player's position
+                    drop_item(item["type"], player["x"], player["y"], item["count"])
+                    player["inventory"][selected_slot] = None
+                    normalize_inventory()
+                    print(f"📦 Dropped {item['count']}x {item['type']}")
+            
+            # Pick up nearby items with E key
+            if event.key == pygame.K_e and game_state == GameState.GAME:
+                # Find items near player
+                pickup_range = 1.5
+                for item in dropped_items[:]:
+                    dx = player["x"] - item["x"]
+                    dy = player["y"] - item["y"]
+                    distance = math.sqrt(dx*dx + dy*dy)
+                    if distance < pickup_range:
+                        pickup_dropped_item(item)
+                        break  # Pick up one item at a time
+            
             # Test block breaking with B key
             if event.key == pygame.K_b:
                 print("🧪 Manual block breaking test triggered!")
@@ -14984,6 +15187,7 @@ while running:
         update_blood_particles()  # Update blood particle effects
         update_block_particles()  # Update block breaking particle effects
         update_fireball_projectiles()  # Update fireball projectiles
+        update_dropped_items()  # Update dropped item physics
         # update_light_sources()  # DISABLED - lighting system disabled
         
         # Ability system removed
@@ -15011,6 +15215,7 @@ while running:
 
         draw_world()
         # draw_darkness_overlay()  # DISABLED - caused glitches
+        draw_dropped_items()  # Draw dropped items with physics
         draw_map()  # Draw the map overlay if it's open
         draw_inventory()
         draw_status_bars()
