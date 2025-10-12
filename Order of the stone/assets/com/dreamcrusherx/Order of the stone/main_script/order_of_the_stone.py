@@ -8668,8 +8668,8 @@ def break_block(mx, my):
         # Start pickaxe animation
         start_pickaxe_animation()
         
-        # Successfully break with pickaxe
-        add_to_inventory(block)
+        # Drop the block as an item instead of adding to inventory
+        drop_item(block, bx, by, 1)
         
         # Create block breaking particles
         particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
@@ -8706,10 +8706,10 @@ def break_block(mx, my):
         
         return True
     
-    # Logs can be carved into oak planks (no tool required!)
+    # Logs: left-click breaks into log item
     elif block == "log":
-        # Carve log into oak planks
-        add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
+        # Drop log as an item
+        drop_item("log", bx, by, 1)
         
         # Create block breaking particles
         particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
@@ -8724,7 +8724,6 @@ def break_block(mx, my):
         if block_key in world_data:
             world_data.pop(block_key, None)
         
-        show_message("🪵 Log carved into 4 Oak Planks!", 1500)
         return True
     
     # Chest: pick up contents and the chest itself
@@ -8776,9 +8775,10 @@ def break_block(mx, my):
         
         return True
     
-    # All other blocks can be broken without tools
+    # All other blocks can be broken without tools - drop as items
     else:
-        add_to_inventory(block)
+        # Drop block as an item instead of adding to inventory
+        drop_item(block, bx, by, 1)
         
         # Remove torch from light sources if it's a torch (disabled - lighting system off)
         # if block == "torch":
@@ -15112,15 +15112,25 @@ while running:
                     if tamed_pigeon:
                         continue
                     
-                    # Log interaction: right-click to convert to oak planks
+                    # Log interaction: right-click to carve into oak planks
                     if block_at_pos == "log":
-                        # Convert log to oak planks
-                        add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
-                        # Remove block completely from world data (turns into air)
-                        if f"{bx},{by}" in world_data:
-                            del world_data[f"{bx},{by}"]
-                        show_message("🪵 Log converted to 4 oak planks!")
-                        print("🪵 Log converted to 4 oak planks!")
+                        # Check if player is within range
+                        px, py = int(player["x"]), int(player["y"])
+                        if abs(bx - px) <= 2 and abs(by - py) <= 2:
+                            # Carve log into oak planks - drop as items
+                            drop_item("oak_planks", bx, by, 4)  # 1 log = 4 planks
+                            
+                            # Create carving particles
+                            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+                            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+                            create_block_particles(particle_x, particle_y, "log", 12)
+                            
+                            # Remove block completely from world data (turns into air)
+                            if f"{bx},{by}" in world_data:
+                                del world_data[f"{bx},{by}"]
+                            
+                            show_message("🪵 Log carved into 4 Oak Planks!", 1500)
+                            print("🪵 Log carved into 4 oak planks!")
                         continue
                     
                     # Try to place a block FIRST (this handles air placement)
