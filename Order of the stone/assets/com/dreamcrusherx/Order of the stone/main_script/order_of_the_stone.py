@@ -12585,7 +12585,7 @@ def spawn_pigeons_on_trees():
         pigeon_spawn_timer = 0
 
 def update_pigeon_behavior():
-    """Update mad pigeon AI - aggressive unless player holds steak"""
+    """Update mad pigeon AI - aggressive unless player holds steak, with collision detection"""
     player_x = player["x"]
     player_y = player["y"]
     
@@ -12610,8 +12610,15 @@ def update_pigeon_behavior():
             # Tamed pigeons follow player
             if distance > 3:
                 speed = 0.05
-                pigeon["x"] += (dx / distance) * speed if distance > 0 else 0
-                pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
+                move_x = (dx / distance) * speed if distance > 0 else 0
+                move_y = (dy / distance) * speed if distance > 0 else 0
+                
+                # Check collision before moving
+                new_x = pigeon["x"] + move_x
+                new_y = pigeon["y"] + move_y
+                if not get_block(int(new_x), int(new_y)):
+                    pigeon["x"] = new_x
+                    pigeon["y"] = new_y
             continue
         
         # Become aggressive if player is in front (horizontal proximity) unless holding steak
@@ -12622,8 +12629,15 @@ def update_pigeon_behavior():
                 # Fly towards player slowly when they have steak
                 if distance > 0.5:
                     speed = 0.03
-                    pigeon["x"] += (dx / distance) * speed if distance > 0 else 0
-                    pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
+                    move_x = (dx / distance) * speed if distance > 0 else 0
+                    move_y = (dy / distance) * speed if distance > 0 else 0
+                    
+                    # Check collision before moving
+                    new_x = pigeon["x"] + move_x
+                    new_y = pigeon["y"] + move_y
+                    if not get_block(int(new_x), int(new_y)):
+                        pigeon["x"] = new_x
+                        pigeon["y"] = new_y
             else:
                 pigeon["aggressive"] = True
                 pigeon["perched"] = False
@@ -12635,8 +12649,15 @@ def update_pigeon_behavior():
             # Dive at player aggressively
             if distance > 0.5:
                 speed = 0.08  # Fast dive speed
-                pigeon["x"] += (dx / distance) * speed if distance > 0 else 0
-                pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
+                move_x = (dx / distance) * speed if distance > 0 else 0
+                move_y = (dy / distance) * speed if distance > 0 else 0
+                
+                # Check collision before moving
+                new_x = pigeon["x"] + move_x
+                new_y = pigeon["y"] + move_y
+                if not get_block(int(new_x), int(new_y)):
+                    pigeon["x"] = new_x
+                    pigeon["y"] = new_y
             
             # Peck player if very close
             if pigeon["cooldown"] <= 0 and distance < 1.5:
@@ -12662,8 +12683,15 @@ def update_pigeon_behavior():
                 
                 if dist_fly > 0.5:
                     speed = 0.04
-                    pigeon["x"] += (dx_fly / dist_fly) * speed if dist_fly > 0 else 0
-                    pigeon["y"] += (dy_fly / dist_fly) * speed if dist_fly > 0 else 0
+                    move_x = (dx_fly / dist_fly) * speed if dist_fly > 0 else 0
+                    move_y = (dy_fly / dist_fly) * speed if dist_fly > 0 else 0
+                    
+                    # Check collision before moving
+                    new_x = pigeon["x"] + move_x
+                    new_y = pigeon["y"] + move_y
+                    if not get_block(int(new_x), int(new_y)):
+                        pigeon["x"] = new_x
+                        pigeon["y"] = new_y
                 else:
                     pigeon["fly_target"] = None
         
