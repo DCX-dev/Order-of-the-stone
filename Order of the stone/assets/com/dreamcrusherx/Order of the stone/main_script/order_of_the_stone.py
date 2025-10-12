@@ -2870,6 +2870,13 @@ try:
 except Exception:
     textures["zombie"] = make_zombie_texture(TILE_SIZE)
 
+# --- Monster texture (tries file, falls back to zombie texture) ---
+try:
+    textures["monster"] = load_texture(os.path.join(MOB_DIR, "monster.gif"))
+except Exception:
+    # Fallback to zombie texture if monster.gif not found
+    textures["monster"] = textures["zombie"]
+
 # --- Slime texture (procedurally generated) ---
 textures["slime"] = make_slime_texture(TILE_SIZE)
 
