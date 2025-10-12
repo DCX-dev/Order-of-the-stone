@@ -4788,20 +4788,20 @@ def create_monster_death_blood_spray(x, y):
     
     # Just a tiny poof effect, not dramatic spray
     for _ in range(4):  # Only 4 particles total
-            angle = random.uniform(0, 2 * math.pi)
+        angle = random.uniform(0, 2 * math.pi)
         speed = random.uniform(1, 3)  # Gentle speed
         life = random.randint(15, 25)  # Quick fade
-            
-            particle = {
+        
+        particle = {
             'x': x,
             'y': y,
-                'vel_x': math.cos(angle) * speed,
+            'vel_x': math.cos(angle) * speed,
             'vel_y': math.sin(angle) * speed - 1,  # Slight upward
-                'life': life,
-                'max_life': life,
+            'life': life,
+            'max_life': life,
             'size': random.randint(1, 2)  # Very small
-            }
-            blood_particles.append(particle)
+        }
+        blood_particles.append(particle)
 
 def update_blood_particles():
     """Update all blood particles"""
@@ -7959,7 +7959,7 @@ def draw_world():
         # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
         screen_x = x * TILE_SIZE - camera_x
         screen_y = y * TILE_SIZE - camera_y
-            screen.blit(img, (screen_x, screen_y))
+        screen.blit(img, (screen_x, screen_y))
 
     # Cave entrance indicators removed - caves are disabled
 
@@ -8670,21 +8670,21 @@ def break_block(mx, my):
     
     # Logs can be carved into oak planks (no tool required!)
     elif block == "log":
-            # Carve log into oak planks
-            add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
-            
-            # Create block breaking particles
-            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
-            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-            create_block_particles(particle_x, particle_y, "log", 12)
-            
+        # Carve log into oak planks
+        add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
+        
+        # Create block breaking particles
+        particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+        particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+        create_block_particles(particle_x, particle_y, "log", 12)
+        
         # Remove log from world
-            if block_key in world_data:
-                del world_data[block_key]
-            
-            # Verify removal
-            if block_key in world_data:
-                world_data.pop(block_key, None)
+        if block_key in world_data:
+            del world_data[block_key]
+        
+        # Verify removal
+        if block_key in world_data:
+            world_data.pop(block_key, None)
         
         show_message("🪵 Log carved into 4 Oak Planks!", 1500)
         return True
@@ -9137,26 +9137,26 @@ def draw_thrown_sword_entities():
                 sword_image = textures.get(sword_type, textures.get("sword"))
                 if sword_image:
                     sword_image = sword_image.copy()  # Copy to avoid modifying the cached texture
-                
-                # Rotate sword based on direction
-                if sword["returning"]:
-                    # Point towards player
-                    dx = player["x"] - sword["x"]
-                    dy = player["y"] - sword["y"]
-                    if dx != 0 or dy != 0:
-                        angle = math.degrees(math.atan2(dy, dx))
-                        sword_image = pygame.transform.rotate(sword_image, -angle)
-                else:
-                    # Point towards target
-                    if sword["target"] and sword["target"] in entities:
-                        target = sword["target"]
-                        dx = target["x"] - sword["x"]
-                        dy = target["y"] - sword["y"]
+                    
+                    # Rotate sword based on direction
+                    if sword["returning"]:
+                        # Point towards player
+                        dx = player["x"] - sword["x"]
+                        dy = player["y"] - sword["y"]
                         if dx != 0 or dy != 0:
                             angle = math.degrees(math.atan2(dy, dx))
                             sword_image = pygame.transform.rotate(sword_image, -angle)
-                
-                screen.blit(sword_image, (screen_x, screen_y))
+                    else:
+                        # Point towards target
+                        if sword["target"] and sword["target"] in entities:
+                            target = sword["target"]
+                            dx = target["x"] - sword["x"]
+                            dy = target["y"] - sword["y"]
+                            if dx != 0 or dy != 0:
+                                angle = math.degrees(math.atan2(dy, dx))
+                                sword_image = pygame.transform.rotate(sword_image, -angle)
+                    
+                    screen.blit(sword_image, (screen_x, screen_y))
                 else:
                     # Fallback: draw a simple sword shape if texture not found
                     pygame.draw.rect(screen, (200, 200, 200), (screen_x + 12, screen_y + 8, 8, 16))
@@ -9215,7 +9215,7 @@ def attack_monsters(mx, my):
         if closest_monster["hp"] <= 0:
             # Track monster kill (only for actual monsters)
             if closest_monster["type"] in ["monster", "zombie"]:
-            track_monster_kill()
+                track_monster_kill()
             
             # Create death effect
             death_x = (closest_monster["x"] * TILE_SIZE) - camera_x
@@ -9238,9 +9238,9 @@ def attack_monsters(mx, my):
                 show_message(f"🐟 Pigeon dropped {fish_count} cooked fish!", 2000)
             elif closest_monster["type"] in ["monster", "zombie"]:
                 # Monsters have chance to drop coins
-            if random.random() < 0.15 and coins_manager:
-                coin_amount = random.randint(1, 2)
-                coins_manager.add_coins(coin_amount)
+                if random.random() < 0.15 and coins_manager:
+                    coin_amount = random.randint(1, 2)
+                    coins_manager.add_coins(coin_amount)
                         
             entities.remove(closest_monster)
     else:
@@ -9737,17 +9737,7 @@ def draw_full_inventory_ui():
         pygame.draw.rect(screen, (200, 200, 200), (output_x, output_y, slot_size, slot_size), 3)
         
         # Old crafting UI removed - using new backpack crafting system
-        # recipe_name = check_crafting_recipe(crafting_materials)
-        # if recipe_name:
-        #     recipe = CRAFTING_RECIPES[recipe_name]
-        #     ...
-            
-            # Craft button
-            craft_btn = pygame.Rect(output_x - 10, output_y + 60, 70, 30)
-            pygame.draw.rect(screen, (100, 255, 100), craft_btn)
-            pygame.draw.rect(screen, (255, 255, 255), craft_btn, 2)
-            craft_text = font.render("CRAFT", True, (0, 0, 0))
-            screen.blit(craft_text, (craft_btn.x + 10, craft_btn.y + 8))
+        # Recipe checking and crafting moved to backpack UI
         
         # Clear button
         clear_btn = pygame.Rect(crafting_x + 200, crafting_y + 100, 70, 30)
@@ -14199,19 +14189,19 @@ def save_game_fallback():
         
         # Save with proper formatting and error handling
         try:
-        with open(world_file, 'w') as f:
+            with open(world_file, 'w') as f:
                 json.dump(save_data, f, indent=2, ensure_ascii=False, default=str)
-        
-        # Remove backup if save was successful
-        if os.path.exists(backup_file):
-            try:
-                os.remove(backup_file)
-            except:
-                pass
-        
-        print(f"✅ Fallback save successful: {world_name}")
+            
+            # Remove backup if save was successful
+            if os.path.exists(backup_file):
+                try:
+                    os.remove(backup_file)
+                except:
+                    pass
+            
+            print(f"✅ Fallback save successful: {world_name}")
             print(f"   📊 Saved: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities, {len(save_data.get('dropped_items', []))} items")
-        return True
+            return True
         except (TypeError, ValueError) as e:
             print(f"⚠️ JSON serialization error: {e}")
             # Try to restore from backup
