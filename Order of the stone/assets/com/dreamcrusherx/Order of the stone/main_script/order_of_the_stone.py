@@ -7988,8 +7988,12 @@ def draw_world():
             
             # Check if monster should use GIF animation
             monster_gif_path = os.path.join(MOB_DIR, "monster.gif")
-            # Use static monster image
-            screen.blit(entity["image"], (ex, ey))
+            # Use static monster image - handle both surface and string types
+            if isinstance(entity["image"], str):
+                monster_img = textures.get(entity["image"], textures.get("monster", textures["zombie"]))
+            else:
+                monster_img = entity["image"]
+            screen.blit(monster_img, (ex, ey))
         elif entity["type"] == "slime":
             # Draw slime with Terraria-style bouncing and squishing
             ex = int(entity["x"] * TILE_SIZE) - camera_x
@@ -7999,8 +8003,12 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            # Get slime image
-            slime_image = entity["image"].copy()
+            # Get slime image - handle both surface and string types
+            if isinstance(entity["image"], str):
+                slime_image = textures.get(entity["image"], textures["slime"])
+            else:
+                slime_image = entity["image"]
+            slime_image = slime_image.copy()
             
             # Apply squish effect when landing
             squish = entity.get("squish_amount", 0)
@@ -8032,7 +8040,12 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            screen.blit(entity["image"], (ex, ey))
+            # Handle both surface and string types for cow image
+            if isinstance(entity["image"], str):
+                cow_img = textures.get(entity["image"], textures["cow"])
+            else:
+                cow_img = entity["image"]
+            screen.blit(cow_img, (ex, ey))
         elif entity["type"] == "mad_pigeon":
             # Draw mad pigeon with visual states
             ex = int(entity["x"] * TILE_SIZE) - camera_x
@@ -8041,7 +8054,12 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            pigeon_image = entity["image"].copy()
+            # Get pigeon image - handle both surface and string types
+            if isinstance(entity["image"], str):
+                pigeon_image = textures.get(entity["image"], textures["mad_pigeon"])
+            else:
+                pigeon_image = entity["image"]
+            pigeon_image = pigeon_image.copy()
             
             # Add red glow if aggressive
             if entity.get("aggressive", False):
@@ -8068,8 +8086,12 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            # Draw boss
-            screen.blit(entity["image"], (ex, ey))
+            # Draw boss - handle both surface and string types
+            if isinstance(entity["image"], str):
+                boss_img = textures.get(entity["image"], textures.get("boss", textures["zombie"]))
+            else:
+                boss_img = entity["image"]
+            screen.blit(boss_img, (ex, ey))
             
             # Draw boss health bar
             health_ratio = entity["hp"] / entity["max_hp"]
@@ -8104,8 +8126,12 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            # Draw villager
-            screen.blit(entity["image"], (ex, ey))
+            # Draw villager - handle both surface and string types
+            if isinstance(entity["image"], str):
+                villager_img = textures.get(entity["image"], textures.get("vllager", textures["zombie"]))
+            else:
+                villager_img = entity["image"]
+            screen.blit(villager_img, (ex, ey))
             
             # Draw villager name with job
             job_name = entity.get("job", "Villager")
@@ -8120,8 +8146,12 @@ def draw_world():
             if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
                 continue
             
-            # Draw fortress boss
-            screen.blit(entity["image"], (ex, ey))
+            # Draw fortress boss - handle both surface and string types
+            if isinstance(entity["image"], str):
+                fortress_boss_img = textures.get(entity["image"], textures.get("boss", textures["zombie"]))
+            else:
+                fortress_boss_img = entity["image"]
+            screen.blit(fortress_boss_img, (ex, ey))
             
             # Draw boss health bar
             health_ratio = entity["hp"] / entity["max_hp"]
