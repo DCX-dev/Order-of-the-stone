@@ -9244,11 +9244,6 @@ def attack_monsters(mx, my):
     if not is_sword_type(sword_type):
         return
     
-    # Check if sword is already thrown
-    if thrown_sword:
-        print("🗡️ Sword is already thrown! Wait for it to return.")
-        return
-    
     # Find closest monster to click location (including slimes)
     closest_monster = None
     closest_distance = float('inf')
@@ -9264,8 +9259,9 @@ def attack_monsters(mx, my):
     if not closest_monster:
         return
     
-    # Determine combat type based on distance
-    if distance <= sword_slash_range:
+    # SWORD THROWING REMOVED - Only close-range combat now
+    # Check if monster is within close combat range
+    if distance <= sword_slash_range * 1.5:  # Slightly increased range for usability
         # Close combat - slash animation
         slash_sword_at_target(target_x, target_y)
         # Deal damage immediately for close combat
@@ -9304,8 +9300,8 @@ def attack_monsters(mx, my):
                         
             entities.remove(closest_monster)
     else:
-        # Long range - throw sword at monster
-        throw_sword_at_monster(closest_monster)
+        # Too far away for combat
+        show_message("⚔️ Too far! Get closer to attack.", 1000)
 
 
 # --- Part Six: World Interaction, Carrots, Chests, Hunger/Health, Monster Damage ---
@@ -11916,8 +11912,8 @@ def throw_sword_at_monster(monster):
 
 # Night monster spawning system
 night_monster_spawn_timer = 0
-night_monster_spawn_cooldown = 120  # 2 seconds at 60 FPS
-max_night_monsters = 12  # Increased for more intense combat
+night_monster_spawn_cooldown = 180  # 3 seconds at 60 FPS (slower spawning)
+max_night_monsters = 6  # Reduced for balanced difficulty (not impossible)
 night_monsters_spawned = False  # Track if we've spawned monsters for this night
 
 # Nighttime visual effects
@@ -12019,18 +12015,23 @@ def update_monsters():
     update_pigeon_behavior()
 
 def cleanup_night_monsters():
-    """Remove night-spawned monsters when it becomes day"""
+    """Burn ALL monsters and zombies when it becomes day (slimes and pigeons are safe)"""
     global entities
     
-    # Remove monsters that were spawned at night
+    # Burn monsters and zombies in daylight
     monsters_removed = 0
     for mob in entities[:]:
-        if mob["type"] in ["monster", "zombie"] and mob.get("night_spawned", False):
+        if mob["type"] in ["monster", "zombie"]:
+            # Create burn effect
+            burn_x = (mob["x"] * TILE_SIZE) - camera_x
+            burn_y = (mob["y"] * TILE_SIZE) - camera_y
+            create_monster_death_blood_spray(burn_x, burn_y)
+            
             entities.remove(mob)
             monsters_removed += 1
     
     if monsters_removed > 0:
-        print(f"🌅 Daytime: Removed {monsters_removed} night-spawned monsters")
+        print(f"☀️ Daytime: {monsters_removed} monsters/zombies burned in sunlight!")
 
 def update_night_overlay():
     """Update the nighttime overlay effect"""
@@ -12737,19 +12738,40 @@ def update_monster_movement_and_combat():
             if dist_squared > 0:
                 dist = math.sqrt(dist_squared)  # Only calculate sqrt when needed
                 
-                # ENHANCED AI: Faster movement when player is detected nearby
-                if dist < 5:  # Player is very close - aggressive pursuit
-                    speed_x = 0.12  # 2x faster horizontal
-                    speed_y = 0.08  # 2x faster vertical
-                elif dist < 10:  # Player is close - moderate pursuit
-                    speed_x = 0.09  # 1.5x faster
-                    speed_y = 0.06  # 1.5x faster
-                else:  # Player is far - normal speed
-                    speed_x = 0.06  # Original speed
-                    speed_y = 0.04  # Original speed
+                # BALANCED AI: Moderate speed, can fly but not through blocks
+                if dist < 5:  # Player is very close
+                    speed = 0.04  # Slower for balance (reduced from 0.06)
+                elif dist < 10:  # Player is close
+                    speed = 0.03  # Reduced from 0.05
+                else:  # Player is far
+                    speed = 0.02  # Reduced from 0.04
                 
-                mob["x"] += speed_x * dx / dist
-                mob["y"] += speed_y * dy / dist
+                # Calculate movement
+                move_x = speed * dx / dist
+                move_y = speed * dy / dist
+                
+                # Check collision before moving
+                new_x = mob["x"] + move_x
+                new_y = mob["y"] + move_y
+                
+                # Check if new position is blocked
+                block_at_new = get_block(int(new_x), int(new_y))
+                
+                if not block_at_new or block_at_new == "air":
+                    # No collision - move freely
+                    mob["x"] = new_x
+                    mob["y"] = new_y
+                else:
+                    # Collision detected - try to move around the obstacle
+                    # Try horizontal only
+                    block_at_x = get_block(int(mob["x"] + move_x), int(mob["y"]))
+                    if not block_at_x or block_at_x == "air":
+                        mob["x"] += move_x
+                    
+                    # Try vertical only
+                    block_at_y = get_block(int(mob["x"]), int(mob["y"] + move_y))
+                    if not block_at_y or block_at_y == "air":
+                        mob["y"] += move_y
 
             # Ranged attack: throw rock projectiles every 1.5s
             mob["cooldown"] = mob.get("cooldown", 0) + 1
@@ -12760,9 +12782,9 @@ def update_monster_movement_and_combat():
                         "type": "rock_projectile",  # Changed to rock_projectile
                         "x": mob["x"],
                         "y": mob["y"],
-                        "dx": 0.15 * dx / dist,  # Slightly slower for balance
-                        "dy": 0.15 * dy / dist,
-                        "damage": 2,  # Reduced damage to 2 hearts (4 HP)
+                        "dx": 0.12 * dx / dist,  # Slower projectile speed
+                        "dy": 0.12 * dy / dist,
+                        "damage": 1,  # Reduced damage to 1 heart for balance
                         "lifetime": 180  # 3 seconds lifetime
                     })
                     print(f"🪨 Monster threw a rock at player!")
@@ -12774,12 +12796,12 @@ def update_monster_movement_and_combat():
                 if "last_attack_time" not in mob:
                     mob["last_attack_time"] = 0
                 
-                if current_time - mob["last_attack_time"] >= 5000:  # 5 seconds = 5000ms
-                    damage = calculate_armor_damage_reduction(3)
+                if current_time - mob["last_attack_time"] >= 4000:  # 4 seconds = 4000ms (more frequent but weaker)
+                    damage = calculate_armor_damage_reduction(2)  # Reduced from 3 to 2
                     player["health"] -= damage
                     play_damage_sound()
                     mob["last_attack_time"] = current_time  # Update attack time
-                    print(f"👹 Monster attacked player! Cooldown: 5 seconds")
+                    print(f"👹 Monster attacked player! (2 damage)")
                     if player["health"] <= 0:
                         show_death_screen()
                 else:
@@ -12789,57 +12811,75 @@ def update_monster_movement_and_combat():
                         print(f"👹 Monster on cooldown: {remaining_cooldown:.1f}s remaining")
         
         elif mob["type"] == "zombie":
-            # Ensure each zombie has health
+            # Ensure each zombie has health and physics
             if "hp" not in mob:
                 mob["hp"] = 10
+            if "vel_y" not in mob:
+                mob["vel_y"] = 0
+            if "on_ground" not in mob:
+                mob["on_ground"] = False
             
-            # Simple walking AI - zombies can only walk, not fly
-            dx = player["x"] - mob["x"]
-            dy = player["y"] - mob["y"]
-            dist = math.hypot(dx, dy)
+            # Apply gravity
+            mob["vel_y"] += 0.02  # Gravity
+            mob["y"] += mob["vel_y"]
             
-            if dist > 0 and dist < 8:  # Only chase if player is close
-                # ENHANCED AI: Zombies move faster when player is closer
-                base_speed = 0.03
-                if dist < 3:  # Player very close - zombie gets aggressive
-                    zombie_speed = base_speed * 2.0  # 2x faster
-                elif dist < 5:  # Player close - moderate speed boost
-                    zombie_speed = base_speed * 1.5  # 1.5x faster
-                else:
-                    zombie_speed = base_speed  # Normal speed
+            # Check ground collision
+            mob_x = int(mob["x"])
+            mob_y = int(mob["y"])
+            block_below = get_block(mob_x, mob_y + 1)
+            
+            if block_below and block_below not in ["air", None]:
+                # On ground - stop falling
+                mob["y"] = float(mob_y)
+                mob["vel_y"] = 0
+                mob["on_ground"] = True
+            else:
+                mob["on_ground"] = False
+            
+            # Zombie AI - walk towards player (only when on ground)
+            if mob.get("on_ground", False):
+                dx = player["x"] - mob["x"]
+                dy = player["y"] - mob["y"]
+                dist = math.hypot(dx, dy)
                 
-                # Horizontal movement only (zombies can't fly)
-                if abs(dx) > 0.5:
-                    # Move horizontally towards player
-                    new_x = mob["x"] + zombie_speed * (1 if dx > 0 else -1)
+                if dist > 0 and dist < 15:  # Chase player within 15 blocks
+                    # ENHANCED AI: Zombies move faster when player is closer
+                    base_speed = 0.04
+                    if dist < 3:  # Player very close - zombie gets aggressive
+                        zombie_speed = base_speed * 2.0  # 2x faster
+                    elif dist < 5:  # Player close - moderate speed boost
+                        zombie_speed = base_speed * 1.5  # 1.5x faster
+                    else:
+                        zombie_speed = base_speed  # Normal speed
                     
-                    # Check if the new position is walkable (not blocked by walls)
-                    block_at_new_pos = get_block(int(new_x), int(mob["y"]))
-                    block_below = get_block(int(new_x), int(mob["y"] + 1))
-                    
-                    if block_below in ["grass", "dirt", "stone"] and block_at_new_pos in [None, "air"]:
-                        mob["x"] = new_x
+                    # Horizontal movement only (zombies walk, don't fly)
+                    if abs(dx) > 0.3:
+                        # Move horizontally towards player
+                        move_dir = 1 if dx > 0 else -1
+                        new_x = mob["x"] + zombie_speed * move_dir
+                        
+                        # Check wall collision
+                        block_ahead = get_block(int(new_x), int(mob["y"]))
+                        
+                        if not block_ahead or block_ahead == "air":
+                            mob["x"] = new_x
+                        # If blocked, zombie just stops (no flying over walls!)
                 
                 # Contact damage (2 hearts) when close
                 if abs(player["x"] - mob["x"]) < 0.8 and abs(player["y"] - mob["y"]) < 1:
-                    # Check cooldown - zombies can only attack every 5 seconds
+                    # Check cooldown - zombies can only attack every 3 seconds (more aggressive)
                     current_time = pygame.time.get_ticks()
                     if "last_attack_time" not in mob:
                         mob["last_attack_time"] = 0
                     
-                    if current_time - mob["last_attack_time"] >= 5000:  # 5 seconds = 5000ms
+                    if current_time - mob["last_attack_time"] >= 3000:  # 3 seconds = 3000ms
                         damage = calculate_armor_damage_reduction(2)
                         player["health"] -= damage
                         play_damage_sound()
-                        mob["last_attack_time"] = current_time  # Update attack time
-                        print(f"🧟 Zombie attacked player! Cooldown: 5 seconds")
+                        mob["last_attack_time"] = current_time
+                        print(f"🧟 Zombie attacked player!")
                         if player["health"] <= 0:
                             show_death_screen()
-                    else:
-                        # Zombie is on cooldown, no damage
-                        remaining_cooldown = (5000 - (current_time - mob["last_attack_time"])) / 1000
-                        if remaining_cooldown > 0:
-                            print(f"🧟 Zombie on cooldown: {remaining_cooldown:.1f}s remaining")
 
     # Projectiles step and collision
     entities_to_remove = []
