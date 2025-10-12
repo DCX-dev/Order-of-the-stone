@@ -2915,12 +2915,18 @@ try:
 except Exception:
     textures["zombie"] = make_zombie_texture(TILE_SIZE)
 
-# --- Monster texture (tries file, falls back to zombie texture) ---
+# --- Monster texture (tries PNG first, then GIF, falls back to zombie texture) ---
 try:
-    textures["monster"] = load_texture(os.path.join(MOB_DIR, "monster.gif"))
+    textures["monster"] = load_texture(os.path.join(MOB_DIR, "monster.png"))
+    print("✅ Loaded monster.png texture")
 except Exception:
-    # Fallback to zombie texture if monster.gif not found
-    textures["monster"] = textures["zombie"]
+    try:
+        textures["monster"] = load_texture(os.path.join(MOB_DIR, "monster.gif"))
+        print("✅ Loaded monster.gif texture")
+    except Exception:
+        # Fallback to zombie texture if neither found
+        textures["monster"] = textures["zombie"]
+        print("⚠️ Using zombie texture as fallback for monster")
 
 # --- Slime texture (procedurally generated) ---
 textures["slime"] = make_slime_texture(TILE_SIZE)
@@ -3192,7 +3198,11 @@ except Exception:
 
 
 player_image = load_texture(os.path.join(PLAYER_DIR, "player.gif"))
-monster_image = load_texture(os.path.join(MOB_DIR, "monster.gif"))
+# Try to load monster.png first, fallback to monster.gif
+try:
+    monster_image = load_texture(os.path.join(MOB_DIR, "monster.png"))
+except Exception:
+    monster_image = load_texture(os.path.join(MOB_DIR, "monster.gif"))
 boss_image = load_texture(os.path.join(MOB_DIR, "boss.png"))
 villager_image = load_texture(os.path.join(MOB_DIR, "villager.png"))
 alive_hp = load_texture(os.path.join(HP_DIR, "alive_hp.png"))
