@@ -8442,30 +8442,21 @@ def monitor_world_data():
     return len(problematic_blocks) == 0
 
 def break_block(mx, my):
-    """EXTREME ENGINEERING: Bulletproof block breaking with multiple verification layers"""
+    """Break blocks with optimized performance"""
     global final_boss_active
     px, py = int(player["x"]), int(player["y"])
-    # EXTREME ENGINEERING FIX: Force integer coordinates
     bx, by = int((mx + camera_x) // TILE_SIZE), int((my + camera_y) // TILE_SIZE)
     block_key = f"{bx},{by}"
     
-    print(f"🚀 EXTREME ENGINEERING BLOCK BREAKING INITIATED")
-    print(f"🔨 Mouse: ({mx}, {my}) -> World: ({bx}, {by})")
-    print(f"👤 Player: ({px}, {py})")
-    print(f"🔑 Block key: '{block_key}'")
-    
     # Check distance first
     if abs(bx - px) > 2 or abs(by - py) > 2:
-        print(f"❌ Too far away: distance = {abs(bx - px)}, {abs(by - py)}")
-        return False  # Too far away, silent fail
+        return False  # Too far away
     
     # Get the block at this position
     block = get_block(bx, by)
-    print(f"📦 Block at ({bx}, {by}): {block} (Type: {type(block)})")
     
     if not block or block == "air":
-        print(f"❌ Nothing to break or already air")
-        return False  # Nothing to break or air, silent fail
+        return False  # Nothing to break
     
     # Bedrock, fluids, and villagers are unbreakable
     if block in ("bedrock", "water", "lava", "villager"):
@@ -8556,73 +8547,13 @@ def break_block(mx, my):
         if block == "grass":
             mark_grass_broken(bx, by)
         
-        # EXTREME ENGINEERING: Multi-layer block removal with force verification
-        print(f"\n🔨 PHASE 1: Primary Block Removal")
-        print(f"   🔍 Block key '{block_key}' in world_data: {block_key in world_data}")
-        
+        # Remove block from world
         if block_key in world_data:
-            # Method 1: Standard deletion
             del world_data[block_key]
-            print(f"   ✅ Method 1: Standard deletion completed")
-        else:
-            print(f"   ❌ Method 1: Block not found in world_data")
         
-        # Method 2: Force cleanup with pop
+        # Verify removal
         if block_key in world_data:
             world_data.pop(block_key, None)
-            print(f"   ✅ Method 2: Force cleanup with pop completed")
-        
-        # Method 3: Direct dictionary manipulation
-        try:
-            if block_key in world_data:
-                world_data.__delitem__(block_key)
-                print(f"   ✅ Method 3: Direct dictionary deletion completed")
-        except Exception as e:
-            print(f"   ⚠️ Method 3: Direct deletion failed: {e}")
-        
-        # Method 4: Nuclear option - force clear if still exists
-        if block_key in world_data:
-            print(f"   🚨 NUCLEAR OPTION: Block still exists after all methods!")
-            print(f"   🧹 Force clearing entire world_data for this position...")
-            # Create a new world_data without this key
-            new_world_data = {k: v for k, v in world_data.items() if k != block_key}
-            world_data.clear()
-            world_data.update(new_world_data)
-            print(f"   ✅ Nuclear option completed")
-        
-        # VERIFICATION LAYER
-        print(f"\n🔍 PHASE 2: Multi-Method Verification")
-        
-        # Verification Method 1: Direct world_data check
-        still_in_world_data = block_key in world_data
-        print(f"   🔍 Method 1: Direct world_data check: {still_in_world_data}")
-        
-        # Verification Method 2: get_block function check
-        get_block_result = get_block(bx, by)
-        print(f"   🔍 Method 2: get_block({bx}, {by}) returns: {get_block_result}")
-        
-        # Verification Method 3: Force get_block with error handling
-        try:
-            force_check = world_data.get(block_key)
-            print(f"   🔍 Method 3: world_data.get('{block_key}') returns: {force_check}")
-        except Exception as e:
-            print(f"   ❌ Method 3: Force check failed: {e}")
-        
-        # Final verification
-        if not still_in_world_data and get_block_result is None:
-            print(f"   🎉 VERIFICATION SUCCESS: Block completely removed!")
-            print(f"   ✅ Block breaking operation completed successfully")
-        else:
-            print(f"   💥 VERIFICATION FAILED: Block still exists!")
-            print(f"   🚨 CRITICAL ERROR: Block removal system malfunction!")
-            print(f"   🔧 Attempting emergency cleanup...")
-            
-            # Emergency cleanup
-            if block_key in world_data:
-                world_data.pop(block_key, None)
-                print(f"   🧹 Emergency cleanup completed")
-        
-        print(f"   📊 Final world_data size: {len(world_data)} blocks")
         
         # Check for mining achievements
         if block == "diamond":
@@ -8642,67 +8573,25 @@ def break_block(mx, my):
         
         return True
     
-    # Logs can be carved into oak planks with pickaxe
+    # Logs can be carved into oak planks (no tool required!)
     elif block == "log":
-        if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]["type"] == "pickaxe":
-            # Carve log into oak planks
-            add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
-            
-            # Create block breaking particles
-            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
-            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-            create_block_particles(particle_x, particle_y, "log", 12)
-            
-            # EXTREME ENGINEERING: Multi-layer log removal with pickaxe
-            print(f"\n🔨 EXTREME ENGINEERING LOG REMOVAL (PICKAXE)")
-            print(f"   🔍 Log key '{block_key}' in world_data: {block_key in world_data}")
-            
-            # Force removal with all methods
-            if block_key in world_data:
-                del world_data[block_key]
-                print(f"   ✅ Log deletion completed")
-            
-            # Verify removal
-            if block_key in world_data:
-                world_data.pop(block_key, None)
-                print(f"   🧹 Force cleanup completed")
-            
-            # Final verification
-            final_check = get_block(bx, by)
-            if final_check is None:
-                print(f"   🎉 Log removal verification: SUCCESS")
-            else:
-                print(f"   💥 Log removal verification: FAILED - {final_check}")
-        else:
-            # Regular log breaking without pickaxe
-            add_to_inventory("log")
-            
-            # Create block breaking particles
-            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
-            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-            create_block_particles(particle_x, particle_y, "log", 10)
-            
-            # EXTREME ENGINEERING: Multi-layer log removal without pickaxe
-            print(f"\n🔨 EXTREME ENGINEERING LOG REMOVAL (NO PICKAXE)")
-            print(f"   🔍 Log key '{block_key}' in world_data: {block_key in world_data}")
-            
-            # Force removal with all methods
-            if block_key in world_data:
-                del world_data[block_key]
-                print(f"   ✅ Log deletion completed")
-            
-            # Verify removal
-            if block_key in world_data:
-                world_data.pop(block_key, None)
-                print(f"   🧹 Force cleanup completed")
-            
-            # Final verification
-            final_check = get_block(bx, by)
-            if final_check is None:
-                print(f"   🎉 Log removal verification: SUCCESS")
-            else:
-                print(f"   💥 Log removal verification: FAILED - {final_check}")
+        # Carve log into oak planks
+        add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
         
+        # Create block breaking particles
+        particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+        particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+        create_block_particles(particle_x, particle_y, "log", 12)
+        
+        # Remove log from world
+        if block_key in world_data:
+            del world_data[block_key]
+        
+        # Verify removal
+        if block_key in world_data:
+            world_data.pop(block_key, None)
+        
+        show_message("🪵 Log carved into 4 Oak Planks!", 1500)
         return True
     
     # Chest: pick up contents and the chest itself
@@ -8744,28 +8633,13 @@ def break_block(mx, my):
         # Create block breaking particles
         particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
         particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-        create_block_particles(particle_x, particle_y, "oak_planks", 8)  # Chest particles look like wood
+        create_block_particles(particle_x, particle_y, "oak_planks", 8)
         
-        # EXTREME ENGINEERING: Multi-layer chest removal
-        print(f"\n🔨 EXTREME ENGINEERING CHEST REMOVAL")
-        print(f"   🔍 Chest key '{block_key}' in world_data: {block_key in world_data}")
-        
-        # Force removal with all methods
+        # Remove chest from world
         if block_key in world_data:
             del world_data[block_key]
-            print(f"   ✅ Chest deletion completed")
-        
-        # Verify removal
         if block_key in world_data:
             world_data.pop(block_key, None)
-            print(f"   🧹 Force cleanup completed")
-        
-        # Final verification
-        final_check = get_block(bx, by)
-        if final_check is None:
-            print(f"   🎉 Chest removal verification: SUCCESS")
-        else:
-            print(f"   💥 Chest removal verification: FAILED - {final_check}")
         
         return True
     
@@ -8786,26 +8660,11 @@ def break_block(mx, my):
         if block == "grass":
             mark_grass_broken(bx, by)
         
-        # EXTREME ENGINEERING: Multi-layer general block removal
-        print(f"\n🔨 EXTREME ENGINEERING GENERAL BLOCK REMOVAL")
-        print(f"   🔍 Block key '{block_key}' in world_data: {block_key in world_data}")
-        
-        # Force removal with all methods
+        # Remove block from world
         if block_key in world_data:
             del world_data[block_key]
-            print(f"   ✅ Block deletion completed")
-        
-        # Verify removal
         if block_key in world_data:
             world_data.pop(block_key, None)
-            print(f"   🧹 Force cleanup completed")
-        
-        # Final verification
-        final_check = get_block(bx, by)
-        if final_check is None:
-            print(f"   🎉 Block removal verification: SUCCESS")
-        else:
-            print(f"   💥 Block removal verification: FAILED - {final_check}")
         
         # Check for sand blocks above that need to fall
         check_sand_falling(bx, by)
