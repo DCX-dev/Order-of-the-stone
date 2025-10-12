@@ -904,7 +904,7 @@ head_bump_effect = False
 
 # Blood particle system
 blood_particles = []
-MAX_BLOOD_PARTICLES = 200  # Limit for performance
+MAX_BLOOD_PARTICLES = 30  # Minimal for E-rating
 
 # Block breaking particle system
 block_particles = []
@@ -4696,15 +4696,16 @@ def add_blood_particle(x, y):
     }
     blood_particles.append(particle)
 
-def create_blood_particles(x, y, count=8):
-    """Create blood particles at the specified location"""
+def create_blood_particles(x, y, count=3):
+    """Create minimal blood particles - just a small splash (E-rated)"""
     global blood_particles
     
+    # Only create a few small particles for minimal violence
     for _ in range(count):
         # Random direction and speed for each particle
         angle = random.uniform(0, 2 * math.pi)
-        speed = random.uniform(2, 6)
-        life = random.randint(20, 40)  # Frames to live
+        speed = random.uniform(1, 3)  # Slower, less dramatic
+        life = random.randint(10, 20)  # Shorter life (fade quickly)
         
         particle = {
             'x': x,
@@ -4713,42 +4714,30 @@ def create_blood_particles(x, y, count=8):
             'vel_y': math.sin(angle) * speed,
             'life': life,
             'max_life': life,
-            'size': random.randint(2, 4)
+            'size': random.randint(1, 2)  # Smaller particles
         }
         blood_particles.append(particle)
 
 def create_monster_death_blood_spray(x, y):
-    """Create dramatic blood squirting effect when monster dies"""
+    """Create minimal splash effect - E-rated friendly"""
     global blood_particles
     
-    # Create multiple bursts of blood over a few seconds
-    for burst in range(3):  # 3 bursts of blood
-        for _ in range(12):  # 12 particles per burst
-            # Create spray pattern - more particles in random directions
-            angle = random.uniform(0, 2 * math.pi)
-            
-            # Vary speed - some fast, some slow for realistic effect
-            speed = random.uniform(3, 10)  # Faster than normal particles
-            
-            # Longer life for more dramatic effect
-            life = random.randint(40, 80)  # Longer lasting
-            
-            # Slightly larger particles for visibility
-            size = random.randint(3, 6)
-            
-            particle = {
-                'x': x + random.uniform(-5, 5),  # Slight spread in starting position
-                'y': y + random.uniform(-5, 5),
-                'vel_x': math.cos(angle) * speed,
-                'vel_y': math.sin(angle) * speed - random.uniform(0, 3),  # Slight upward bias
-                'life': life,
-                'max_life': life,
-                'size': size
-            }
-            blood_particles.append(particle)
+    # Just a tiny poof effect, not dramatic spray
+    for _ in range(4):  # Only 4 particles total
+        angle = random.uniform(0, 2 * math.pi)
+        speed = random.uniform(1, 3)  # Gentle speed
+        life = random.randint(15, 25)  # Quick fade
         
-        # Small delay between bursts (simulated by varying particle life)
-        # The delay is handled by the update timing
+        particle = {
+            'x': x,
+            'y': y,
+            'vel_x': math.cos(angle) * speed,
+            'vel_y': math.sin(angle) * speed - 1,  # Slight upward
+            'life': life,
+            'max_life': life,
+            'size': random.randint(1, 2)  # Very small
+        }
+        blood_particles.append(particle)
 
 def update_blood_particles():
     """Update all blood particles"""
