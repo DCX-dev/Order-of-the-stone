@@ -11904,6 +11904,40 @@ night_monsters_spawned = False  # Track if we've spawned monsters for this night
 night_overlay_alpha = 0
 night_overlay_surface = None
 
+def cleanup_distant_entities():
+    """Remove entities and items far from player to prevent lag"""
+    global entities, dropped_items
+    
+    player_x = player["x"]
+    player_y = player["y"]
+    cleanup_distance = 100  # Remove entities 100+ blocks away
+    
+    # Clean up far entities (except important ones like bosses)
+    entities_removed = 0
+    for entity in entities[:]:
+        if entity["type"] in ["monster", "zombie", "slime"]:
+            dx = abs(entity["x"] - player_x)
+            dy = abs(entity["y"] - player_y)
+            distance = math.sqrt(dx*dx + dy*dy)
+            
+            if distance > cleanup_distance:
+                entities.remove(entity)
+                entities_removed += 1
+    
+    # Clean up far dropped items
+    items_removed = 0
+    for item in dropped_items[:]:
+        dx = abs(item["x"] - player_x)
+        dy = abs(item["y"] - player_y)
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance > cleanup_distance:
+            dropped_items.remove(item)
+            items_removed += 1
+    
+    if entities_removed > 0 or items_removed > 0:
+        print(f"🧹 Cleanup: Removed {entities_removed} entities and {items_removed} items ({len(entities)} entities, {len(dropped_items)} items remaining)")
+
 def update_monsters():
     global entities, night_monster_spawn_timer, night_monsters_spawned
     
@@ -13973,23 +14007,36 @@ def save_game_fallback():
             except:
                 pass
         
-        # Save with proper formatting
-        with open(world_file, 'w') as f:
-            json.dump(save_data, f, indent=2, ensure_ascii=False)
-        
-        # Remove backup if save was successful
-        if os.path.exists(backup_file):
-            try:
-                os.remove(backup_file)
-            except:
-                pass
-        
-        print(f"✅ Fallback save successful: {world_name}")
-        print(f"   📊 Saved: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
-        return True
+        # Save with proper formatting and error handling
+        try:
+            with open(world_file, 'w') as f:
+                json.dump(save_data, f, indent=2, ensure_ascii=False, default=str)
+            
+            # Remove backup if save was successful
+            if os.path.exists(backup_file):
+                try:
+                    os.remove(backup_file)
+                except:
+                    pass
+            
+            print(f"✅ Fallback save successful: {world_name}")
+            print(f"   📊 Saved: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities, {len(save_data.get('dropped_items', []))} items")
+            return True
+        except (TypeError, ValueError) as e:
+            print(f"⚠️ JSON serialization error: {e}")
+            # Try to restore from backup
+            if os.path.exists(backup_file):
+                try:
+                    shutil.copy2(backup_file, world_file)
+                    print("✅ Restored from backup after failed save")
+                except:
+                    pass
+            return False
         
     except Exception as e:
         print(f"💥 Fallback save failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 # Old crafting system functions removed - using new simplified system above
@@ -15243,6 +15290,10 @@ while running:
         
         # Auto-save world every 5 minutes
         auto_save_game()
+        
+        # Clean up distant entities every 30 seconds to prevent lag
+        if frame_count % 1800 == 0:  # Every 30 seconds at 60 FPS
+            cleanup_distant_entities()
         
         # Validate world integrity every 10 minutes (600 frames at 60 FPS)
         if frame_count % 36000 == 0:  # Every 10 minutes
