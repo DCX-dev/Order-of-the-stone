@@ -12394,20 +12394,20 @@ def update_cow_behavior():
 # Mad Pigeon spawning system  
 pigeon_spawn_timer = 0
 pigeon_spawn_cooldown = 1800  # 30 seconds at 60 FPS
-max_pigeons = 1500  # Allow up to 1500 pigeons (1000 initial + natural spawning)
+max_pigeons = 200  # Allow up to 200 pigeons (100 initial + natural spawning)
 
 def spawn_initial_pigeons():
-    """Spawn 1000 pigeons across all trees in the world when creating a new world"""
+    """Spawn pigeons across all trees in the world when creating a new world"""
     global entities
     
-    print("🐦 Spawning initial 1000 pigeons across the world...")
+    print("🐦 Spawning initial pigeons across the world...")
     pigeons_spawned = 0
-    target_pigeons = 1000
+    target_pigeons = 100  # Reduced from 1000 to 100 for better performance
     
     # Search across the entire generated world
     search_range = 2000  # Search a wide area
     attempts = 0
-    max_attempts = 10000  # Try many times to place 1000 pigeons
+    max_attempts = 2000  # Reduced attempts since we need fewer pigeons
     
     while pigeons_spawned < target_pigeons and attempts < max_attempts:
         attempts += 1
@@ -12511,8 +12511,8 @@ def update_pigeon_behavior():
                 pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
             continue
         
-        # Become aggressive if player gets close (unless holding steak)
-        if distance < 8:
+        # Become aggressive if player gets within 1 block (unless holding steak)
+        if distance < 1:
             if holding_steak:
                 pigeon["aggressive"] = False
                 # Fly towards player slowly when they have steak
@@ -12523,7 +12523,7 @@ def update_pigeon_behavior():
             else:
                 pigeon["aggressive"] = True
                 pigeon["perched"] = False
-        elif distance > 15:
+        elif distance > 3:
             pigeon["aggressive"] = False
         
         # Aggressive behavior
