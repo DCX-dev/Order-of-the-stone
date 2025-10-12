@@ -5803,7 +5803,10 @@ def update_world_generation():
         world_generation_status = "Spawning wildlife..."
         print("🌍 World generation complete!")
         
-        # Spawn 1000 pigeons across the world
+        # Spawn cows near spawn (safe area)
+        spawn_initial_cows()
+        
+        # Spawn pigeons far from spawn (dangerous area)
         spawn_initial_pigeons()
         
         world_generation_status = "World generation complete!"
@@ -12336,8 +12339,50 @@ def find_ground_level(x):
             return y - 1
     return None
 
+def spawn_initial_cows():
+    """Spawn 10 cows near spawn point when creating a new world"""
+    global entities
+    
+    print("🐄 Spawning initial cows near spawn...")
+    cows_spawned = 0
+    target_cows = 10
+    
+    # Spawn near spawn area (0, 0) within 30 blocks
+    spawn_area_radius = 30
+    attempts = 0
+    max_attempts = 100
+    
+    while cows_spawned < target_cows and attempts < max_attempts:
+        attempts += 1
+        
+        # Random position near spawn
+        spawn_x = random.randint(-spawn_area_radius, spawn_area_radius)
+        
+        # Find ground level (not trees)
+        spawn_y_ground = find_ground_level(spawn_x)
+        
+        if spawn_y_ground is not None:
+            # Make sure there's no block at spawn position
+            block_at_spawn = get_block(spawn_x, int(spawn_y_ground))
+            
+            if not block_at_spawn or block_at_spawn == "air":
+                entities.append({
+                    "type": "cow",
+                    "x": float(spawn_x),
+                    "y": float(spawn_y_ground),
+                    "hp": 5,
+                    "image": textures["cow"],
+                    "wander_target": None,
+                    "wander_cooldown": 0,
+                    "vel_y": 0,
+                    "on_ground": True
+                })
+                cows_spawned += 1
+    
+    print(f"✅ Spawned {cows_spawned} cows near spawn!")
+
 def spawn_cows_randomly():
-    """Spawn peaceful cows in the world on solid ground only"""
+    """Spawn peaceful cows NEAR SPAWN on solid ground only"""
     global entities, cow_spawn_timer
     
     cow_spawn_timer += 1
@@ -12346,11 +12391,10 @@ def spawn_cows_randomly():
         cow_count = sum(1 for e in entities if e["type"] == "cow")
         
         if cow_count < max_cows and random.random() < 0.6:
-            # Spawn far from player
-            spawn_distance = random.uniform(15, 40)
-            spawn_angle = random.uniform(0, 2 * math.pi)
+            # Spawn near spawn area (safe zone) - within 40 blocks
+            spawn_area_max = 40
+            spawn_x = random.uniform(-spawn_area_max, spawn_area_max)
             
-            spawn_x = player["x"] + math.cos(spawn_angle) * spawn_distance
             # Use ground level finder to avoid spawning on trees
             spawn_y_ground = find_ground_level(int(spawn_x))
             
@@ -12371,7 +12415,7 @@ def spawn_cows_randomly():
                         "vel_y": 0,
                         "on_ground": True
                     })
-                    print(f"🐄 Cow spawned at ({spawn_x:.1f}, {spawn_y_ground:.1f})")
+                    print(f"🐄 Cow spawned near spawn at ({spawn_x:.1f}, {spawn_y_ground:.1f})")
         
         cow_spawn_timer = 0
 
@@ -12443,29 +12487,34 @@ pigeon_spawn_cooldown = 1800  # 30 seconds at 60 FPS
 max_pigeons = 200  # Allow up to 200 pigeons (100 initial + natural spawning)
 
 def spawn_initial_pigeons():
-    """Spawn pigeons across all trees in the world when creating a new world"""
+    """Spawn pigeons across all trees FAR from spawn (safe starting area)"""
     global entities
     
-    print("🐦 Spawning initial pigeons across the world...")
+    print("🐦 Spawning initial pigeons far from spawn...")
     pigeons_spawned = 0
-    target_pigeons = 100  # Reduced from 1000 to 100 for better performance
+    target_pigeons = 100
     
-    # Search across the entire generated world
+    # Search far from spawn - avoid spawn area
+    safe_spawn_radius = 50  # Don't spawn pigeons within 50 blocks of spawn
     search_range = 2000  # Search a wide area
     attempts = 0
-    max_attempts = 2000  # Reduced attempts since we need fewer pigeons
+    max_attempts = 2000
     
     while pigeons_spawned < target_pigeons and attempts < max_attempts:
         attempts += 1
         
-        # Random X position across the world
+        # Random X position across the world, but not near spawn (0, 0)
         search_x = random.randint(-search_range, search_range)
+        
+        # Skip if too close to spawn
+        if abs(search_x) < safe_spawn_radius:
+            continue
         
         # Find surface and check for trees
         for y in range(90, 130):
             block = get_block(search_x, y)
             if block == "leaves":
-                # Found leaves! Spawn pigeon here
+                # Found leaves! Spawn pigeon here (far from spawn)
                 entities.append({
                     "type": "mad_pigeon",
                     "x": float(search_x),
@@ -12480,16 +12529,16 @@ def spawn_initial_pigeons():
                 })
                 pigeons_spawned += 1
                 
-                # Print progress every 100 pigeons
-                if pigeons_spawned % 100 == 0:
+                # Print progress every 50 pigeons
+                if pigeons_spawned % 50 == 0:
                     print(f"🐦 Spawned {pigeons_spawned}/{target_pigeons} pigeons...")
                 
                 break  # Move to next attempt
     
-    print(f"✅ Spawned {pigeons_spawned} pigeons across the world!")
+    print(f"✅ Spawned {pigeons_spawned} pigeons far from spawn (safe zone)!")
 
 def spawn_pigeons_on_trees():
-    """Spawn mad pigeons on tree leaves"""
+    """Spawn mad pigeons on tree leaves (far from spawn area)"""
     global entities, pigeon_spawn_timer
     
     pigeon_spawn_timer += 1
@@ -12498,10 +12547,16 @@ def spawn_pigeons_on_trees():
         pigeon_count = sum(1 for e in entities if e["type"] == "mad_pigeon")
         
         if pigeon_count < max_pigeons and random.random() < 0.7:
-            # Find a tree (log block with leaves nearby)
+            # Find a tree (log block with leaves nearby), avoid spawn area
             search_range = 40
+            safe_spawn_radius = 50
+            
             for attempt in range(20):  # Try 20 times to find a tree
                 search_x = int(player["x"] + random.uniform(-search_range, search_range))
+                
+                # Skip if too close to spawn (0, 0)
+                if abs(search_x) < safe_spawn_radius:
+                    continue
                 
                 # Find surface and check for trees
                 for y in range(90, 130):
