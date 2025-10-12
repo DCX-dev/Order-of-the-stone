@@ -7307,6 +7307,7 @@ def normalize_inventory():
     # Keep at most 9 slots
     inv = player.get("inventory", [])
     # Compact: keep only dict items or well-formed entries
+    # IMPORTANT: Preserve __THROWN_SWORD__ markers (reserved slots) to prevent inventory shifting during sword throws
     compacted = [it for it in inv if it and isinstance(it, dict) and "type" in it and "count" in it and it["count"] > 0]
     player["inventory"] = compacted[:9]
 
@@ -8907,8 +8908,13 @@ def throw_sword_at_target(target_x, target_y):
     sword_item = player["inventory"][player["selected"]].copy()
     original_slot = player["selected"]
     
-    # Remove sword from inventory temporarily (DON'T normalize yet - it shifts items!)
-    player["inventory"][player["selected"]] = None
+    # Debug: Print inventory state before throwing
+    print(f"📊 Before throw - Slot {original_slot}: {player['inventory'][original_slot]}")
+    print(f"📊 Full inventory: {[item['type'] if item else None for item in player['inventory'][:9]]}")
+    
+    # IMPORTANT: Mark this slot as "reserved" so normalize_inventory doesn't shift items
+    # We'll use a special marker that normalize_inventory will skip
+    player["inventory"][original_slot] = {"type": "__THROWN_SWORD__", "count": 1, "reserved": True}
     
     # Create thrown sword projectile
     thrown_sword = {
@@ -8923,9 +8929,9 @@ def throw_sword_at_target(target_x, target_y):
     }
     
     if closest_monster:
-        print(f"🗡️ Throwing {sword_item['type']} at {closest_monster['type']}!")
+        print(f"🗡️ Throwing {sword_item['type']} at {closest_monster['type']} from slot {original_slot}!")
     else:
-        print(f"🗡️ Throwing {sword_item['type']} at target location!")
+        print(f"🗡️ Throwing {sword_item['type']} at target location from slot {original_slot}!")
     return True
 
 def slash_sword_at_target(target_x, target_y):
@@ -9016,10 +9022,16 @@ def update_thrown_sword():
             while len(player["inventory"]) <= sword["original_slot"]:
                 player["inventory"].append(None)
             
-            # Put sword back in original slot
+            # Debug: Check what's in the slot before returning
+            print(f"📊 Slot {sword['original_slot']} before return: {player['inventory'][sword['original_slot']]}")
+            
+            # Replace the marker (or whatever is there) with the actual sword
             player["inventory"][sword["original_slot"]] = sword["sword_item"]
             
+            # Debug: Confirm return
             print(f"🗡️ {sword['sword_type']} returned to slot {sword['original_slot']}!")
+            print(f"📊 Full inventory after return: {[item['type'] if item else None for item in player['inventory'][:9]]}")
+            
             thrown_sword = None
         else:
             # Move towards player
