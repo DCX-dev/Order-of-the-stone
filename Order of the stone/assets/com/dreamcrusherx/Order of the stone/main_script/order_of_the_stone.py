@@ -12327,8 +12327,17 @@ cow_spawn_timer = 0
 cow_spawn_cooldown = 1200  # 20 seconds at 60 FPS
 max_cows = 20  # Maximum cows in the world
 
+def find_ground_level(x):
+    """Find actual ground level (grass/dirt/stone), not trees or leaves"""
+    for y in range(90, 250):
+        block = get_block(x, y)
+        if block in ["grass", "dirt", "stone", "sand"]:
+            # Found solid ground - return position above it
+            return y - 1
+    return None
+
 def spawn_cows_randomly():
-    """Spawn peaceful cows in the world"""
+    """Spawn peaceful cows in the world on solid ground only"""
     global entities, cow_spawn_timer
     
     cow_spawn_timer += 1
@@ -12342,50 +12351,87 @@ def spawn_cows_randomly():
             spawn_angle = random.uniform(0, 2 * math.pi)
             
             spawn_x = player["x"] + math.cos(spawn_angle) * spawn_distance
-            spawn_y_surface = find_surface_level(int(spawn_x))
+            # Use ground level finder to avoid spawning on trees
+            spawn_y_ground = find_ground_level(int(spawn_x))
             
-            if spawn_y_surface is not None:
-                entities.append({
-                    "type": "cow",
-                    "x": float(spawn_x),
-                    "y": float(spawn_y_surface),
-                    "hp": 5,
-                    "image": textures["cow"],
-                    "wander_target": None,
-                    "wander_cooldown": 0
-                })
+            if spawn_y_ground is not None:
+                # Make sure there's no tree above the spawn position
+                spawn_y_check = int(spawn_y_ground)
+                block_at_spawn = get_block(int(spawn_x), spawn_y_check)
+                
+                if not block_at_spawn or block_at_spawn == "air":
+                    entities.append({
+                        "type": "cow",
+                        "x": float(spawn_x),
+                        "y": float(spawn_y_ground),
+                        "hp": 5,
+                        "image": textures["cow"],
+                        "wander_target": None,
+                        "wander_cooldown": 0,
+                        "vel_y": 0,
+                        "on_ground": True
+                    })
+                    print(f"🐄 Cow spawned at ({spawn_x:.1f}, {spawn_y_ground:.1f})")
         
         cow_spawn_timer = 0
 
 def update_cow_behavior():
-    """Update cow wandering behavior"""
+    """Update cow wandering behavior with gravity and collision"""
     for cow in entities[:]:
         if cow["type"] != "cow":
             continue
         
-        # Simple wandering AI
-        if cow.get("wander_target") is None or cow.get("wander_cooldown", 0) <= 0:
-            # Pick new wander target
-            wander_distance = random.uniform(3, 8)
-            wander_angle = random.uniform(0, 2 * math.pi)
-            cow["wander_target"] = (
-                cow["x"] + math.cos(wander_angle) * wander_distance,
-                cow["y"] + math.sin(wander_angle) * wander_distance
-            )
-            cow["wander_cooldown"] = random.randint(120, 300)  # 2-5 seconds
+        # Apply gravity
+        if "vel_y" not in cow:
+            cow["vel_y"] = 0
         
-        # Move towards wander target
-        if cow["wander_target"]:
-            target_x, target_y = cow["wander_target"]
-            dx = target_x - cow["x"]
-            dy = target_y - cow["y"]
-            dist = math.sqrt(dx*dx + dy*dy)
+        cow["vel_y"] += 0.015  # Gravity
+        cow["y"] += cow["vel_y"]
+        
+        # Check ground collision
+        cow_x = int(cow["x"])
+        cow_y = int(cow["y"])
+        block_below = get_block(cow_x, cow_y + 1)
+        
+        if block_below and block_below != "air":
+            # On ground - stop falling
+            cow["y"] = float(cow_y)
+            cow["vel_y"] = 0
+            cow["on_ground"] = True
+        else:
+            cow["on_ground"] = False
+        
+        # Only wander when on ground
+        if cow.get("on_ground", False):
+            # Simple wandering AI - only move horizontally
+            if cow.get("wander_target") is None or cow.get("wander_cooldown", 0) <= 0:
+                # Pick new wander target (horizontal only)
+                wander_distance = random.uniform(3, 8)
+                wander_direction = random.choice([-1, 1])  # Left or right
+                cow["wander_target"] = cow["x"] + wander_distance * wander_direction
+                cow["wander_cooldown"] = random.randint(120, 300)  # 2-5 seconds
             
-            if dist > 0.3:
-                speed = 0.02
-                cow["x"] += (dx / dist) * speed
-            else:
-                cow["wander_target"] = None
+            # Move towards wander target (horizontal only)
+            if cow["wander_target"] is not None:
+                target_x = cow["wander_target"]
+                dx = target_x - cow["x"]
+                
+                if abs(dx) > 0.1:
+                    speed = 0.02
+                    move_x = speed if dx > 0 else -speed
+                    
+                    # Check if next position has a block (wall collision)
+                    next_x = int(cow["x"] + move_x)
+                    next_y = int(cow["y"])
+                    block_ahead = get_block(next_x, next_y)
+                    
+                    if not block_ahead or block_ahead == "air":
+                        cow["x"] += move_x
+                    else:
+                        # Hit a wall, pick new target
+                        cow["wander_target"] = None
+                else:
+                    cow["wander_target"] = None
         
         # Update cooldown
         if cow.get("wander_cooldown", 0) > 0:
@@ -12501,6 +12547,7 @@ def update_pigeon_behavior():
         dx = player_x - pigeon["x"]
         dy = player_y - pigeon["y"]
         distance = math.sqrt(dx*dx + dy*dy)
+        horizontal_distance = abs(dx)  # Horizontal distance only
         
         # Don't process if tamed
         if pigeon.get("tamed", False):
@@ -12511,8 +12558,9 @@ def update_pigeon_behavior():
                 pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
             continue
         
-        # Become aggressive if player gets within 1 block (unless holding steak)
-        if distance < 1:
+        # Become aggressive if player is in front (horizontal proximity) unless holding steak
+        # This simulates the pigeon seeing the player approach
+        if horizontal_distance < 5 and abs(dy) < 10:  # Player is in front within 5 blocks horizontally
             if holding_steak:
                 pigeon["aggressive"] = False
                 # Fly towards player slowly when they have steak
@@ -12523,7 +12571,7 @@ def update_pigeon_behavior():
             else:
                 pigeon["aggressive"] = True
                 pigeon["perched"] = False
-        elif distance > 3:
+        elif horizontal_distance > 10:  # Player is far away horizontally
             pigeon["aggressive"] = False
         
         # Aggressive behavior
