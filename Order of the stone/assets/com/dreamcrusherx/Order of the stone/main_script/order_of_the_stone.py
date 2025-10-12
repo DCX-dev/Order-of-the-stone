@@ -12194,11 +12194,6 @@ slime_spawn_cooldown = 600  # 10 seconds at 60 FPS
 max_slimes = 100  # Maximum slimes in the world
 slime_aggro_distance = 3  # Distance at which slimes become aggressive
 
-# Cow spawning system
-cow_spawn_timer = 0
-cow_spawn_cooldown = 900  # 15 seconds at 60 FPS
-max_cows = 30  # Maximum cows in the world
-
 def spawn_slimes_randomly():
     """Spawn slimes randomly across the world (harmless until approached)"""
     global entities, slime_spawn_timer
@@ -12329,7 +12324,7 @@ def update_slime_behavior():
 # Cow spawning system
 cow_spawn_timer = 0
 cow_spawn_cooldown = 1200  # 20 seconds at 60 FPS
-max_cows = 20  # Maximum cows in the world
+max_cows = 4  # Maximum 3-4 cows near spawn
 
 def find_ground_level(x):
     """Find actual ground level (grass/dirt/stone), not trees or leaves"""
@@ -12341,12 +12336,12 @@ def find_ground_level(x):
     return None
 
 def spawn_initial_cows():
-    """Spawn 10 cows near spawn point when creating a new world"""
+    """Spawn 3-4 cows near spawn point when creating a new world"""
     global entities
     
     print("🐄 Spawning initial cows near spawn...")
     cows_spawned = 0
-    target_cows = 10
+    target_cows = random.randint(3, 4)  # Spawn 3 or 4 cows
     
     # Spawn near spawn area (0, 0) within 30 blocks
     spawn_area_radius = 30
