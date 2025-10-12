@@ -11409,13 +11409,34 @@ def update_dropped_items():
             if abs(item["vel_x"]) < 0.01:
                 item["vel_x"] = 0
         
-        # Update position
-        item["x"] += item["vel_x"]
-        item["y"] += item["vel_y"]
+        # Store old position for collision check
+        old_x = item["x"]
+        old_y = item["y"]
         
-        # Check collision with blocks
+        # Update horizontal position and check for wall collision
+        item["x"] += item["vel_x"]
         item_x = int(item["x"])
         item_y = int(item["y"])
+        
+        # Check for horizontal collision (walls)
+        block_at_new_x = get_block(item_x, item_y)
+        if block_at_new_x and block_at_new_x != "air":
+            # Hit a wall, revert position and bounce back
+            item["x"] = old_x
+            item["vel_x"] = -item["vel_x"] * 0.3  # Bounce back with damping
+        
+        # Update vertical position and check for ceiling/floor collision
+        item["y"] += item["vel_y"]
+        item_x = int(item["x"])
+        item_y = int(item["y"])
+        
+        # Check block at current position (in case item is inside a block)
+        block_at_pos = get_block(item_x, item_y)
+        if block_at_pos and block_at_pos != "air":
+            # Item is inside a block, push it up
+            item["y"] = old_y
+            item["vel_y"] = -abs(item["vel_y"]) * 0.5  # Pop up
+            item["on_ground"] = False
         
         # Check block below
         block_below = get_block(item_x, item_y + 1)
@@ -11430,6 +11451,12 @@ def update_dropped_items():
                 item["on_ground"] = False
         else:
             item["on_ground"] = False
+        
+        # Check block above (ceiling)
+        block_above = get_block(item_x, item_y - 1)
+        if block_above and block_above != "air" and item["vel_y"] < 0:
+            # Hit ceiling
+            item["vel_y"] = 0
         
         # Check collision with player (push items)
         dx = player["x"] - item["x"]
@@ -11466,29 +11493,37 @@ def pickup_dropped_item(item):
     # Try to add to inventory
     added = False
     
+    # Ensure inventory is initialized
+    while len(player["inventory"]) < 9:
+        player["inventory"].append(None)
+    while len(player["backpack"]) < 27:
+        player["backpack"].append(None)
+    
     # Check if we have space in hotbar
     for i in range(9):
-        if player["inventory"][i] is None:
-            player["inventory"][i] = {"type": item["type"], "count": item["count"]}
-            added = True
-            break
-        elif player["inventory"][i]["type"] == item["type"]:
-            # Stack with existing item
-            player["inventory"][i]["count"] += item["count"]
-            added = True
-            break
+        if i < len(player["inventory"]):
+            if player["inventory"][i] is None:
+                player["inventory"][i] = {"type": item["type"], "count": item["count"]}
+                added = True
+                break
+            elif player["inventory"][i].get("type") == item["type"]:
+                # Stack with existing item
+                player["inventory"][i]["count"] += item["count"]
+                added = True
+                break
     
     # If hotbar is full, try backpack
     if not added:
         for i in range(27):
-            if player["backpack"][i] is None:
-                player["backpack"][i] = {"type": item["type"], "count": item["count"]}
-                added = True
-                break
-            elif player["backpack"][i]["type"] == item["type"]:
-                player["backpack"][i]["count"] += item["count"]
-                added = True
-                break
+            if i < len(player["backpack"]):
+                if player["backpack"][i] is None:
+                    player["backpack"][i] = {"type": item["type"], "count": item["count"]}
+                    added = True
+                    break
+                elif player["backpack"][i].get("type") == item["type"]:
+                    player["backpack"][i]["count"] += item["count"]
+                    added = True
+                    break
     
     if added:
         dropped_items.remove(item)
