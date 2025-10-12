@@ -1575,6 +1575,53 @@ def make_slime_texture(size):
     
     return surf
 
+def make_mad_pigeon_texture(size):
+    """Create a mad pigeon texture"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Pigeon body (gray)
+    body_color = (150, 150, 150)
+    dark_gray = (100, 100, 100)
+    
+    # Body (rounded)
+    body_rect = pygame.Rect(size//6, size//3, size*2//3, size//2)
+    pygame.draw.ellipse(surf, body_color, body_rect)
+    
+    # Head (smaller circle)
+    head_x = size//4
+    head_y = size//4
+    head_size = size//4
+    pygame.draw.circle(surf, body_color, (head_x, head_y), head_size)
+    
+    # Beak (orange triangle)
+    beak_points = [
+        (head_x - head_size//2, head_y),
+        (head_x - head_size, head_y - 2),
+        (head_x - head_size, head_y + 2)
+    ]
+    pygame.draw.polygon(surf, (255, 140, 0), beak_points)
+    
+    # Eye (beady and angry)
+    eye_x = head_x - 2
+    eye_y = head_y - 2
+    pygame.draw.circle(surf, (255, 255, 255), (eye_x, eye_y), 3)
+    pygame.draw.circle(surf, (255, 0, 0), (eye_x, eye_y), 2)  # Red angry eye
+    
+    # Wings (darker gray)
+    wing_rect = pygame.Rect(size//3, size//2, size//3, size//4)
+    pygame.draw.ellipse(surf, dark_gray, wing_rect)
+    
+    # Tail feathers
+    tail_x = size*5//6
+    tail_y = size//2
+    pygame.draw.polygon(surf, dark_gray, [
+        (tail_x, tail_y),
+        (tail_x + size//6, tail_y - size//8),
+        (tail_x + size//6, tail_y + size//8)
+    ])
+    
+    return surf
+
 def make_potion_texture(size):
     """Procedurally draw a potion texture (upside down)."""
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -1943,7 +1990,7 @@ def generate_terrain_column(x):
     
     # Mark as generated
     generated_terrain_columns.add(x)
-
+    
 # Cave generation functions removed
 
 def calculate_surface_height(x):
@@ -2877,6 +2924,18 @@ except Exception:
 
 # --- Slime texture (procedurally generated) ---
 textures["slime"] = make_slime_texture(TILE_SIZE)
+
+# --- Mad Pigeon texture (procedurally generated) ---
+textures["mad_pigeon"] = make_mad_pigeon_texture(TILE_SIZE)
+
+# --- Cow texture ---
+try:
+    textures["cow"] = load_texture(os.path.join(MOB_DIR, "cow.png"))
+except Exception:
+    # Fallback to a simple brown rectangle if cow.png not found
+    cow_surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+    pygame.draw.rect(cow_surf, (139, 69, 19), (4, 4, TILE_SIZE-8, TILE_SIZE-8))  # Brown
+    textures["cow"] = cow_surf
 
 # Shopkeeper texture removed
 
@@ -4729,20 +4788,20 @@ def create_monster_death_blood_spray(x, y):
     
     # Just a tiny poof effect, not dramatic spray
     for _ in range(4):  # Only 4 particles total
-        angle = random.uniform(0, 2 * math.pi)
+            angle = random.uniform(0, 2 * math.pi)
         speed = random.uniform(1, 3)  # Gentle speed
         life = random.randint(15, 25)  # Quick fade
-        
-        particle = {
+            
+            particle = {
             'x': x,
             'y': y,
-            'vel_x': math.cos(angle) * speed,
+                'vel_x': math.cos(angle) * speed,
             'vel_y': math.sin(angle) * speed - 1,  # Slight upward
-            'life': life,
-            'max_life': life,
+                'life': life,
+                'max_life': life,
             'size': random.randint(1, 2)  # Very small
-        }
-        blood_particles.append(particle)
+            }
+            blood_particles.append(particle)
 
 def update_blood_particles():
     """Update all blood particles"""
@@ -7878,28 +7937,28 @@ def draw_world():
             # Get block at this position
             block = get_block(x, y)
             
-            if not block or block == "air":
-                continue
-            
-            img = textures.get(block)
-            if img is None:
-                continue
-            
-            # Check if this is a GIF texture that should be animated
-            gif_path = None
-            if block == "carrot":
-                gif_path = os.path.join(TILE_DIR, "carrot.gif")
-            elif block == "wheat":
-                gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
-            
-            # Use static texture for now
-            animated_frame = None
-            if animated_frame:
-                img = animated_frame
-            
-            # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
-            screen_x = x * TILE_SIZE - camera_x
-            screen_y = y * TILE_SIZE - camera_y
+        if not block or block == "air":
+            continue
+        
+        img = textures.get(block)
+        if img is None:
+            continue
+        
+        # Check if this is a GIF texture that should be animated
+        gif_path = None
+        if block == "carrot":
+            gif_path = os.path.join(TILE_DIR, "carrot.gif")
+        elif block == "wheat":
+            gif_path = os.path.join(TILE_DIR, "carrot.gif")  # Using carrot as wheat
+        
+        # Use static texture for now
+        animated_frame = None
+        if animated_frame:
+            img = animated_frame
+        
+        # NATURAL WATER RENDERING: Water blocks now have beautiful textures built-in
+        screen_x = x * TILE_SIZE - camera_x
+        screen_y = y * TILE_SIZE - camera_y
             screen.blit(img, (screen_x, screen_y))
 
     # Cave entrance indicators removed - caves are disabled
@@ -7965,6 +8024,42 @@ def draw_world():
                 slime_image.blit(red_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
             
             screen.blit(slime_image, (ex, ey))
+        elif entity["type"] == "cow":
+            # Draw cow
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
+            screen.blit(entity["image"], (ex, ey))
+        elif entity["type"] == "mad_pigeon":
+            # Draw mad pigeon with visual states
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            if ex < -TILE_SIZE or ex > SCREEN_WIDTH + TILE_SIZE or ey < -TILE_SIZE or ey > SCREEN_HEIGHT + TILE_SIZE:
+                continue
+            
+            pigeon_image = entity["image"].copy()
+            
+            # Add red glow if aggressive
+            if entity.get("aggressive", False):
+                red_overlay = pygame.Surface(pigeon_image.get_size(), pygame.SRCALPHA)
+                red_overlay.fill((255, 50, 50, 120))
+                pigeon_image.blit(red_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            
+            # Add green glow if tamed
+            if entity.get("tamed", False):
+                green_overlay = pygame.Surface(pigeon_image.get_size(), pygame.SRCALPHA)
+                green_overlay.fill((50, 255, 50, 100))
+                pigeon_image.blit(green_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                # Draw heart above tamed pigeon
+                heart_x = ex + TILE_SIZE // 2
+                heart_y = ey - 10
+                pygame.draw.circle(screen, (255, 100, 150), (heart_x, heart_y), 3)
+            
+            screen.blit(pigeon_image, (ex, ey))
         elif entity["type"] == "final_boss":
             ex = int(entity["x"] * TILE_SIZE) - camera_x
             ey = int(entity["y"] * TILE_SIZE) - camera_y
@@ -8575,21 +8670,21 @@ def break_block(mx, my):
     
     # Logs can be carved into oak planks (no tool required!)
     elif block == "log":
-        # Carve log into oak planks
-        add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
-        
-        # Create block breaking particles
-        particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
-        particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-        create_block_particles(particle_x, particle_y, "log", 12)
-        
+            # Carve log into oak planks
+            add_to_inventory("oak_planks", 4)  # 1 log = 4 planks
+            
+            # Create block breaking particles
+            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
+            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
+            create_block_particles(particle_x, particle_y, "log", 12)
+            
         # Remove log from world
-        if block_key in world_data:
-            del world_data[block_key]
-        
-        # Verify removal
-        if block_key in world_data:
-            world_data.pop(block_key, None)
+            if block_key in world_data:
+                del world_data[block_key]
+            
+            # Verify removal
+            if block_key in world_data:
+                world_data.pop(block_key, None)
         
         show_message("🪵 Log carved into 4 Oak Planks!", 1500)
         return True
@@ -9042,26 +9137,26 @@ def draw_thrown_sword_entities():
                 sword_image = textures.get(sword_type, textures.get("sword"))
                 if sword_image:
                     sword_image = sword_image.copy()  # Copy to avoid modifying the cached texture
-                    
-                    # Rotate sword based on direction
-                    if sword["returning"]:
-                        # Point towards player
-                        dx = player["x"] - sword["x"]
-                        dy = player["y"] - sword["y"]
+                
+                # Rotate sword based on direction
+                if sword["returning"]:
+                    # Point towards player
+                    dx = player["x"] - sword["x"]
+                    dy = player["y"] - sword["y"]
+                    if dx != 0 or dy != 0:
+                        angle = math.degrees(math.atan2(dy, dx))
+                        sword_image = pygame.transform.rotate(sword_image, -angle)
+                else:
+                    # Point towards target
+                    if sword["target"] and sword["target"] in entities:
+                        target = sword["target"]
+                        dx = target["x"] - sword["x"]
+                        dy = target["y"] - sword["y"]
                         if dx != 0 or dy != 0:
                             angle = math.degrees(math.atan2(dy, dx))
                             sword_image = pygame.transform.rotate(sword_image, -angle)
-                    else:
-                        # Point towards target
-                        if sword["target"] and sword["target"] in entities:
-                            target = sword["target"]
-                            dx = target["x"] - sword["x"]
-                            dy = target["y"] - sword["y"]
-                            if dx != 0 or dy != 0:
-                                angle = math.degrees(math.atan2(dy, dx))
-                                sword_image = pygame.transform.rotate(sword_image, -angle)
-                    
-                    screen.blit(sword_image, (screen_x, screen_y))
+                
+                screen.blit(sword_image, (screen_x, screen_y))
                 else:
                     # Fallback: draw a simple sword shape if texture not found
                     pygame.draw.rect(screen, (200, 200, 200), (screen_x + 12, screen_y + 8, 8, 16))
@@ -9099,7 +9194,7 @@ def attack_monsters(mx, my):
     closest_distance = float('inf')
     
     for mob in entities[:]:
-        if mob["type"] in ["monster", "zombie", "slime"]:
+        if mob["type"] in ["monster", "zombie", "slime", "cow", "mad_pigeon"]:
             mob_x, mob_y = mob["x"], mob["y"]
             click_distance = math.hypot(target_x - mob_x, target_y - mob_y)
             if click_distance < closest_distance:
@@ -9118,15 +9213,31 @@ def attack_monsters(mx, my):
         # Show health bar when hit
         show_monster_health(closest_monster)
         if closest_monster["hp"] <= 0:
-            # Track monster kill
+            # Track monster kill (only for actual monsters)
+            if closest_monster["type"] in ["monster", "zombie"]:
             track_monster_kill()
             
-            # Create dramatic blood spray for death
+            # Create death effect
             death_x = (closest_monster["x"] * TILE_SIZE) - camera_x
             death_y = (closest_monster["y"] * TILE_SIZE) - camera_y
             create_monster_death_blood_spray(death_x, death_y)
             
-            # Monster defeated - chance to drop coins
+            # Drop items based on mob type
+            mob_x = closest_monster["x"]
+            mob_y = closest_monster["y"]
+            
+            if closest_monster["type"] == "cow":
+                # Cows drop 1-3 steak
+                steak_count = random.randint(1, 3)
+                drop_item("steak", mob_x, mob_y, steak_count)
+                show_message(f"🥩 Cow dropped {steak_count} steak!", 2000)
+            elif closest_monster["type"] == "mad_pigeon":
+                # Pigeons drop 1-2 cooked fish (bird meat)
+                fish_count = random.randint(1, 2)
+                drop_item("cooked_fish", mob_x, mob_y, fish_count)
+                show_message(f"🐟 Pigeon dropped {fish_count} cooked fish!", 2000)
+            elif closest_monster["type"] in ["monster", "zombie"]:
+                # Monsters have chance to drop coins
             if random.random() < 0.15 and coins_manager:
                 coin_amount = random.randint(1, 2)
                 coins_manager.add_coins(coin_amount)
@@ -9631,12 +9742,12 @@ def draw_full_inventory_ui():
         #     recipe = CRAFTING_RECIPES[recipe_name]
         #     ...
             
-        # Craft button
-        craft_btn = pygame.Rect(output_x - 10, output_y + 60, 70, 30)
-        pygame.draw.rect(screen, (100, 255, 100), craft_btn)
-        pygame.draw.rect(screen, (255, 255, 255), craft_btn, 2)
-        craft_text = font.render("CRAFT", True, (0, 0, 0))
-        screen.blit(craft_text, (craft_btn.x + 10, craft_btn.y + 8))
+            # Craft button
+            craft_btn = pygame.Rect(output_x - 10, output_y + 60, 70, 30)
+            pygame.draw.rect(screen, (100, 255, 100), craft_btn)
+            pygame.draw.rect(screen, (255, 255, 255), craft_btn, 2)
+            craft_text = font.render("CRAFT", True, (0, 0, 0))
+            screen.blit(craft_text, (craft_btn.x + 10, craft_btn.y + 8))
         
         # Clear button
         clear_btn = pygame.Rect(crafting_x + 200, crafting_y + 100, 70, 30)
@@ -10652,7 +10763,7 @@ def handle_inventory_click(mouse_pos):
             print("🧹 Cleared crafting grid")
             return
         
-        # ENHANCED CRAFTING: Check crafting grid slots for drag-and-drop
+# ENHANCED CRAFTING: Check crafting grid slots for drag-and-drop
         for row in range(3):
             for col in range(3):
                 slot_x = inv_x + 500 + col * 60
@@ -10777,7 +10888,7 @@ def handle_backpack_click(mouse_pos):
         global show_all_recipes
         if draw_backpack_ui.view_all_button.collidepoint(mouse_pos):
             show_all_recipes = not show_all_recipes
-            return
+        return
     
     # Calculate backpack UI position
     backpack_width, backpack_height = 700, 600
@@ -11771,10 +11882,16 @@ def cleanup_distant_entities():
     player_y = player["y"]
     cleanup_distance = 100  # Remove entities 100+ blocks away
     
-    # Clean up far entities (except important ones like bosses)
+    # Clean up far entities (except important ones like bosses, cows, and tamed pigeons)
     entities_removed = 0
     for entity in entities[:]:
-        if entity["type"] in ["monster", "zombie", "slime"]:
+        # Don't remove cows or tamed pigeons
+        if entity["type"] == "mad_pigeon" and entity.get("tamed", False):
+            continue
+        if entity["type"] == "cow":
+            continue
+            
+        if entity["type"] in ["monster", "zombie", "slime", "mad_pigeon"]:
             dx = abs(entity["x"] - player_x)
             dy = abs(entity["y"] - player_y)
             distance = math.sqrt(dx*dx + dy*dy)
@@ -11835,10 +11952,21 @@ def update_monsters():
     # Spawn slimes randomly during both day and night (harmless until approached)
     spawn_slimes_randomly()
     
+    # Spawn cows randomly during day
+    if is_day:
+        spawn_cows_randomly()
+    
+    # Spawn mad pigeons on trees
+    spawn_pigeons_on_trees()
+    
     # Update monster movement and combat
     update_monster_movement_and_combat()
     # Update slime behavior
     update_slime_behavior()
+    # Update cow behavior
+    update_cow_behavior()
+    # Update pigeon behavior
+    update_pigeon_behavior()
 
 def cleanup_night_monsters():
     """Remove night-spawned monsters when it becomes day"""
@@ -12038,6 +12166,11 @@ slime_spawn_cooldown = 600  # 10 seconds at 60 FPS
 max_slimes = 100  # Maximum slimes in the world
 slime_aggro_distance = 3  # Distance at which slimes become aggressive
 
+# Cow spawning system
+cow_spawn_timer = 0
+cow_spawn_cooldown = 900  # 15 seconds at 60 FPS
+max_cows = 30  # Maximum cows in the world
+
 def spawn_slimes_randomly():
     """Spawn slimes randomly across the world (harmless until approached)"""
     global entities, slime_spawn_timer
@@ -12163,6 +12296,204 @@ def update_slime_behavior():
         # Update cooldown
         if slime["cooldown"] > 0:
             slime["cooldown"] -= 1
+
+# Cow spawning system
+cow_spawn_timer = 0
+cow_spawn_cooldown = 1200  # 20 seconds at 60 FPS
+max_cows = 20  # Maximum cows in the world
+
+def spawn_cows_randomly():
+    """Spawn peaceful cows in the world"""
+    global entities, cow_spawn_timer
+    
+    cow_spawn_timer += 1
+    
+    if cow_spawn_timer >= cow_spawn_cooldown:
+        cow_count = sum(1 for e in entities if e["type"] == "cow")
+        
+        if cow_count < max_cows and random.random() < 0.6:
+            # Spawn far from player
+            spawn_distance = random.uniform(15, 40)
+            spawn_angle = random.uniform(0, 2 * math.pi)
+            
+            spawn_x = player["x"] + math.cos(spawn_angle) * spawn_distance
+            spawn_y_surface = find_surface_level(int(spawn_x))
+            
+            if spawn_y_surface is not None:
+                entities.append({
+                    "type": "cow",
+                    "x": float(spawn_x),
+                    "y": float(spawn_y_surface),
+                    "hp": 5,
+                    "image": textures["cow"],
+                    "wander_target": None,
+                    "wander_cooldown": 0
+                })
+        
+        cow_spawn_timer = 0
+
+def update_cow_behavior():
+    """Update cow wandering behavior"""
+    for cow in entities[:]:
+        if cow["type"] != "cow":
+            continue
+        
+        # Simple wandering AI
+        if cow.get("wander_target") is None or cow.get("wander_cooldown", 0) <= 0:
+            # Pick new wander target
+            wander_distance = random.uniform(3, 8)
+            wander_angle = random.uniform(0, 2 * math.pi)
+            cow["wander_target"] = (
+                cow["x"] + math.cos(wander_angle) * wander_distance,
+                cow["y"] + math.sin(wander_angle) * wander_distance
+            )
+            cow["wander_cooldown"] = random.randint(120, 300)  # 2-5 seconds
+        
+        # Move towards wander target
+        if cow["wander_target"]:
+            target_x, target_y = cow["wander_target"]
+            dx = target_x - cow["x"]
+            dy = target_y - cow["y"]
+            dist = math.sqrt(dx*dx + dy*dy)
+            
+            if dist > 0.3:
+                speed = 0.02
+                cow["x"] += (dx / dist) * speed
+            else:
+                cow["wander_target"] = None
+        
+        # Update cooldown
+        if cow.get("wander_cooldown", 0) > 0:
+            cow["wander_cooldown"] -= 1
+
+# Mad Pigeon spawning system  
+pigeon_spawn_timer = 0
+pigeon_spawn_cooldown = 1800  # 30 seconds at 60 FPS
+max_pigeons = 15
+
+def spawn_pigeons_on_trees():
+    """Spawn mad pigeons on tree leaves"""
+    global entities, pigeon_spawn_timer
+    
+    pigeon_spawn_timer += 1
+    
+    if pigeon_spawn_timer >= pigeon_spawn_cooldown:
+        pigeon_count = sum(1 for e in entities if e["type"] == "mad_pigeon")
+        
+        if pigeon_count < max_pigeons and random.random() < 0.7:
+            # Find a tree (log block with leaves nearby)
+            search_range = 40
+            for attempt in range(20):  # Try 20 times to find a tree
+                search_x = int(player["x"] + random.uniform(-search_range, search_range))
+                
+                # Find surface and check for trees
+                for y in range(90, 130):
+                    block = get_block(search_x, y)
+                    if block == "leaves":
+                        # Found leaves! Spawn pigeon here
+                        entities.append({
+                            "type": "mad_pigeon",
+                            "x": float(search_x),
+                            "y": float(y),
+                            "hp": 4,
+                            "image": textures["mad_pigeon"],
+                            "aggressive": False,
+                            "tamed": False,
+                            "cooldown": 0,
+                            "fly_target": None,
+                            "perched": True  # Start perched on tree
+                        })
+                        print(f"🐦 Mad Pigeon spawned on tree at ({search_x}, {y})")
+                        break
+                else:
+                    continue
+                break
+        
+        pigeon_spawn_timer = 0
+
+def update_pigeon_behavior():
+    """Update mad pigeon AI - aggressive unless player holds steak"""
+    player_x = player["x"]
+    player_y = player["y"]
+    
+    # Check if player is holding steak
+    holding_steak = False
+    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
+        if player["inventory"][player["selected"]].get("type") == "steak":
+            holding_steak = True
+    
+    for pigeon in entities[:]:
+        if pigeon["type"] != "mad_pigeon":
+            continue
+        
+        # Calculate distance to player
+        dx = player_x - pigeon["x"]
+        dy = player_y - pigeon["y"]
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        # Don't process if tamed
+        if pigeon.get("tamed", False):
+            # Tamed pigeons follow player
+            if distance > 3:
+                speed = 0.05
+                pigeon["x"] += (dx / distance) * speed if distance > 0 else 0
+                pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
+            continue
+        
+        # Become aggressive if player gets close (unless holding steak)
+        if distance < 8:
+            if holding_steak:
+                pigeon["aggressive"] = False
+                # Fly towards player slowly when they have steak
+                if distance > 0.5:
+                    speed = 0.03
+                    pigeon["x"] += (dx / distance) * speed if distance > 0 else 0
+                    pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
+            else:
+                pigeon["aggressive"] = True
+                pigeon["perched"] = False
+        elif distance > 15:
+            pigeon["aggressive"] = False
+        
+        # Aggressive behavior
+        if pigeon.get("aggressive", False):
+            # Dive at player aggressively
+            if distance > 0.5:
+                speed = 0.08  # Fast dive speed
+                pigeon["x"] += (dx / distance) * speed if distance > 0 else 0
+                pigeon["y"] += (dy / distance) * speed if distance > 0 else 0
+            
+            # Peck player if very close
+            if pigeon["cooldown"] <= 0 and distance < 1.5:
+                player["health"] -= 2
+                pigeon["cooldown"] = 60
+                print(f"🐦 Mad Pigeon pecked you! Health: {player['health']}/10")
+        elif not pigeon.get("perched", False):
+            # Fly around randomly
+            if pigeon.get("fly_target") is None or random.random() < 0.02:
+                fly_distance = random.uniform(3, 8)
+                fly_angle = random.uniform(0, 2 * math.pi)
+                pigeon["fly_target"] = (
+                    pigeon["x"] + math.cos(fly_angle) * fly_distance,
+                    pigeon["y"] + math.sin(fly_angle) * fly_distance
+                )
+            
+            if pigeon["fly_target"]:
+                target_x, target_y = pigeon["fly_target"]
+                dx_fly = target_x - pigeon["x"]
+                dy_fly = target_y - pigeon["y"]
+                dist_fly = math.sqrt(dx_fly*dx_fly + dy_fly*dy_fly)
+                
+                if dist_fly > 0.5:
+                    speed = 0.04
+                    pigeon["x"] += (dx_fly / dist_fly) * speed if dist_fly > 0 else 0
+                    pigeon["y"] += (dy_fly / dist_fly) * speed if dist_fly > 0 else 0
+                else:
+                    pigeon["fly_target"] = None
+        
+        # Update cooldown
+        if pigeon["cooldown"] > 0:
+            pigeon["cooldown"] -= 1
 
 def update_monster_movement_and_combat():
     """Update monster movement and combat (separated for performance)"""
@@ -13777,15 +14108,15 @@ def save_game():
             print(f"💾 Saving to world system: '{world_system.current_world_name}'")
             
             # Prepare save data
-            save_data = {
-                "name": world_system.current_world_name,
-                "blocks": world_data.copy() if world_data else {},
-                "entities": entities.copy() if entities else [],
-                "player": player.copy() if player else {},
+        save_data = {
+            "name": world_system.current_world_name,
+            "blocks": world_data.copy() if world_data else {},
+            "entities": entities.copy() if entities else [],
+            "player": player.copy() if player else {},
                 "dropped_items": dropped_items.copy() if dropped_items else [],  # Save dropped items too
-                "world_settings": {
-                    "time": time.time(),
-                    "day": is_day,
+            "world_settings": {
+                "time": time.time(),
+                "day": is_day,
                     "weather": current_weather
                 },
                 "monster_data": {
@@ -13799,15 +14130,15 @@ def save_game():
             }
             
             # Update world system with current data
-            world_system.current_world_data = save_data
-            
+        world_system.current_world_data = save_data
+        
             # Save using world system
-            if world_system.save_world():
-                print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
-                print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
-                return True
-            else:
-                print("⚠️ World system save failed, trying fallback...")
+        if world_system.save_world():
+            print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
+            print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
+            return True
+        else:
+            print("⚠️ World system save failed, trying fallback...")
         
         # Fallback: Direct file save
         print("💾 Using fallback save system...")
@@ -13868,19 +14199,19 @@ def save_game_fallback():
         
         # Save with proper formatting and error handling
         try:
-            with open(world_file, 'w') as f:
+        with open(world_file, 'w') as f:
                 json.dump(save_data, f, indent=2, ensure_ascii=False, default=str)
-            
-            # Remove backup if save was successful
-            if os.path.exists(backup_file):
-                try:
-                    os.remove(backup_file)
-                except:
-                    pass
-            
-            print(f"✅ Fallback save successful: {world_name}")
+        
+        # Remove backup if save was successful
+        if os.path.exists(backup_file):
+            try:
+                os.remove(backup_file)
+            except:
+                pass
+        
+        print(f"✅ Fallback save successful: {world_name}")
             print(f"   📊 Saved: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities, {len(save_data.get('dropped_items', []))} items")
-            return True
+        return True
         except (TypeError, ValueError) as e:
             print(f"⚠️ JSON serialization error: {e}")
             # Try to restore from backup
@@ -14578,6 +14909,33 @@ while running:
                             print(f"🏪 Opening merchant shop at ({bx}, {by})")
                         else:
                             print(f"🏪 Merchant too far away: player at ({px}, {py}), merchant at ({bx}, {by})")
+                        continue
+                    
+                    # Check if clicking on a mad pigeon to tame it
+                    tamed_pigeon = False
+                    if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
+                        if player["inventory"][player["selected"]].get("type") == "steak":
+                            # Player has steak! Check for nearby pigeons
+                            for entity in entities:
+                                if entity["type"] == "mad_pigeon" and not entity.get("tamed", False):
+                                    pigeon_x = entity["x"]
+                                    pigeon_y = entity["y"]
+                                    pigeon_dist = math.sqrt((player["x"] - pigeon_x)**2 + (player["y"] - pigeon_y)**2)
+                                    
+                                    if pigeon_dist <= 2:  # Within 2 blocks
+                                        # Tame the pigeon!
+                                        entity["tamed"] = True
+                                        entity["aggressive"] = False
+                                        # Consume the steak
+                                        player["inventory"][player["selected"]]["count"] -= 1
+                                        if player["inventory"][player["selected"]]["count"] <= 0:
+                                            player["inventory"][player["selected"]] = None
+                                        show_message("🐦💚 Mad Pigeon tamed! It will follow you now!", 3000)
+                                        print(f"🐦 Tamed a Mad Pigeon with steak!")
+                                        tamed_pigeon = True
+                                        break
+                    
+                    if tamed_pigeon:
                         continue
                     
                     # Log interaction: right-click to convert to oak planks
