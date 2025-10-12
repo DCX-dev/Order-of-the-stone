@@ -3273,9 +3273,10 @@ player = {
         "leggings": None,
         "boots": None
     },
-            "facing_direction": 1,  # 1 = right, -1 = left
-        "last_x": 10,  # Initialize last position for movement detection
-        "last_y": 0,
+    "facing_direction": 1,  # 1 = right, -1 = left
+    "last_x": 10,  # Initialize last position for movement detection
+    "last_y": 0,
+    "log_carve_counts": {},  # Track how many times each log has been carved
     "spawn_x": 10,  # Bed spawn point
     "spawn_y": 0,   # Bed spawn point
     "has_bed_spawn": False,  # Whether player has set a bed spawn
@@ -8723,6 +8724,10 @@ def break_block(mx, my):
         # Verify removal
         if block_key in world_data:
             world_data.pop(block_key, None)
+        
+        # Clear carve count for this log (if it was being carved)
+        if "log_carve_counts" in player and block_key in player["log_carve_counts"]:
+            del player["log_carve_counts"][block_key]
         
         return True
     
@@ -15112,25 +15117,42 @@ while running:
                     if tamed_pigeon:
                         continue
                     
-                    # Log interaction: right-click to carve into oak planks
+                    # Log interaction: right-click to carve into oak planks (4 carves = 4 planks, then log disappears)
                     if block_at_pos == "log":
                         # Check if player is within range
                         px, py = int(player["x"]), int(player["y"])
                         if abs(bx - px) <= 2 and abs(by - py) <= 2:
-                            # Carve log into oak planks - drop as items
-                            drop_item("oak_planks", bx, by, 4)  # 1 log = 4 planks
+                            block_key = f"{bx},{by}"
+                            
+                            # Initialize or get carve count for this log
+                            if not hasattr(player, "log_carve_counts"):
+                                player["log_carve_counts"] = {}
+                            
+                            carve_count = player["log_carve_counts"].get(block_key, 0)
+                            carve_count += 1
+                            player["log_carve_counts"][block_key] = carve_count
+                            
+                            # Drop 1 oak plank
+                            drop_item("oak_planks", bx, by, 1)
                             
                             # Create carving particles
                             particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
                             particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-                            create_block_particles(particle_x, particle_y, "log", 12)
+                            create_block_particles(particle_x, particle_y, "log", 8)
                             
-                            # Remove block completely from world data (turns into air)
-                            if f"{bx},{by}" in world_data:
-                                del world_data[f"{bx},{by}"]
-                            
-                            show_message("🪵 Log carved into 4 Oak Planks!", 1500)
-                            print("🪵 Log carved into 4 oak planks!")
+                            # Check if log should disappear (carved 4 times)
+                            if carve_count >= 4:
+                                # Remove block completely from world data (turns into air)
+                                if block_key in world_data:
+                                    del world_data[block_key]
+                                # Clean up carve count
+                                if block_key in player["log_carve_counts"]:
+                                    del player["log_carve_counts"][block_key]
+                                show_message(f"🪵 Carved log 4/4 times - Log is gone!", 1500)
+                                print("🪵 Log fully carved and removed!")
+                            else:
+                                show_message(f"🪵 Carved log {carve_count}/4 times - Got 1 Oak Plank!", 1500)
+                                print(f"🪵 Carved log {carve_count}/4 times!")
                         continue
                     
                     # Try to place a block FIRST (this handles air placement)
