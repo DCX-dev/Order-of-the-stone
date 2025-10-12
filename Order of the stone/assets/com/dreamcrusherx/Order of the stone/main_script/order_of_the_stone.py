@@ -11740,7 +11740,7 @@ def update_player():
 
 def load_world_data():
     """Load world data from the world system into the game"""
-    global world_data, entities, player
+    global world_data, entities, player, dropped_items
     
     if not world_system.current_world_data:
         print("⚠️ No world data available to load")
@@ -11750,6 +11750,7 @@ def load_world_data():
         # Load world data
         world_data = world_system.current_world_data.get("blocks", {})
         entities = world_system.current_world_data.get("entities", [])
+        dropped_items = world_system.current_world_data.get("dropped_items", [])
         villages = world_system.current_world_data.get("villages", [])
         
         # Load player data with validation
@@ -13883,15 +13884,16 @@ def save_game():
             print(f"💾 Saving to world system: '{world_system.current_world_name}'")
             
             # Prepare save data
-        save_data = {
-            "name": world_system.current_world_name,
-            "blocks": world_data.copy() if world_data else {},
-            "entities": entities.copy() if entities else [],
-            "player": player.copy() if player else {},
-            "world_settings": {
-                "time": time.time(),
-                "day": is_day,
-                "weather": "clear"
+            save_data = {
+                "name": world_system.current_world_name,
+                "blocks": world_data.copy() if world_data else {},
+                "entities": entities.copy() if entities else [],
+                "player": player.copy() if player else {},
+                "dropped_items": dropped_items.copy() if dropped_items else [],  # Save dropped items too
+                "world_settings": {
+                    "time": time.time(),
+                    "day": is_day,
+                    "weather": current_weather
                 },
                 "monster_data": {
                     "total_monsters_killed": total_monsters_killed
@@ -13904,15 +13906,15 @@ def save_game():
             }
             
             # Update world system with current data
-        world_system.current_world_data = save_data
-        
+            world_system.current_world_data = save_data
+            
             # Save using world system
-        if world_system.save_world():
-            print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
-            print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
-            return True
-        else:
-            print("⚠️ World system save failed, trying fallback...")
+            if world_system.save_world():
+                print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
+                print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
+                return True
+            else:
+                print("⚠️ World system save failed, trying fallback...")
         
         # Fallback: Direct file save
         print("💾 Using fallback save system...")
@@ -13944,10 +13946,11 @@ def save_game_fallback():
             "blocks": world_data.copy() if world_data else {},
             "entities": entities.copy() if entities else [],
             "player": player.copy() if player else {},
+            "dropped_items": dropped_items.copy() if dropped_items else [],
             "world_settings": {
                 "time": time.time(),
                 "day": is_day,
-                "weather": "clear"
+                "weather": current_weather
             },
             "monster_data": {
                 "total_monsters_killed": total_monsters_killed
