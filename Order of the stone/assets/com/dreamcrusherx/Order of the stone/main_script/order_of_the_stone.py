@@ -8907,9 +8907,8 @@ def throw_sword_at_target(target_x, target_y):
     sword_item = player["inventory"][player["selected"]].copy()
     original_slot = player["selected"]
     
-    # Remove sword from inventory temporarily
+    # Remove sword from inventory temporarily (DON'T normalize yet - it shifts items!)
     player["inventory"][player["selected"]] = None
-    normalize_inventory()
     
     # Create thrown sword projectile
     thrown_sword = {
@@ -9013,18 +9012,14 @@ def update_thrown_sword():
         distance = math.hypot(dx, dy)
         
         if distance < 0.5:  # Close enough to player
-            # Return sword to inventory
-            if sword["original_slot"] < len(player["inventory"]):
-                player["inventory"][sword["original_slot"]] = sword["sword_item"]
-            else:
-                # Add to first available slot
-                for i, slot in enumerate(player["inventory"]):
-                    if slot is None:
-                        player["inventory"][i] = sword["sword_item"]
-                        break
+            # Return sword to the SAME slot it was thrown from
+            while len(player["inventory"]) <= sword["original_slot"]:
+                player["inventory"].append(None)
             
-            normalize_inventory()
-            print(f"🗡️ {sword['sword_type']} returned to inventory!")
+            # Put sword back in original slot
+            player["inventory"][sword["original_slot"]] = sword["sword_item"]
+            
+            print(f"🗡️ {sword['sword_type']} returned to slot {sword['original_slot']}!")
             thrown_sword = None
         else:
             # Move towards player
