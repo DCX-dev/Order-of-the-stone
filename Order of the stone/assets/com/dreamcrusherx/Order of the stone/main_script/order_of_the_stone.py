@@ -5197,6 +5197,41 @@ def join_multiplayer_server(server_ip, server_port):
         print(f"❌ Multiplayer connection error: {e}")
         return False
 
+def reset_game_state_to_title():
+    """Reset all game state when returning to title screen"""
+    global entities, dropped_items, is_day, night_overlay_alpha, night_monsters_spawned
+    global chest_open, backpack_open, map_open, merchant_shop_open, thrown_sword
+    global boss_fight_active, final_boss_active, game_paused
+    
+    print("🔄 Resetting game state for title screen...")
+    
+    # Clear all entities and items
+    entities.clear()
+    dropped_items.clear()
+    
+    # Reset to daytime
+    is_day = True
+    night_overlay_alpha = 0
+    night_monsters_spawned = False
+    
+    # Close all UIs
+    chest_open = False
+    backpack_open = False
+    map_open = False
+    merchant_shop_open = False
+    
+    # Clear thrown sword
+    thrown_sword = None
+    
+    # Reset boss states
+    boss_fight_active = False
+    final_boss_active = False
+    
+    # Unpause
+    game_paused = False
+    
+    print("✅ Game state reset to clean title screen")
+
 def create_world_with_name(name_input):
     """Create a new world with the given name"""
     global game_state, world_name_input, world_name_cursor_pos
@@ -7512,6 +7547,7 @@ def show_death_screen():
                 elif title_btn.collidepoint(pygame.mouse.get_pos()):
                     # CRITICAL: Escape option to return to title screen
                     print("🏠 Player chose to return to title screen from death")
+                    reset_game_state_to_title()  # Reset everything before returning
                     game_state = GameState.TITLE
                     update_pause_state()  # Pause time when returning to title
                     return  # Exit the death screen function completely
@@ -15491,6 +15527,7 @@ while running:
                         show_message("❌ Failed to save game!")
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
+                    reset_game_state_to_title()  # Reset everything before returning
                     game_state = GameState.TITLE
                     update_pause_state()  # Pause time when returning to title
             elif game_state == GameState.USERNAME_CREATE:
