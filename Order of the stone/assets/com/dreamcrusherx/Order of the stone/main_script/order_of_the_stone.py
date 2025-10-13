@@ -9404,6 +9404,11 @@ def attack_monsters(mx, my):
     for mob in entities[:]:
         if mob["type"] in ["monster", "zombie", "slime", "cow", "mad_pigeon"]:
             mob_x, mob_y = mob["x"], mob["y"]
+            # Check if monster is within 2 blocks of PLAYER (not just click)
+            distance_to_player = math.hypot(mob_x - px, mob_y - py)
+            if distance_to_player > 2.5:  # More than 2 blocks away from player
+                continue  # Skip this monster, too far
+            
             click_distance = math.hypot(target_x - mob_x, target_y - mob_y)
             if click_distance < closest_distance:
                 closest_distance = click_distance
@@ -9413,8 +9418,8 @@ def attack_monsters(mx, my):
         return
     
     # SWORD THROWING REMOVED - Only close-range combat now
-    # Check if monster is within close combat range
-    if distance <= sword_slash_range * 1.5:  # Slightly increased range for usability
+    # Check if monster is within close combat range (and within 2 blocks of player)
+    if distance <= sword_slash_range * 2:  # Increased range for easier combat
         # Close combat - slash animation
         slash_sword_at_target(target_x, target_y)
         # Deal damage immediately for close combat
@@ -12465,6 +12470,11 @@ def update_slime_behavior():
         elif distance > slime_aggro_distance * 2:
             slime["aggressive"] = False
         
+        # Track fall start for fall damage
+        if not slime.get("on_ground", False):
+            if "fall_start_y" not in slime:
+                slime["fall_start_y"] = slime["y"]
+        
         # Apply gravity (always falling unless on ground)
         if not slime.get("on_ground", False):
             slime["vel_y"] = slime.get("vel_y", 0) + gravity
@@ -12480,6 +12490,21 @@ def update_slime_behavior():
             slime["on_ground"] = True
             slime["vel_y"] = 0
             slime["y"] = float(slime_block_y)  # Snap to ground
+            
+            # Apply fall damage if fell from high enough
+            if "fall_start_y" in slime:
+                fall_distance = slime["fall_start_y"] - slime["y"]
+                if fall_distance > 4:  # Same threshold as player
+                    fall_damage = int(fall_distance - 3)  # 1 damage per block over 4
+                    slime["hp"] = slime.get("hp", 3) - fall_damage
+                    print(f"🟢 Slime took {fall_damage} fall damage! HP: {slime['hp']}/3")
+                    
+                    if slime["hp"] <= 0:
+                        entities.remove(slime)
+                        print("🟢 Slime died from fall damage!")
+                        continue
+                
+                del slime["fall_start_y"]
             
             # Squish effect on landing
             if slime.get("vel_y", 0) > 0.1:
@@ -13007,6 +13032,11 @@ def update_monster_movement_and_combat():
             if "on_ground" not in mob:
                 mob["on_ground"] = False
             
+            # Track fall start for fall damage
+            if not mob.get("on_ground", False):
+                if "fall_start_y" not in mob:
+                    mob["fall_start_y"] = mob["y"]
+            
             # Apply gravity
             mob["vel_y"] += 0.02  # Gravity
             mob["y"] += mob["vel_y"]
@@ -13021,6 +13051,21 @@ def update_monster_movement_and_combat():
                 mob["y"] = float(mob_y)
                 mob["vel_y"] = 0
                 mob["on_ground"] = True
+                
+                # Apply fall damage
+                if "fall_start_y" in mob:
+                    fall_distance = mob["fall_start_y"] - mob["y"]
+                    if fall_distance > 4:  # Same threshold as player
+                        fall_damage = int(fall_distance - 3)  # 1 damage per block over 4
+                        mob["hp"] = mob.get("hp", 10) - fall_damage
+                        print(f"🧟 Zombie took {fall_damage} fall damage! HP: {mob['hp']}/10")
+                        
+                        if mob["hp"] <= 0:
+                            entities.remove(mob)
+                            print("🧟 Zombie died from fall damage!")
+                            continue
+                    
+                    del mob["fall_start_y"]
             else:
                 mob["on_ground"] = False
             
