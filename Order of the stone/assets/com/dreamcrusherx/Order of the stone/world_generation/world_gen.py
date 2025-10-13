@@ -54,9 +54,6 @@ class WorldGenerator:
         print("⛏️ Adding ores...")
         self._generate_simple_ores(world_data["blocks"], world_width)
         
-        print("📦 Adding chests...")
-        self._generate_simple_chests(world_data["blocks"], world_width)
-        
         # Find spawn location
         spawn_x, spawn_y = self._find_spawn_location(world_data["blocks"], world_width)
         world_data["spawn_x"] = spawn_x
@@ -149,7 +146,7 @@ class WorldGenerator:
                     for dx in range(-1, 2):
                         for dy in range(-1, 3):
                             check_x, check_y = tree_x + dx, surface_y + dy
-                            if f"{check_x},{check_y}" in blocks and blocks[f"{check_x},{check_y}"] in ["log", "leaves", "red_brick", "stone", "chest", "door"]:
+                            if f"{check_x},{check_y}" in blocks and blocks[f"{check_x},{check_y}"] in ["log", "leaves", "red_brick", "stone", "door"]:
                                 area_clear = False
                                 break
                         if not area_clear:
@@ -225,13 +222,6 @@ class WorldGenerator:
                     blocks[f"{x - 3},{surface_y + 3}"] = "door"
                 if self.rng.random() < 0.5:
                     blocks[f"{x + 3},{surface_y + 3}"] = "door"
-                
-                # Multiple chests
-                for _ in range(self.rng.randint(2, 4)):  # 2-4 chests
-                    chest_x = x + self.rng.randint(-5, 6)
-                    chest_y = surface_y + 1
-                    if f"{chest_x},{chest_y}" not in blocks:
-                        blocks[f"{chest_x},{chest_y}"] = "chest"
                 
                 # Add some decorative elements
                 if self.rng.random() < 0.6:
@@ -316,38 +306,6 @@ class WorldGenerator:
         surface_y = max(100, min(125, surface_y))
         
         return x, surface_y - 2  # Spawn 2 blocks above surface
-
-    def _generate_simple_chests(self, blocks: Dict[str, str], world_width: int):
-        """Generate standalone chests scattered around the world - 4000+ chests total"""
-        chest_count = 0
-        
-        # Generate chests with 5% chance per block - uncommon but visible
-        for x in range(-world_width//2, world_width//2):
-            if self.rng.random() < 0.05:  # 5% chance for chest per block - uncommon but visible
-                # Find surface height using same calculation as terrain
-                import math
-                base_height = 115
-                primary_wave = 6 * math.sin(x * 0.05)
-                secondary_wave = 3 * math.sin(x * 0.15)
-                tertiary_wave = 2 * math.sin(x * 0.3)
-                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-                surface_y = base_height + height_variation
-                surface_y = max(100, min(125, surface_y))
-                
-                # Place chest ABOVE the surface (on top of grass)
-                chest_y = surface_y - 1  # Above surface level, on top of grass
-                
-                # Only place if location is clear and on grass
-                block_key = f"{x},{chest_y}"
-                if block_key not in blocks:
-                    # Check if this would be on grass (grass is placed at surface_y)
-                    blocks[block_key] = "chest"
-                    chest_count += 1
-                    print(f"📦 WorldGen: Chest placed at ({x}, {chest_y})")
-                else:
-                    print(f"❌ WorldGen: Cannot place chest at ({x}, {chest_y}) - block already exists")
-        
-        print(f"📦 Generated {chest_count} standalone chests (5% chance per block)")
 
 def generate_world(seed: str = None, world_width: int = 400) -> Dict:
     """
