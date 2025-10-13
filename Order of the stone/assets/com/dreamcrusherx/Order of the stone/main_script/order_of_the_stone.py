@@ -2883,7 +2883,6 @@ textures = {
     "cooked_fish": load_texture(os.path.join(ITEM_DIR, "cooked_fish.png")),
     "steak": load_texture(os.path.join(ITEM_DIR, "steak.png")),
     "honey_jar": load_texture(os.path.join(ITEM_DIR, "honey_jar.png")),
-    "wheat": load_texture(os.path.join(TILE_DIR, "carrot.gif")),  # Using carrot as wheat for now
     "stick": load_texture(os.path.join(TILE_DIR, "log.png")),  # Using log as stick for now
     
     # Potions (flipped upside down)
@@ -2930,6 +2929,22 @@ except Exception:
 
 # --- Slime texture (procedurally generated) ---
 textures["slime"] = make_slime_texture(TILE_SIZE)
+
+# --- Beef texture (tries file, falls back to steak texture) ---
+try:
+    textures["beef"] = load_texture(os.path.join(ITEM_DIR, "beef.png"))
+    print("✅ Loaded beef.png texture")
+except Exception:
+    textures["beef"] = textures["steak"]  # Fallback to steak texture
+    print("⚠️ Using steak texture as fallback for beef")
+
+# --- Wheat texture (tries file, falls back to carrot) ---
+try:
+    textures["wheat"] = load_texture(os.path.join(ITEM_DIR, "wheat.png"))
+    print("✅ Loaded wheat.png texture")
+except Exception:
+    textures["wheat"] = load_texture(os.path.join(TILE_DIR, "carrot.gif"))  # Fallback to carrot
+    print("⚠️ Using carrot texture as fallback for wheat")
 
 # --- Mad Pigeon texture (procedurally generated) ---
 textures["mad_pigeon"] = make_mad_pigeon_texture(TILE_SIZE)
@@ -3380,8 +3395,9 @@ FOOD_ITEMS = {
     "bread": {"hunger": 3, "health": 0, "rarity": 0.12},   # Common
     
     # NEW FOODS
+    "beef": {"hunger": 2, "health": 0, "rarity": 0.12},             # Raw beef (dropped by cows)
     "cooked_fish": {"hunger": 4, "health": 1, "rarity": 0.10},      # Grilled fish
-    "steak": {"hunger": 5, "health": 2, "rarity": 0.08},            # Cooked beef
+    "steak": {"hunger": 5, "health": 2, "rarity": 0.08},            # Cooked beef (craft from beef + coal)
     "honey_jar": {"hunger": 2, "health": 3, "rarity": 0.06}         # Sweet honey (best healing!)
 }
 
@@ -3458,7 +3474,7 @@ CRAFTING_RECIPES = {
     "steak": {
         "materials": {"coal": 1, "beef": 1},
         "output_count": 1,
-        "description": "Cooked meat - restores 3 hearts"
+        "description": "Cook beef into steak - restores 3 hearts"
     }
 }
 
@@ -9333,10 +9349,10 @@ def attack_monsters(mx, my):
             mob_y = closest_monster["y"]
             
             if closest_monster["type"] == "cow":
-                # Cows drop 1-3 steak
-                steak_count = random.randint(1, 3)
-                drop_item("steak", mob_x, mob_y, steak_count)
-                show_message(f"🥩 Cow dropped {steak_count} steak!", 2000)
+                # Cows drop 1-3 raw beef (must be cooked into steak)
+                beef_count = random.randint(1, 3)
+                drop_item("beef", mob_x, mob_y, beef_count)
+                show_message(f"🥩 Cow dropped {beef_count} raw beef!", 2000)
             elif closest_monster["type"] == "mad_pigeon":
                 # Pigeons drop 1-2 cooked fish (bird meat)
                 fish_count = random.randint(1, 2)
@@ -15685,8 +15701,10 @@ while running:
             mouse_pos = event.pos
         
         elif event.type == pygame.MOUSEWHEEL:
-            # Mouse wheel scrolling removed - now using View All button instead
-            pass
+            # Handle scrolling in about page
+            if game_state == GameState.ABOUT:
+                modern_ui.handle_about_scroll(event.y)
+            # Mouse wheel scrolling for backpack removed - using View All button instead
         
         # EXTREME ENGINEERING: Handle multiplayer chat input
         if multiplayer_mode:
