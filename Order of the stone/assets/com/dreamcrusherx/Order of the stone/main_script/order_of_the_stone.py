@@ -8949,9 +8949,9 @@ def break_block(mx, my):
         # Drop block as an item instead of adding to inventory
         drop_item(block, bx, by, 1)
         
-        # Remove torch from light sources if it's a torch (disabled - lighting system off)
-        # if block == "torch":
-        #     remove_torch(bx, by)
+        # Remove torch from light sources if it's a torch
+        if block == "torch":
+            remove_torch(bx, by)
         
         # Create block breaking particles
         particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
@@ -9018,7 +9018,7 @@ def place_block(mx, my):
         print(f"📦 Placed EMPTY chest at ({bx}, {by}) - player chests start empty!")
     elif item_type == "torch":
         set_block(bx, by, "torch")
-        # add_torch(bx, by)  # Lighting system disabled
+        add_torch(bx, by)  # Lighting system enabled
         print(f"🔥 Placed torch at ({bx}, {by})!")
     else:
         set_block(bx, by, item_type)
@@ -12018,6 +12018,22 @@ def load_world_data():
                 generated_terrain_columns.add(x)
             except (ValueError, TypeError):
                 continue  # Skip invalid keys
+        
+        # Initialize torch light sources from loaded world
+        global light_sources
+        light_sources.clear()
+        torch_count = 0
+        for block_key, block_type in world_data.items():
+            if block_type == "torch":
+                try:
+                    x, y = block_key.split(',')
+                    x, y = int(x), int(y)
+                    light_sources.append((x, y))
+                    torch_count += 1
+                except (ValueError, TypeError):
+                    continue
+        if torch_count > 0:
+            print(f"🔥 Initialized {torch_count} torch light sources")
         
         print(f"🌍 World data loaded: {len(world_data)} blocks, {len(entities)} entities")
         print(f"👤 Player loaded: health={player['health']}, hunger={player['hunger']}")
