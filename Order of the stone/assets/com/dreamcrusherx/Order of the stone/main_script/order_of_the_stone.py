@@ -3391,11 +3391,26 @@ FOOD_ITEMS = {
 
 # Crafting recipes - {result: {materials: {item: count}, output_count: num}}
 CRAFTING_RECIPES = {
+    # Building Materials
+    "oak_planks": {
+        "materials": {"log": 1},
+        "output_count": 4,
+        "description": "Building material from logs"
+    },
+    "red_brick": {
+        "materials": {"stone": 2, "coal": 1},
+        "output_count": 4,
+        "description": "Decorative building block"
+    },
+    
+    # Tools
     "pickaxe": {
         "materials": {"oak_planks": 2},
         "output_count": 1,
-        "description": "Basic tool for mining"
+        "description": "Basic tool for mining stone and ores"
     },
+    
+    # Weapons
     "sword": {
         "materials": {"oak_planks": 3},
         "output_count": 1,
@@ -3406,20 +3421,22 @@ CRAFTING_RECIPES = {
         "output_count": 1,
         "description": "Stronger stone sword"
     },
+    
+    # Furniture & Utility
     "chest": {
         "materials": {"oak_planks": 4},
         "output_count": 1,
-        "description": "Storage container"
+        "description": "Storage container - stores items"
     },
     "door": {
         "materials": {"oak_planks": 10},
         "output_count": 1,
-        "description": "Wooden door"
+        "description": "Wooden door for buildings"
     },
     "bed": {
         "materials": {"oak_planks": 3, "leaves": 2},
         "output_count": 1,
-        "description": "Sleep through the night"
+        "description": "Sleep through the night & set spawn"
     },
     "ladder": {
         "materials": {"oak_planks": 5},
@@ -3429,22 +3446,19 @@ CRAFTING_RECIPES = {
     "torch": {
         "materials": {"coal": 1, "oak_planks": 1},
         "output_count": 4,
-        "description": "Light source"
+        "description": "Light source (4 torches per craft)"
     },
-    "oak_planks": {
-        "materials": {"log": 1},
-        "output_count": 4,
-        "description": "Building material"
-    },
+    
+    # Food
     "bread": {
         "materials": {"wheat": 3},
         "output_count": 1,
-        "description": "Basic food"
+        "description": "Restores 2 hearts"
     },
-    "red_brick": {
-        "materials": {"stone": 2, "coal": 1},
-        "output_count": 4,
-        "description": "Decorative building block"
+    "steak": {
+        "materials": {"coal": 1, "beef": 1},
+        "output_count": 1,
+        "description": "Cooked meat - restores 3 hearts"
     }
 }
 
@@ -15235,28 +15249,7 @@ while running:
                     if tamed_pigeon:
                         continue
                     
-                    # Log interaction: right-click to carve into oak planks (1 carve = 4 planks, log disappears)
-                    if block_at_pos == "log":
-                        # Check if player is within range
-                        px, py = int(player["x"]), int(player["y"])
-                        if abs(bx - px) <= 2 and abs(by - py) <= 2:
-                            block_key = f"{bx},{by}"
-                            
-                            # Drop 4 oak planks at once
-                            drop_item("oak_planks", bx, by, 4)
-                            
-                            # Create carving particles
-                            particle_x = (bx * TILE_SIZE) - camera_x + TILE_SIZE // 2
-                            particle_y = (by * TILE_SIZE) - camera_y + TILE_SIZE // 2
-                            create_block_particles(particle_x, particle_y, "log", 12)
-                            
-                            # Remove log completely from world data (turns into air)
-                            if block_key in world_data:
-                                del world_data[block_key]
-                            
-                            show_message("🪵 Log carved into 4 Oak Planks!", 1500)
-                            print("🪵 Log carved into 4 oak planks!")
-                        continue
+                    # Log carving removed - must craft oak planks from logs in backpack
                     
                     # Try to place a block FIRST (this handles air placement)
                     if place_block(mx, my):
