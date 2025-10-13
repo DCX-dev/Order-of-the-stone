@@ -14251,9 +14251,74 @@ def draw_credits_screen():
         screen.blit(continue_text, continue_rect)
 
 # --- World Selection Screen Drawing Function ---
+def import_world_from_file():
+    """Import a world JSON file from the file system"""
+    try:
+        # Try to use tkinter file dialog
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            
+            # Create hidden root window
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            
+            # Open file dialog
+            file_path = filedialog.askopenfilename(
+                title="Select World JSON File",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+                initialdir=os.path.expanduser("~")
+            )
+            
+            root.destroy()
+            
+            if not file_path:
+                print("❌ No file selected")
+                return False
+                
+        except ImportError:
+            print("⚠️ tkinter not available, using input prompt")
+            print("📁 Enter the full path to the world JSON file:")
+            file_path = input().strip()
+            
+            if not file_path or not os.path.exists(file_path):
+                print("❌ Invalid file path")
+                return False
+        
+        # Read the JSON file
+        import json
+        with open(file_path, 'r') as f:
+            world_data_import = json.load(f)
+        
+        # Get world name from JSON or filename
+        world_name = world_data_import.get("name", os.path.splitext(os.path.basename(file_path))[0])
+        
+        # Copy to save_data/worlds directory
+        import shutil
+        worlds_dir = os.path.join("save_data", "worlds")
+        os.makedirs(worlds_dir, exist_ok=True)
+        
+        dest_path = os.path.join(worlds_dir, f"{world_name}.json")
+        shutil.copy2(file_path, dest_path)
+        
+        # Refresh world list
+        world_ui.refresh_world_selection()
+        
+        print(f"✅ World imported successfully: {world_name}")
+        show_message(f"World '{world_name}' imported successfully!", 3000)
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to import world: {e}")
+        import traceback
+        traceback.print_exc()
+        show_message("Failed to import world!", 2000)
+        return False
+
 def draw_world_selection_screen():
     """EXTREME ENGINEERING: Draw the world selection screen with username validation"""
-    global world_play_btn, world_delete_btn, world_create_btn, world_back_btn
+    global world_play_btn, world_delete_btn, world_create_btn, world_back_btn, world_import_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14268,6 +14333,7 @@ def draw_world_selection_screen():
     world_play_btn = button_states.get("play_world")
     world_delete_btn = button_states.get("delete_world")
     world_create_btn = button_states.get("create_world")
+    world_import_btn = button_states.get("import_world")
     world_back_btn = button_states.get("back")
 
 # --- World Naming Screen Drawing Function ---
@@ -15571,6 +15637,7 @@ while running:
                     "play_world": world_play_btn,
                     "delete_world": world_delete_btn,
                     "create_world": world_create_btn,
+                    "import_world": world_import_btn,
                     "back": world_back_btn
                 }
                 
@@ -15643,6 +15710,10 @@ while running:
                         game_state = GameState.WORLD_NAMING
                         update_pause_state()  # Pause time when entering world naming
                         print("🌍 Opening world naming screen!")
+                elif action == "import_world":
+                    print("📥 Import World button clicked!")
+                    # Open file dialog to import world
+                    import_world_from_file()
                 elif action == "back":
                     print("⬅️ Back button clicked!")
                     game_state = GameState.TITLE
