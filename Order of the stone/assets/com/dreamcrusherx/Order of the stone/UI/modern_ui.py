@@ -18,6 +18,9 @@ class ModernUI:
         self.title_font = title_font
         self.big_font = big_font
         
+        # Scrolling state for about page
+        self.about_scroll_offset = 0
+        
         # Modern color scheme
         self.colors = {
             "background": (15, 15, 35),
@@ -369,7 +372,7 @@ class ModernUI:
         return {"back": back_btn}
 
     def draw_about_screen(self, mouse_pos: tuple) -> Dict[str, pygame.Rect]:
-        """Draw beautiful about screen"""
+        """Draw beautiful about screen with mouse wheel scrolling"""
         # Enhanced background
         self.draw_gradient_background()
         self.draw_decorative_elements()
@@ -383,7 +386,9 @@ class ModernUI:
         self.screen.blit(glow_surface, (title_x + 2, 52))
         self.screen.blit(title, (title_x, 50))
         
-        # About text
+        # About text with scroll offset
+        y_start = 120 - self.about_scroll_offset
+        
         about_texts = [
             "Order of the Stone",
             "A 2D Minecraft-inspired adventure game",
@@ -395,55 +400,82 @@ class ModernUI:
             "• Beautiful modern UI"
         ]
         
-        y_start = 120
         for i, text in enumerate(about_texts):
-            if text.startswith("•"):
-                color = self.colors["accent"]
-            elif text in ["Features:", "Order of the Stone"]:
-                color = self.colors["text"]
-            else:
-                color = self.colors["text_secondary"]
-            
-            text_surface = self.font.render(text, True, color)
-            self.screen.blit(text_surface, (50, y_start + i * 25))
+            y_pos = y_start + i * 25
+            # Only draw if visible on screen
+            if 100 < y_pos < 520:
+                if text.startswith("•"):
+                    color = self.colors["accent"]
+                elif text in ["Features:", "Order of the Stone"]:
+                    color = self.colors["text"]
+                else:
+                    color = self.colors["text_secondary"]
+                
+                text_surface = self.font.render(text, True, color)
+                self.screen.blit(text_surface, (50, y_pos))
         
         # Crafting Recipes Section
         recipes_y = y_start + len(about_texts) * 25 + 20
         recipes_title = self.font.render("🔨 Crafting Recipes:", True, self.colors["accent"])
-        self.screen.blit(recipes_title, (50, recipes_y))
+        if 100 < recipes_y < 520:
+            self.screen.blit(recipes_title, (50, recipes_y))
         
-        # Display all recipes in compact format
+        # Display ALL crafting recipes
         recipes = [
-            "2 Oak Planks → Pickaxe",
-            "3 Oak Planks → Sword",
-            "3 Stone + 1 Oak Plank → Stone Sword",
-            "4 Oak Planks → Chest",
-            "10 Oak Planks → Door",
-            "3 Oak Planks + 2 Leaves → Bed",
-            "5 Oak Planks → 3 Ladders",
-            "1 Coal + 1 Oak Plank → 4 Torches",
-            "1 Log → 4 Oak Planks",
-            "3 Wheat → Bread",
-            "2 Stone + 1 Coal → 4 Red Bricks"
+            "📦 BUILDING MATERIALS:",
+            "  1 Log → 4 Oak Planks",
+            "  2 Stone + 1 Coal → 4 Red Bricks",
+            "",
+            "⛏️ TOOLS:",
+            "  2 Oak Planks → Pickaxe",
+            "",
+            "⚔️ WEAPONS:",
+            "  3 Oak Planks → Sword",
+            "  3 Stone + 1 Oak Plank → Stone Sword",
+            "",
+            "🏠 FURNITURE & UTILITY:",
+            "  4 Oak Planks → Chest",
+            "  10 Oak Planks → Door",
+            "  3 Oak Planks + 2 Leaves → Bed",
+            "  5 Oak Planks → 3 Ladders",
+            "  1 Coal + 1 Oak Plank → 4 Torches",
+            "",
+            "🍞 FOOD:",
+            "  3 Wheat → Bread",
+            "  1 Coal + 1 Beef → Steak (cook raw beef)"
         ]
         
         recipe_y = recipes_y + 30
         for i, recipe in enumerate(recipes):
-            # Split into two columns for space
-            if i < 6:
-                x_pos = 50
-                y_pos = recipe_y + i * 22
-            else:
-                x_pos = 420
-                y_pos = recipe_y + (i - 6) * 22
-            
-            recipe_text = self.small_font.render(recipe, True, self.colors["text_secondary"])
-            self.screen.blit(recipe_text, (x_pos, y_pos))
+            y_pos = recipe_y + i * 20
+            # Only draw if visible on screen
+            if 100 < y_pos < 520:
+                if recipe.strip() == "":
+                    continue  # Skip blank lines
+                    
+                # Color coding
+                if recipe.startswith("📦") or recipe.startswith("⛏️") or recipe.startswith("⚔️") or recipe.startswith("🏠") or recipe.startswith("🍞"):
+                    color = self.colors["accent"]  # Category headers
+                else:
+                    color = self.colors["text_secondary"]  # Recipe entries
+                
+                recipe_text = self.small_font.render(recipe, True, color)
+                self.screen.blit(recipe_text, (50, y_pos))
+        
+        # Scroll hint
+        scroll_hint = self.small_font.render("🖱️ Use mouse wheel to scroll", True, self.colors["text_dim"])
+        self.screen.blit(scroll_hint, (self.screen.get_width() - scroll_hint.get_width() - 20, 105))
         
         # Back button
         back_btn = self.draw_modern_button("⬅️ Back to Title", 540, mouse_pos, self.colors["button"])
         
         return {"back": back_btn}
+    
+    def handle_about_scroll(self, scroll_amount: int):
+        """Handle scrolling in about page"""
+        self.about_scroll_offset -= scroll_amount * 30  # 30 pixels per scroll
+        # Clamp scroll offset
+        self.about_scroll_offset = max(0, min(400, self.about_scroll_offset))  # Max 400px scroll
 
     def draw_options_screen(self, mouse_pos: tuple, fullscreen: bool = False, fps_limit: int = 60) -> Dict[str, pygame.Rect]:
         """Draw beautiful options screen"""
