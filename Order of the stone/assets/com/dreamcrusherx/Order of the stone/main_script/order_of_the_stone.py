@@ -2398,7 +2398,7 @@ def damage_player_from_lightning():
     
     # Damage player for 3 hearts
     player["health"] = max(0, player["health"] - 3)
-    show_message("⚡ LIGHTNING STRUCK NEARBY! -3 hearts!", 3000)
+    show_message("LIGHTNING STRUCK NEARBY! -3 hearts!", 3000)
     print(f"⚡ Lightning struck near player! Health: {player['health']}/10")
     
     # Check if player died
@@ -3576,7 +3576,7 @@ def craft_item(recipe_name):
     # Verify player has materials
     for material, count in recipe["materials"].items():
         if selected_crafting_materials.get(material, 0) < count:
-            show_message(f"❌ Not enough {material}!", 2000)
+            show_message(f" Not enough {material}!", 2000)
             return False
     
     # Consume materials
@@ -3592,7 +3592,7 @@ def craft_item(recipe_name):
     output_count = recipe.get("output_count", 1)
     add_to_inventory(recipe_name, output_count)
     
-    show_message(f"✅ Crafted {output_count}x {recipe_name.replace('_', ' ').title()}!", 2000)
+    show_message(f" Crafted {output_count}x {recipe_name.replace('_', ' ').title()}!", 2000)
     print(f"🔨 Crafted {output_count}x {recipe_name}")
     
     crafting_result = None
@@ -3627,7 +3627,7 @@ def eat_food(food_type):
     
     # Check if player needs food (not already full)
     if player["hunger"] >= 10 and player["health"] >= 10:
-        show_message(f"🍖 Already full! Can't eat {food_type.replace('_', ' ').title()}.", 1500)
+        show_message(f" Already full! Can't eat {food_type.replace('_', ' ').title()}.", 1500)
         print(f"🍖 Can't eat {food_type} - hunger and health are already full")
         return False
     
@@ -3650,7 +3650,7 @@ def eat_food(food_type):
         message_parts.append(f"+{health_gained} Health")
     
     if message_parts:
-        show_message(f"🍖 Ate {food_name}: {', '.join(message_parts)}!", 2000)
+        show_message(f" Ate {food_name}: {', '.join(message_parts)}!", 2000)
         print(f"🍖 Ate {food_name}: Hunger {old_hunger} → {player['hunger']}, Health {old_health} → {player['health']}")
     
         return True
@@ -4082,7 +4082,7 @@ def interact_with_villager(villager):
     # Cycle through dialogue
     dialogue = villager["dialogue"][villager["current_dialogue"]]
     job_name = villager.get("job", "Villager")
-    show_message(f"👤 {job_name}: {dialogue}", 3000)
+    show_message(f" {job_name}: {dialogue}", 3000)
     print(f"👤 {job_name} says: {dialogue}")
     
     # Move to next dialogue
@@ -5244,14 +5244,14 @@ def start_multiplayer_server(world_name):
         multiplayer_server = MultiplayerServer()
         if multiplayer_server.start_server("My Server", world_name, 5555):
             is_hosting = True
-            show_message(f"🌐 Server started! Others can join at {multiplayer_server.host}:{multiplayer_server.port}")
+            show_message(f" Server started! Others can join at {multiplayer_server.host}:{multiplayer_server.port}")
             print(f"🌐 Multiplayer server started: {multiplayer_server.server_name} hosting {world_name}")
             return True
         else:
-            show_message("❌ Failed to start server")
+            show_message(" Failed to start server")
             return False
     except Exception as e:
-        show_message(f"❌ Server error: {e}")
+        show_message(f" Server error: {e}")
         print(f"❌ Multiplayer server error: {e}")
         return False
 
@@ -5268,14 +5268,14 @@ def join_multiplayer_server(server_ip, server_port):
         
         if multiplayer_client.connect_to_server(server_ip, server_port, username):
             is_connected = True
-            show_message(f"🔗 Connected to {server_ip}:{server_port}")
+            show_message(f" Connected to {server_ip}:{server_port}")
             print(f"🔗 Connected to multiplayer server as {username}")
             return True
         else:
-            show_message("❌ Failed to connect to server")
+            show_message(" Failed to connect to server")
             return False
     except Exception as e:
-        show_message(f"❌ Connection failed: {e}")
+        show_message(f" Connection failed: {e}")
         print(f"❌ Multiplayer connection error: {e}")
         return False
 
@@ -5370,17 +5370,17 @@ def create_new_world_with_seed(seed_input):
     
     # Validate world name
     if not world_name_input or len(world_name_input) < 3:
-        show_message("❌ World name must be at least 3 characters!")
+        show_message(" World name must be at least 3 characters!")
         return
     
     # Generate a new world
-    show_message("🌍 Generating new world...")
+    show_message(" Generating new world...")
     if load_game():
         game_state = GameState.GAME
         update_pause_state()  # Resume time when entering game
-        show_message("✅ New world generated successfully!")
+        show_message(" New world generated successfully!")
     else:
-        show_message("❌ Failed to generate world!")
+        show_message(" Failed to generate world!")
     
     # Reset inputs
     world_name_input = ""
@@ -6157,14 +6157,14 @@ def handle_boss_room_choice(choice):
     
     if choice == 0:  # Yes, enter
         if check_player_armor():
-            show_message("🛡️ Great! You're well prepared. Entering boss room...", 2000)
+            show_message(" Great! You're well prepared. Entering boss room...", 2000)
         else:
-            show_message("⚠️ You're entering without armor! Good luck...", 2000)
+            show_message(" You're entering without armor! Good luck...", 2000)
         
         # Start the boss fight
         start_boss_fight()
     else:  # No, get armor first
-        show_message("💡 Good idea! Find some armor before challenging the boss.", 3000)
+        show_message(" Good idea! Find some armor before challenging the boss.", 3000)
         print("💡 Player chose to get armor before boss fight")
 
 def start_boss_fight():
@@ -6176,7 +6176,7 @@ def start_boss_fight():
     
     # Check if player has a weapon
     if not check_weapon_requirement():
-        show_message("⚔️ You need a weapon to fight the boss!", 3000)
+        show_message(" You need a weapon to fight the boss!", 3000)
         print("❌ Player attempted to fight boss without weapon")
         return
     
@@ -6197,7 +6197,7 @@ def start_boss_fight():
     if boss_arena_center["x"] == 0:
         generate_boss_arena()
     
-    show_message("🐉 LEGENDARY BOSS FIGHT STARTED! Prepare for battle!", 3000)
+    show_message(" LEGENDARY BOSS FIGHT STARTED! Prepare for battle!", 3000)
     print(f"🐉 LEGENDARY BOSS FIGHT STARTED! Boss HP: {boss_health}/{boss_max_health}")
 
 def update_boss():
@@ -6225,7 +6225,7 @@ def update_boss():
         boss_health = BOSS_PHASE_2_HP
         boss_max_health = BOSS_PHASE_2_HP
         boss_attack_type = "phase2"
-        show_message("🐉 BOSS PHASE 2 ACTIVATED! Orange form unleashed!", 3000)
+        show_message(" BOSS PHASE 2 ACTIVATED! Orange form unleashed!", 3000)
         print(f"🐉 BOSS PHASE 2! HP: {boss_health}/{boss_max_health}")
         
         # Reset attack cooldown for phase 2
@@ -6234,7 +6234,7 @@ def update_boss():
     elif boss_phase == 2 and boss_health <= 0:
         # Boss defeated!
         boss_fight_active = False
-        show_message("🏆 LEGENDARY BOSS DEFEATED! You are victorious!", 5000)
+        show_message(" LEGENDARY BOSS DEFEATED! You are victorious!", 5000)
         print("🏆 LEGENDARY BOSS DEFEATED!")
         
         # Give player rewards
@@ -6279,7 +6279,7 @@ def execute_boss_attack():
     
     # Check if player died
     if player["health"] <= 0:
-        show_message("💀 You were defeated by the boss! Game over!", 3000)
+        show_message(" You were defeated by the boss! Game over!", 3000)
         print("💀 Player defeated by boss!")
 
 def get_weapon_damage():
@@ -6312,7 +6312,7 @@ def damage_boss(damage_amount=None):
     
     # Check if player has a weapon
     if not check_weapon_requirement():
-        show_message("⚔️ You need a weapon to damage the boss!", 2000)
+        show_message(" You need a weapon to damage the boss!", 2000)
         print("❌ Player attempted to damage boss without weapon")
         return False
     
@@ -6345,7 +6345,7 @@ def give_boss_rewards():
     for reward in legendary_rewards:
         player["inventory"].append(reward)
     
-    show_message("🏆 LEGENDARY REWARDS: Legendary Sword, Boss Trophy, Diamonds, Gold!", 4000)
+    show_message(" LEGENDARY REWARDS: Legendary Sword, Boss Trophy, Diamonds, Gold!", 4000)
     print("🏆 Boss rewards given to player!")
 
 def load_boss_texture():
@@ -6388,15 +6388,15 @@ def check_underground_fortress_trigger():
         
         # Check if player has broken through bedrock (deep underground)
         if player["y"] < -50:  # Very deep underground
-            show_message("🏰⚒️ You've discovered the underground fortress! The final boss awaits!", 4000)
+            show_message(" You've discovered the underground fortress! The final boss awaits!", 4000)
             print("🏰 Player discovered underground fortress!")
             
             # Auto-start boss fight if player has stone sword
             if check_stone_sword_requirement():
-                show_message("⚔️ You have the Stone Sword! The boss fight begins!", 3000)
+                show_message(" You have the Stone Sword! The boss fight begins!", 3000)
                 start_boss_fight()
             else:
-                show_message("⚔️ You need a Stone Sword to challenge the boss!", 3000)
+                show_message(" You need a Stone Sword to challenge the boss!", 3000)
                 print("❌ Player needs stone sword for boss fight")
             
             return True
@@ -6483,13 +6483,13 @@ def buy_merchant_item(category, item_id):
     
     # Check if player has enough coins
     if not spend_coins(price):
-        show_message(f"💰 Not enough coins! Need {price} coins.", 3000)
+        show_message(f" Not enough coins! Need {price} coins.", 3000)
         return False
     
     # Add item to player inventory
     add_item_to_inventory(item_id, 1)
     
-    show_message(f"✅ Bought {item['name']} for {price} coins!", 3000)
+    show_message(f" Bought {item['name']} for {price} coins!", 3000)
     print(f"🏪 Player bought {item['name']} for {price} coins")
     return True
 
@@ -7149,12 +7149,12 @@ def damage_boss(damage):
     
     # Show damage message
     if boss_health > 0:
-        show_message(f"⚔️ Boss HP: {boss_health}/{boss_max_health}", 1000)
+        show_message(f" Boss HP: {boss_health}/{boss_max_health}", 1000)
     else:
         if boss_phase == 1:
-            show_message("🐉 BOSS PHASE 1 DEFEATED! Phase 2 incoming!", 2000)
+            show_message(" BOSS PHASE 1 DEFEATED! Phase 2 incoming!", 2000)
         else:
-            show_message("🏆 FINAL BOSS PHASE DEFEATED! Victory!", 2000)
+            show_message(" FINAL BOSS PHASE DEFEATED! Victory!", 2000)
 
 
 def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
@@ -7611,7 +7611,7 @@ def show_death_screen():
                             coins_lost = max(1, min(50, current_coins // 4))
                             coins_manager.spend_coins(coins_lost)
                             print(f"💀 Death penalty: Lost {coins_lost} coins! Remaining: {coins_manager.get_coins()}")
-                            show_message(f"💀 Death penalty: Lost {coins_lost} coins!", 3000)
+                            show_message(f" Death penalty: Lost {coins_lost} coins!", 3000)
                     
                     # Reset player to spawn position
                     player["inventory"] = []
@@ -8736,11 +8736,11 @@ def break_block(mx, my):
                 damage_amount = get_weapon_damage()
                 damage_boss(damage_amount)
                 weapon_name = player["inventory"][player["selected"]]["type"].replace("_", " ").title()
-                show_message(f"⚔️ You hit the boss with your {weapon_name} for {damage_amount} damage!", 1500)
+                show_message(f" You hit the boss with your {weapon_name} for {damage_amount} damage!", 1500)
                 print(f"⚔️ Player dealt {damage_amount} damage to boss with {weapon_name}!")
                 return True  # Attack successful, don't break blocks
             else:
-                show_message("⚔️ You need a weapon to attack the boss!", 2000)
+                show_message(" You need a weapon to attack the boss!", 2000)
                 return False  # Need weapon to attack boss
     
     # Final boss combat
@@ -8758,14 +8758,14 @@ def break_block(mx, my):
                         # Deal damage to final boss
                         damage_amount = get_weapon_damage()
                         entity["hp"] -= damage_amount
-                        show_message(f"👹 Final boss hit! Health: {entity['hp']}/{entity['max_hp']}", 1000)
+                        show_message(f" Final boss hit! Health: {entity['hp']}/{entity['max_hp']}", 1000)
                         print(f"👹 Final boss hit! Health: {entity['hp']}/{entity['max_hp']}")
                         
                         if entity["hp"] <= 0:
                             # Final boss defeated
                             final_boss_active = False
                             entities.remove(entity)
-                            show_message("🎉 FINAL BOSS DEFEATED! You won the game!", 5000)
+                            show_message(" FINAL BOSS DEFEATED! You won the game!", 5000)
                             print("🎉 FINAL BOSS DEFEATED! You won the game!")
                             
                             # Give massive reward
@@ -8774,7 +8774,7 @@ def break_block(mx, my):
                             add_to_inventory("gold")
                             add_to_inventory("gold")
                             add_to_inventory("gold")
-                            show_message("💎 Rewarded with 10 diamonds and 3 gold!", 3000)
+                            show_message(" Rewarded with 10 diamonds and 3 gold!", 3000)
                             print("💎 Rewarded with 10 diamonds and 3 gold!")
                             
                             # Show credits screen after a delay
@@ -8785,7 +8785,7 @@ def break_block(mx, my):
                             print("🎬 Credits screen activated!")
                         return True  # Attack successful, don't break blocks
                     else:
-                        show_message("⚔️ You need a weapon to attack the final boss!", 2000)
+                        show_message(" You need a weapon to attack the final boss!", 2000)
                         return False  # Need weapon to attack final boss
                 break
     
@@ -8920,12 +8920,12 @@ def break_block(mx, my):
                 # Mature crop - harvest wheat
                 wheat_count = random.randint(1, 3)  # 1-3 wheat
                 drop_item("wheat", bx, by, wheat_count)
-                show_message(f"🌾 Harvested {wheat_count} wheat!", 1500)
+                show_message(f" Harvested {wheat_count} wheat!", 1500)
                 print(f"🌾 Harvested {wheat_count} wheat from mature crop")
             else:
                 # Young crop - get seeds back
                 drop_item("seeds", bx, by, 1)
-                show_message("🌱 Crop not ready - got seeds back", 1500)
+                show_message(" Crop not ready - got seeds back", 1500)
                 print("🌱 Broke young crop, returned seeds")
             
             # Remove crop from tracking and world
@@ -8944,7 +8944,7 @@ def break_block(mx, my):
         # Special case: Breaking grass has a chance to drop seeds
         if block == "grass" and random.random() < 0.3:  # 30% chance
             drop_item("seeds", bx, by, 1)
-            show_message("🌱 Found seeds!", 1000)
+            show_message(" Found seeds!", 1000)
         
         # Drop block as an item instead of adding to inventory
         drop_item(block, bx, by, 1)
@@ -9439,12 +9439,12 @@ def attack_monsters(mx, my):
                 # Cows drop 1-3 raw beef (must be cooked into steak)
                 beef_count = random.randint(1, 3)
                 drop_item("beef", mob_x, mob_y, beef_count)
-                show_message(f"🥩 Cow dropped {beef_count} raw beef!", 2000)
+                show_message(f" Cow dropped {beef_count} raw beef!", 2000)
             elif closest_monster["type"] == "mad_pigeon":
                 # Pigeons drop 1-2 cooked fish (bird meat)
                 fish_count = random.randint(1, 2)
                 drop_item("cooked_fish", mob_x, mob_y, fish_count)
-                show_message(f"🐟 Pigeon dropped {fish_count} cooked fish!", 2000)
+                show_message(f" Pigeon dropped {fish_count} cooked fish!", 2000)
             elif closest_monster["type"] in ["monster", "zombie"]:
                 # Monsters have chance to drop coins
                 if random.random() < 0.15 and coins_manager:
@@ -9454,7 +9454,7 @@ def attack_monsters(mx, my):
             entities.remove(closest_monster)
     else:
         # Too far away for combat
-        show_message("⚔️ Too far! Get closer to attack.", 1000)
+        show_message(" Too far! Get closer to attack.", 1000)
 
 
 # --- Part Six: World Interaction, Carrots, Chests, Hunger/Health, Monster Damage ---
@@ -9486,7 +9486,7 @@ def update_world_interactions():
             # Remove carrot completely from world data (turns into air)
             if f"{px},{py}" in world_data:
                 del world_data[f"{px},{py}"]
-            show_message("🥕 Carrot collected! Right-click in inventory to eat", 1500)
+            show_message(" Carrot collected! Right-click in inventory to eat", 1500)
             print(f"🥕 Carrot collected and added to inventory")
             
             # Check for first carrot achievement
@@ -9496,7 +9496,7 @@ def update_world_interactions():
         # Remove carrot completely from world data (turns into air)
         if f"{px},{py + 1}" in world_data:
             del world_data[f"{px},{py + 1}"]
-        show_message("🥕 Carrot collected! Right-click in inventory to eat", 1500)
+        show_message(" Carrot collected! Right-click in inventory to eat", 1500)
         print(f"🥕 Carrot collected and added to inventory")
     
     # Portal interaction (Lost Ruins portal)
@@ -9504,7 +9504,7 @@ def update_world_interactions():
         keys = pygame.key.get_pressed()
         if keys[pygame.K_e]:
             spawn_final_boss()
-            show_message("🌀 Portal activated! Final boss spawned!", 3000)
+            show_message(" Portal activated! Final boss spawned!", 3000)
     
     # Check for villager interaction
     for entity in entities:
@@ -10725,7 +10725,7 @@ def check_achievement(achievement_name, coin_reward, message):
         achievements[achievement_name] = True
         if coins_manager:
             coins_manager.add_coins(coin_reward)
-        show_message(f"🏆 {message} +{coin_reward} coins!")
+        show_message(f" {message} +{coin_reward} coins!")
         print(f"🏆 Achievement unlocked: {achievement_name} - {message} (+{coin_reward} coins)")
         return True
     return False
@@ -10793,9 +10793,9 @@ def handle_shop_click(mouse_pos):
             # Open skin creator
             open_skin_creator()
             coins_manager.spend_coins(3000)
-            show_message("🎨 Skin Creator opened! Cost: 3000 coins")
+            show_message(" Skin Creator opened! Cost: 3000 coins")
         else:
-            show_message("❌ Not enough coins! Need 3000 coins for Skin Creator")
+            show_message(" Not enough coins! Need 3000 coins for Skin Creator")
         return
 
 
@@ -10807,7 +10807,7 @@ def handle_skin_creator_click(mouse_pos):
     if skin_creator_save_btn and skin_creator_save_btn.collidepoint(mouse_pos):
         # Save the custom skin
         save_custom_skin()
-        show_message("🎨 Custom skin saved!")
+        show_message(" Custom skin saved!")
         return
     
     # Check if close button was clicked
@@ -10838,11 +10838,11 @@ def save_custom_skin():
         pygame.image.save(skin_surface, filepath)
         
         print(f"🎨 Custom skin saved to: {filepath}")
-        show_message("🎨 Custom skin saved successfully!")
+        show_message(" Custom skin saved successfully!")
         
     except Exception as e:
         print(f"❌ Error saving custom skin: {e}")
-        show_message("❌ Error saving skin!")
+        show_message(" Error saving skin!")
 
 def handle_multiplayer_click(mouse_pos):
     """Handle clicks in the multiplayer interface"""
@@ -10906,7 +10906,7 @@ def refresh_server_list():
     """Refresh the list of available servers"""
     try:
         # For now, just show a message
-        show_message("🔍 Refreshing server list...")
+        show_message(" Refreshing server list...")
         print("🔍 Server discovery functionality coming soon!")
         
         # In a full implementation, this would:
@@ -10916,7 +10916,7 @@ def refresh_server_list():
         
     except Exception as e:
         print(f"❌ Error refreshing server list: {e}")
-        show_message("❌ Failed to refresh servers!")
+        show_message(" Failed to refresh servers!")
 
 
 def handle_inventory_click(mouse_pos):
@@ -11196,14 +11196,14 @@ def handle_inventory_right_click(mouse_pos):
                         already_selected = selected_crafting_materials.get(item_type, 0)
                         
                         if already_selected >= total_available:
-                            show_message(f"❌ You've already put all {item_type.replace('_', ' ')} in crafting!", 1500)
+                            show_message(f" You've already put all {item_type.replace('_', ' ')} in crafting!", 1500)
                             return
                         
                         # Select item for crafting
                         count_to_add = 1
                         selected_crafting_materials[item_type] = already_selected + count_to_add
                         print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}/{total_available}")
-                        show_message(f"🔨 Selected {item_type} ({selected_crafting_materials[item_type]}/{total_available})", 1000)
+                        show_message(f" Selected {item_type} ({selected_crafting_materials[item_type]}/{total_available})", 1000)
                         return
                 return
     
@@ -11232,14 +11232,14 @@ def handle_inventory_right_click(mouse_pos):
                         already_selected = selected_crafting_materials.get(item_type, 0)
                         
                         if already_selected >= total_available:
-                            show_message(f"❌ You've already put all {item_type.replace('_', ' ')} in crafting!", 1500)
+                            show_message(f" You've already put all {item_type.replace('_', ' ')} in crafting!", 1500)
                             return
                         
                         # Select item for crafting
                         count_to_add = 1
                         selected_crafting_materials[item_type] = already_selected + count_to_add
                         print(f"🔨 Selected {item_type} for crafting! Total: {selected_crafting_materials[item_type]}/{total_available}")
-                        show_message(f"🔨 Selected {item_type} ({selected_crafting_materials[item_type]}/{total_available})", 1000)
+                        show_message(f" Selected {item_type} ({selected_crafting_materials[item_type]}/{total_available})", 1000)
                         return
         return
 
@@ -11441,14 +11441,14 @@ def use_map_from_inventory():
         nearby_features.append(f"{villager_count} villagers nearby")
     
     # Show map information
-    show_message("🗺️ MAP: Your location and nearby features:", 3000)
-    show_message(f"🗺️ Position: ({player_x}, {player_y})", 2000)
+    show_message(" MAP: Your location and nearby features:", 3000)
+    show_message(f" Position: ({player_x}, {player_y})", 2000)
     
     if nearby_features:
         for feature in nearby_features[:3]:  # Show up to 3 features
-            show_message(f"🗺️ {feature}", 2000)
+            show_message(f" {feature}", 2000)
     else:
-        show_message("🗺️ No special features detected nearby", 2000)
+        show_message(" No special features detected nearby", 2000)
     
     print(f"🗺️ Map used at position ({player_x}, {player_y}) - Features: {nearby_features}")
 
@@ -15381,7 +15381,7 @@ while running:
                                         player["inventory"][player["selected"]]["count"] -= 1
                                         if player["inventory"][player["selected"]]["count"] <= 0:
                                             player["inventory"][player["selected"]] = None
-                                        show_message("🐦💚 Mad Pigeon tamed! It will follow you now!", 3000)
+                                        show_message(" Mad Pigeon tamed! It will follow you now!", 3000)
                                         print(f"🐦 Tamed a Mad Pigeon with steak!")
                                         tamed_pigeon = True
                                         break
@@ -15415,10 +15415,10 @@ while running:
                                         player["inventory"][player["selected"]] = None
                                         normalize_inventory()
                                     
-                                    show_message("🌱 Seeds planted! Wait 3 days to harvest.", 2000)
+                                    show_message(" Seeds planted! Wait 3 days to harvest.", 2000)
                                     print(f"🌱 Planted seeds at ({bx}, {by})")
                                 else:
-                                    show_message("🌱 Already planted here!", 1000)
+                                    show_message(" Already planted here!", 1000)
                                 continue
                     
                     # Try to place a block FIRST (this handles air placement)
@@ -15437,7 +15437,7 @@ while running:
                             player["spawn_x"] = bx
                             player["spawn_y"] = by
                             player["has_bed_spawn"] = True
-                            show_message(f"🏠 Spawn point set at ({bx}, {by})", 2000)
+                            show_message(f" Spawn point set at ({bx}, {by})", 2000)
                             print(f"🏠 Bed spawn point set at ({bx}, {by})")
                         continue
                     
@@ -15450,10 +15450,10 @@ while running:
                         
                         door_states[door_pos] = not door_states[door_pos]
                         if door_states[door_pos]:
-                            show_message("🚪 Door opened!")
+                            show_message(" Door opened!")
                             print("🚪 Door opened at", door_pos)
                         else:
-                            show_message("🚪 Door closed!")
+                            show_message(" Door closed!")
                             print("🚪 Door closed at", door_pos)
                         continue
                     
@@ -15685,9 +15685,9 @@ while running:
                         give_starting_items()
                 elif save_btn.collidepoint(event.pos):
                     if save_game():
-                        show_message("✅ Game saved successfully!")
+                        show_message(" Game saved successfully!")
                     else:
-                        show_message("❌ Failed to save game!")
+                        show_message(" Failed to save game!")
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
                     reset_game_state_to_title()  # Reset everything before returning
@@ -15779,10 +15779,10 @@ while running:
                         if start_multiplayer_server("Default World"):
                             game_state = GameState.GAME
                             update_pause_state()
-                            show_message("🌐 Multiplayer server started! Players can now join!", 3000)
+                            show_message(" Multiplayer server started! Players can now join!", 3000)
                             print("🌐 Multiplayer server started successfully")
                         else:
-                            show_message("❌ Failed to start server")
+                            show_message(" Failed to start server")
                     elif multiplayer_host_back_btn and multiplayer_host_back_btn.collidepoint(event.pos):
                         game_state = GameState.TITLE
                         update_pause_state()
@@ -15793,7 +15793,7 @@ while running:
                         # Search for available servers
                         discover_servers()
                         multiplayer_menu_state = "server_list"
-                        show_message("🔍 Searching for servers...", 2000)
+                        show_message(" Searching for servers...", 2000)
                         print("🔍 Server search initiated")
                     elif multiplayer_join_back_btn and multiplayer_join_back_btn.collidepoint(event.pos):
                         game_state = GameState.TITLE
@@ -15814,10 +15814,10 @@ while running:
                                 if join_multiplayer_server(server):
                                     game_state = GameState.GAME
                                     update_pause_state()
-                                    show_message(f"🔗 Joined server: {server['name']}!", 3000)
+                                    show_message(f" Joined server: {server['name']}!", 3000)
                                     print(f"🔗 Successfully joined server: {server['name']}")
                                 else:
-                                    show_message("❌ Failed to join server", 2000)
+                                    show_message(" Failed to join server", 2000)
                                 break
             elif game_state == GameState.SHOP:
                 # Handle shop clicks
