@@ -1091,6 +1091,54 @@ def load_texture(path):
         return error_surface
 
 # --- Ladder Texture Generator ---
+def make_seeds_texture(size):
+    """Generate a seeds texture - small green dots"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    surf.fill((0, 0, 0, 0))  # Transparent background
+    
+    # Draw 5-7 small green dots (seeds)
+    seed_color = (100, 180, 50)  # Green
+    seed_size = max(2, size // 8)
+    
+    # Scatter seeds around
+    import random
+    random.seed(42)  # Consistent pattern
+    for _ in range(6):
+        x = random.randint(seed_size, size - seed_size)
+        y = random.randint(seed_size, size - seed_size)
+        pygame.draw.circle(surf, seed_color, (x, y), seed_size)
+    
+    return surf
+
+def make_crop_texture(size, growth_stage):
+    """Generate crop texture based on growth stage (0=just planted, 1=mature/tan)"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    surf.fill((0, 0, 0, 0))  # Transparent background
+    
+    if growth_stage < 0.5:
+        # Young crop - green
+        crop_color = (50, 200, 50)
+        height = size // 2
+    else:
+        # Mature crop - tan/golden
+        crop_color = (210, 180, 100)
+        height = int(size * 0.8)
+    
+    # Draw crop stalks
+    stalk_width = max(2, size // 10)
+    num_stalks = 3
+    spacing = size // (num_stalks + 1)
+    
+    for i in range(num_stalks):
+        x = spacing * (i + 1)
+        # Draw stalk
+        pygame.draw.rect(surf, crop_color, (x - stalk_width//2, size - height, stalk_width, height))
+        # Draw wheat head on top for mature crops
+        if growth_stage >= 0.5:
+            pygame.draw.circle(surf, crop_color, (x, size - height), stalk_width + 1)
+    
+    return surf
+
 def make_ladder_texture(size):
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     base = (210, 160, 50)   # wood/yellow-orange
@@ -2884,6 +2932,9 @@ textures = {
     "steak": load_texture(os.path.join(ITEM_DIR, "steak.png")),
     "honey_jar": load_texture(os.path.join(ITEM_DIR, "honey_jar.png")),
     "stick": load_texture(os.path.join(TILE_DIR, "log.png")),  # Using log as stick for now
+    "seeds": make_seeds_texture(TILE_SIZE),  # Procedural green dots
+    "crop_young": make_crop_texture(TILE_SIZE, 0),  # Green growing crop
+    "crop_mature": make_crop_texture(TILE_SIZE, 1),  # Tan mature crop ready for harvest
     
     # Potions (flipped upside down)
     "healing_potion": pygame.transform.flip(load_texture(os.path.join(ITEM_DIR, "potion.png")), False, True) if os.path.exists(os.path.join(ITEM_DIR, "potion.png")) else make_potion_texture(TILE_SIZE),
@@ -3327,6 +3378,7 @@ FALL_DAMAGE_MULTIPLIER = 1.5  # Damage per block above threshold
 world_data = {}
 entities = []
 dropped_items = []  # List of dropped items with physics
+crops = {}  # Dictionary of crops: {(x, y): {"planted_time": time, "growth_progress": 0-1}}
 camera_x = 0
 camera_y = 0  # Vertical camera position
 fall_start_y = None
@@ -8857,8 +8909,43 @@ def break_block(mx, my):
         
         return True
     
+    # Crop harvesting: mature crops give wheat, young crops give seeds back
+    elif block in ["crop_young", "crop_mature"]:
+        crop_key = (bx, by)
+        
+        if crop_key in crops:
+            growth_progress = crops[crop_key]["growth_progress"]
+            
+            if growth_progress >= 1.0:
+                # Mature crop - harvest wheat
+                wheat_count = random.randint(1, 3)  # 1-3 wheat
+                drop_item("wheat", bx, by, wheat_count)
+                show_message(f"🌾 Harvested {wheat_count} wheat!", 1500)
+                print(f"🌾 Harvested {wheat_count} wheat from mature crop")
+            else:
+                # Young crop - get seeds back
+                drop_item("seeds", bx, by, 1)
+                show_message("🌱 Crop not ready - got seeds back", 1500)
+                print("🌱 Broke young crop, returned seeds")
+            
+            # Remove crop from tracking and world
+            del crops[crop_key]
+            if block_key in world_data:
+                del world_data[block_key]
+        else:
+            # No crop data, just remove block
+            if block_key in world_data:
+                del world_data[block_key]
+        
+        return True
+    
     # All other blocks can be broken without tools - drop as items
     else:
+        # Special case: Breaking grass has a chance to drop seeds
+        if block == "grass" and random.random() < 0.3:  # 30% chance
+            drop_item("seeds", bx, by, 1)
+            show_message("🌱 Found seeds!", 1000)
+        
         # Drop block as an item instead of adding to inventory
         drop_item(block, bx, by, 1)
         
@@ -11822,7 +11909,7 @@ def update_player():
 
 def load_world_data():
     """Load world data from the world system into the game"""
-    global world_data, entities, player, dropped_items
+    global world_data, entities, player, dropped_items, crops
     
     if not world_system.current_world_data:
         print("⚠️ No world data available to load")
@@ -11833,6 +11920,17 @@ def load_world_data():
         world_data = world_system.current_world_data.get("blocks", {})
         entities = world_system.current_world_data.get("entities", [])
         dropped_items = world_system.current_world_data.get("dropped_items", [])
+        
+        # Load crop data (convert string keys back to tuples)
+        crops_data = world_system.current_world_data.get("crops", {})
+        crops.clear()
+        for key_str, crop_info in crops_data.items():
+            try:
+                x, y = key_str.split(',')
+                crop_key = (int(x), int(y))
+                crops[crop_key] = crop_info
+            except (ValueError, IndexError):
+                print(f"⚠️ Invalid crop key format: {key_str}")
         villages = world_system.current_world_data.get("villages", [])
         
         # Load player data with validation
@@ -12025,6 +12123,30 @@ def cleanup_distant_entities():
     
     if entities_removed > 0 or items_removed > 0:
         print(f"🧹 Cleanup: Removed {entities_removed} entities and {items_removed} items ({len(entities)} entities, {len(dropped_items)} items remaining)")
+
+def update_crops():
+    """Update crop growth - crops mature after 3 in-game days"""
+    global crops, world_data
+    
+    current_time = time.time()
+    growth_time = 3 * 300  # 3 days * 300 seconds per day = 900 seconds
+    
+    for crop_pos, crop_data in list(crops.items()):
+        # Calculate growth progress
+        time_elapsed = current_time - crop_data["planted_time"]
+        growth_progress = min(1.0, time_elapsed / growth_time)
+        crop_data["growth_progress"] = growth_progress
+        
+        # Update crop texture based on growth
+        x, y = crop_pos
+        block_key = f"{x},{y}"
+        
+        if growth_progress >= 1.0:
+            # Fully mature - tan/golden
+            world_data[block_key] = "crop_mature"
+        else:
+            # Still growing - green
+            world_data[block_key] = "crop_young"
 
 def update_monsters():
     global entities, night_monster_spawn_timer, night_monsters_spawned
@@ -14441,6 +14563,7 @@ def save_game():
             "entities": entities.copy() if entities else [],
             "player": player.copy() if player else {},
                 "dropped_items": dropped_items.copy() if dropped_items else [],  # Save dropped items too
+                "crops": {f"{k[0]},{k[1]}": v for k, v in crops.items()},  # Save crop data
             "world_settings": {
                 "time": time.time(),
                 "day": is_day,
@@ -14498,6 +14621,7 @@ def save_game_fallback():
             "entities": entities.copy() if entities else [],
             "player": player.copy() if player else {},
             "dropped_items": dropped_items.copy() if dropped_items else [],
+            "crops": {f"{k[0]},{k[1]}": v for k, v in crops.items()},  # Save crop data
             "world_settings": {
                 "time": time.time(),
                 "day": is_day,
@@ -15267,6 +15391,36 @@ while running:
                     
                     # Log carving removed - must craft oak planks from logs in backpack
                     
+                    # Seed planting: right-click grass with seeds to plant crops
+                    if block_at_pos == "grass" and player["selected"] < len(player["inventory"]):
+                        selected_item = player["inventory"][player["selected"]]
+                        if selected_item and selected_item.get("type") == "seeds":
+                            px, py = int(player["x"]), int(player["y"])
+                            if abs(bx - px) <= 2 and abs(by - py) <= 2:
+                                # Plant the crop
+                                crop_key = (bx, by)
+                                if crop_key not in crops:
+                                    crops[crop_key] = {
+                                        "planted_time": time.time(),
+                                        "growth_progress": 0.0
+                                    }
+                                    
+                                    # Replace grass with crop block
+                                    world_data[f"{bx},{by}"] = "crop_young"
+                                    
+                                    # Consume one seed
+                                    if "count" in selected_item and selected_item["count"] > 1:
+                                        selected_item["count"] -= 1
+                                    else:
+                                        player["inventory"][player["selected"]] = None
+                                        normalize_inventory()
+                                    
+                                    show_message("🌱 Seeds planted! Wait 3 days to harvest.", 2000)
+                                    print(f"🌱 Planted seeds at ({bx}, {by})")
+                                else:
+                                    show_message("🌱 Already planted here!", 1000)
+                                continue
+                    
                     # Try to place a block FIRST (this handles air placement)
                     if place_block(mx, my):
                         # Block was placed successfully, don't do other interactions
@@ -15794,6 +15948,7 @@ while running:
         update_water_flow()  # Update water flow
         update_world_interactions()
         update_monsters()
+        update_crops()  # Update crop growth
         update_villagers()
         # update_fortress_bosses()  # REMOVED - fortress system disabled
         update_oxygen_system()  # Update oxygen system

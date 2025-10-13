@@ -474,8 +474,8 @@ class ModernUI:
     def handle_about_scroll(self, scroll_amount: int):
         """Handle scrolling in about page"""
         self.about_scroll_offset -= scroll_amount * 30  # 30 pixels per scroll
-        # Clamp scroll offset
-        self.about_scroll_offset = max(0, min(400, self.about_scroll_offset))  # Max 400px scroll
+        # Clamp scroll offset (allow scrolling down far enough to see all content)
+        self.about_scroll_offset = max(0, min(300, self.about_scroll_offset))  # Max 300px scroll
 
     def draw_options_screen(self, mouse_pos: tuple, fullscreen: bool = False, fps_limit: int = 60) -> Dict[str, pygame.Rect]:
         """Draw beautiful options screen"""
