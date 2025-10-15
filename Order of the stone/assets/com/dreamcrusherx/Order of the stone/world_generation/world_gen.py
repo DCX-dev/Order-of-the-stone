@@ -82,10 +82,17 @@ class WorldGenerator:
         water_level = 108  # Water level for oceans
         
         for x in range(-world_width//2, world_width//2):
-            # OCEAN BIOME DETECTION using low-frequency wave
-            ocean_wave = math.sin(x * 0.01)  # Very slow wave for large ocean biomes
-            is_ocean = ocean_wave < -0.3  # Ocean when wave is significantly negative
-            is_beach = -0.3 <= ocean_wave < -0.1 or (ocean_wave > 0.3 and math.sin(x * 0.01 + 0.5) < -0.2)  # Beach transition zones
+            # OCEAN BIOME DETECTION - create a natural lake/bay shape
+            # Use a bell curve to create ocean in the center with beaches on both sides
+            center_x = 0  # Center of the world
+            ocean_width = world_width * 0.6  # Ocean takes up 60% of world width
+            distance_from_center = abs(x - center_x)
+            
+            # Create bell curve for natural lake shape
+            ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+            
+            is_ocean = ocean_factor > 0.7  # Deep ocean in center
+            is_beach = 0.3 <= ocean_factor <= 0.7  # Beach transition zones on both sides
             
             # Clean terrain waves - same pattern per world but different between worlds
             # Use the world seed to create consistent but varied terrain
@@ -104,8 +111,8 @@ class WorldGenerator:
                 surface_y = max(water_level + 6, min(water_level + 12, surface_y))  # Shallow, flat ocean floor
             elif is_beach:
                 # Beach slopes naturally from land down to water level
-                # Calculate distance from ocean boundary for smooth slope
-                beach_progress = (ocean_wave + 0.3) / 0.2  # 0.0 at ocean edge, 1.0 at land edge
+                # Calculate distance from ocean for smooth slope using ocean_factor
+                beach_progress = (0.7 - ocean_factor) / 0.4  # 0.0 at ocean edge, 1.0 at land edge
                 beach_progress = max(0.0, min(1.0, beach_progress))
                 
                 # Natural slope: starts at land height, gradually slopes down to water level
@@ -193,9 +200,13 @@ class WorldGenerator:
                 import math
                 
                 # Check if this is ocean or beach biome - no trees there
-                ocean_wave = math.sin(tree_x * 0.01)
-                is_ocean = ocean_wave < -0.3
-                is_beach = -0.3 <= ocean_wave < -0.1 or (ocean_wave > 0.3 and math.sin(tree_x * 0.01 + 0.5) < -0.2)
+                center_x = 0
+                ocean_width = world_width * 0.6
+                distance_from_center = abs(tree_x - center_x)
+                ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+                
+                is_ocean = ocean_factor > 0.7
+                is_beach = 0.3 <= ocean_factor <= 0.7
                 
                 if is_ocean or is_beach:
                     continue  # Skip tree placement in oceans and beaches
@@ -256,9 +267,13 @@ class WorldGenerator:
                 
                 # Check if this is ocean or beach - no fortresses there
                 import math
-                ocean_wave = math.sin(x * 0.01)
-                is_ocean = ocean_wave < -0.3
-                is_beach = -0.3 <= ocean_wave < -0.1 or (ocean_wave > 0.3 and math.sin(x * 0.01 + 0.5) < -0.2)
+                center_x = 0
+                ocean_width = world_width * 0.6
+                distance_from_center = abs(x - center_x)
+                ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+                
+                is_ocean = ocean_factor > 0.7
+                is_beach = 0.3 <= ocean_factor <= 0.7
                 
                 if is_ocean or is_beach:
                     continue  # Skip fortress in ocean/beach
@@ -317,9 +332,13 @@ class WorldGenerator:
         # Generate ores for each column in the world
         for x in range(-world_width//2, world_width//2):
             # Calculate surface height using the same algorithm as terrain generation
-            ocean_wave = math.sin(x * 0.01)
-            is_ocean = ocean_wave < -0.3
-            is_beach = -0.3 <= ocean_wave < -0.1 or (ocean_wave > 0.3 and math.sin(x * 0.01 + 0.5) < -0.2)
+            center_x = 0
+            ocean_width = world_width * 0.6
+            distance_from_center = abs(x - center_x)
+            ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+            
+            is_ocean = ocean_factor > 0.7
+            is_beach = 0.3 <= ocean_factor <= 0.7
             
             base_height = 115
             primary_wave = 6 * math.sin(x * 0.05)
@@ -334,8 +353,12 @@ class WorldGenerator:
                 surface_y = water_level + 8 + int(2 * math.sin(x * 0.2))
                 surface_y = max(water_level + 6, min(water_level + 12, surface_y))
             elif is_beach:
-                surface_y = water_level + int(2 * math.sin(x * 0.1))
-                surface_y = max(105, min(112, surface_y))
+                beach_progress = (0.7 - ocean_factor) / 0.4
+                beach_progress = max(0.0, min(1.0, beach_progress))
+                land_height = base_height + height_variation
+                slope_height = int(beach_progress * (land_height - water_level))
+                surface_y = water_level + slope_height + int(math.sin(x * 0.3))
+                surface_y = max(water_level - 3, min(land_height, surface_y))
             else:
                 surface_y = max(100, min(125, surface_y))
             
@@ -390,9 +413,13 @@ class WorldGenerator:
         # Try to find a spawn location on land, not in ocean
         for spawn_x in range(0, 100, 5):  # Search from center outward
             # Check if this is ocean or beach
-            ocean_wave = math.sin(spawn_x * 0.01)
-            is_ocean = ocean_wave < -0.3
-            is_beach = -0.3 <= ocean_wave < -0.1
+            center_x = 0
+            ocean_width = world_width * 0.6
+            distance_from_center = abs(spawn_x - center_x)
+            ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+            
+            is_ocean = ocean_factor > 0.7
+            is_beach = 0.3 <= ocean_factor <= 0.7
             
             # Skip ocean and beach, find normal land
             if not is_ocean and not is_beach:
