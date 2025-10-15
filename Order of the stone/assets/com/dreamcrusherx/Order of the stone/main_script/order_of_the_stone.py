@@ -3383,11 +3383,8 @@ camera_x = 0
 camera_y = 0  # Vertical camera position
 fall_start_y = None
 
-# Block breaking animation system
-breaking_block_pos = None  # (x, y) of block being broken
-breaking_progress = 0.0  # 0.0 to 1.0
-breaking_start_time = 0
-BREAKING_TIME = 0.5  # seconds to break a block
+# Block highlighting system
+highlighted_block_pos = None  # (x, y) of block being hovered
 # Village generation removed
 generated_terrain_columns = set()  # Track which columns have had terrain generated
 broken_grass_locations = set()  # Track grass blocks that have been broken by the player
@@ -8728,49 +8725,25 @@ def monitor_world_data():
     return len(problematic_blocks) == 0
 
 def break_block(mx, my):
-    """Break blocks with delay and cracking animation"""
-    global final_boss_active, breaking_block_pos, breaking_progress, breaking_start_time
-    import time
-    
+    """Break blocks instantly - back to normal"""
+    global final_boss_active
     px, py = int(player["x"]), int(player["y"])
     bx, by = int((mx + camera_x) // TILE_SIZE), int((my + camera_y) // TILE_SIZE)
     block_key = f"{bx},{by}"
     
     # Check distance first
     if abs(bx - px) > 2 or abs(by - py) > 2:
-        breaking_block_pos = None
-        breaking_progress = 0.0
         return False  # Too far away
     
     # Get the block at this position
     block = get_block(bx, by)
     
     if not block or block == "air":
-        breaking_block_pos = None
-        breaking_progress = 0.0
         return False  # Nothing to break
     
     # Bedrock, fluids, and villagers are unbreakable
     if block in ("bedrock", "water", "lava", "villager"):
-        breaking_block_pos = None
-        breaking_progress = 0.0
         return False  # Can't break, silent fail
-    
-    # Start breaking animation if this is a new block
-    if breaking_block_pos != (bx, by):
-        breaking_block_pos = (bx, by)
-        breaking_progress = 0.0
-        breaking_start_time = time.time()
-        return False  # Started breaking, don't destroy yet
-    
-    # Update breaking progress
-    current_time = time.time()
-    elapsed = current_time - breaking_start_time
-    breaking_progress = min(1.0, elapsed / BREAKING_TIME)
-    
-    # Only break the block when progress is complete
-    if breaking_progress < 1.0:
-        return False  # Still breaking
     
     # EXTREME ENGINEERING: Boss damage system - check if player is attacking the boss
     if boss_fight_active:
@@ -8880,10 +8853,6 @@ def break_block(mx, my):
             if random.random() < 0.1:  # 10% chance
                 coin_amount = 1 if block == "gold" else 2
                 coins_manager.add_coins(coin_amount)
-        
-        # Reset breaking animation
-        breaking_block_pos = None
-        breaking_progress = 0.0
         
         return True
     
@@ -9022,27 +8991,38 @@ def break_block(mx, my):
         # Check for sand blocks above that need to fall
         check_sand_falling(bx, by)
         
-        # Reset breaking animation
-        breaking_block_pos = None
-        breaking_progress = 0.0
-        
         return True
 
-def draw_block_breaking_animation():
-    """
-    Draw cracking animation overlay on the block being broken.
+def update_block_highlight(mx, my):
+    """Update which block is highlighted based on mouse position"""
+    global highlighted_block_pos
     
-    ⚠️ IMPORTANT: This function MUST be called in the main game rendering loop
-    after blocks are drawn but before UI elements. Add this line in the 
-    GameState.GAME rendering section:
-        draw_block_breaking_animation()
-    """
-    global breaking_block_pos, breaking_progress
+    # Convert mouse position to block coordinates
+    bx = int((mx + camera_x) // TILE_SIZE)
+    by = int((my + camera_y) // TILE_SIZE)
     
-    if breaking_block_pos is None or breaking_progress <= 0:
+    # Get the block at this position
+    block = get_block(bx, by)
+    
+    # Only highlight if there's an actual block (not air/sky)
+    if block and block != "air":
+        highlighted_block_pos = (bx, by)
+    else:
+        highlighted_block_pos = None
+
+def draw_block_highlight():
+    """
+    Draw highlight overlay on the block under the mouse cursor.
+    
+    ⚠️ IMPORTANT: Call this in the main game rendering loop after blocks are drawn.
+    Also call update_block_highlight(mx, my) every frame to update the highlight position.
+    """
+    global highlighted_block_pos
+    
+    if highlighted_block_pos is None:
         return
     
-    bx, by = breaking_block_pos
+    bx, by = highlighted_block_pos
     
     # Convert block coordinates to screen coordinates
     screen_x = (bx * TILE_SIZE) - camera_x
@@ -9052,36 +9032,14 @@ def draw_block_breaking_animation():
     if screen_x < -TILE_SIZE or screen_x > SCREEN_WIDTH or screen_y < -TILE_SIZE or screen_y > SCREEN_HEIGHT:
         return
     
-    # Create crack overlay based on progress
-    crack_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+    # Draw a bright outline around the highlighted block
+    highlight_rect = pygame.Rect(screen_x, screen_y, TILE_SIZE, TILE_SIZE)
+    pygame.draw.rect(screen, (255, 255, 255), highlight_rect, 3)  # White outline
     
-    # Draw cracks - more cracks as progress increases
-    crack_color = (0, 0, 0, 200)  # Semi-transparent black cracks
-    num_cracks = int(breaking_progress * 8) + 2  # 2-10 cracks
-    
-    for i in range(num_cracks):
-        # Random-looking but consistent cracks based on progress
-        start_x = int((i * 7 + bx * 3) % TILE_SIZE)
-        start_y = int((i * 11 + by * 5) % TILE_SIZE)
-        end_x = int(((i + 1) * 13 + bx * 7) % TILE_SIZE)
-        end_y = int(((i + 1) * 17 + by * 11) % TILE_SIZE)
-        
-        pygame.draw.line(crack_surface, crack_color, (start_x, start_y), (end_x, end_y), 3)
-        
-        # Add crossing cracks for more Minecraft-like appearance
-        if i % 2 == 0:
-            cross_x = int(((i + 2) * 19 + bx * 5) % TILE_SIZE)
-            cross_y = int(((i + 2) * 23 + by * 7) % TILE_SIZE)
-            pygame.draw.line(crack_surface, crack_color, (end_x, end_y), (cross_x, cross_y), 2)
-    
-    # White overlay that gets brighter as breaking progresses (Minecraft style)
-    white_alpha = int(breaking_progress * 120)
-    white_overlay = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-    white_overlay.fill((255, 255, 255, white_alpha))
-    crack_surface.blit(white_overlay, (0, 0))
-    
-    # Draw the crack overlay on the block
-    screen.blit(crack_surface, (screen_x, screen_y))
+    # Draw a subtle semi-transparent overlay
+    highlight_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+    highlight_surface.fill((255, 255, 255, 30))  # Semi-transparent white
+    screen.blit(highlight_surface, (screen_x, screen_y))
 
 def place_block(mx, my):
     """Place a block at the mouse position - ONLY on air, with proper validation"""
