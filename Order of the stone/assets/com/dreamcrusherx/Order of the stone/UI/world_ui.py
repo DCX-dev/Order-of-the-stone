@@ -593,8 +593,8 @@ class WorldUI:
             traceback.print_exc()
             self.reset_world_selection()
     
-    def draw_world_creation(self, mouse_pos: tuple, world_name: str = "", seed: str = "") -> Dict[str, any]:
-        """Draw the world creation screen with enhanced design"""
+    def draw_world_creation(self, mouse_pos: tuple, world_name: str = "", seed: str = "", active_field: str = "name") -> Dict[str, any]:
+        """Draw the world creation screen with keyboard input support"""
         # Enhanced background
         self._draw_gradient_background()
         self._draw_decorative_elements()
@@ -622,7 +622,9 @@ class WorldUI:
         pygame.draw.rect(self.screen, self.colors["panel_glow"], name_input_rect, border_radius=8)
         # Main input field
         pygame.draw.rect(self.screen, self.colors["panel"], name_input_rect, border_radius=8)
-        pygame.draw.rect(self.screen, self.colors["accent"], name_input_rect, 3, border_radius=8)
+        # Highlight active field with brighter border
+        border_color = self.colors["success"] if active_field == "name" else self.colors["accent"]
+        pygame.draw.rect(self.screen, border_color, name_input_rect, 3, border_radius=8)
         
         if world_name:
             name_text = self.font.render(world_name, True, self.colors["text"])
@@ -640,7 +642,9 @@ class WorldUI:
         pygame.draw.rect(self.screen, self.colors["panel_glow"], seed_input_rect, border_radius=8)
         # Main input field
         pygame.draw.rect(self.screen, self.colors["panel"], seed_input_rect, border_radius=8)
-        pygame.draw.rect(self.screen, self.colors["info"], seed_input_rect, 3, border_radius=8)
+        # Highlight active field with brighter border
+        border_color = self.colors["success"] if active_field == "seed" else self.colors["info"]
+        pygame.draw.rect(self.screen, border_color, seed_input_rect, 3, border_radius=8)
         
         if seed:
             seed_text = self.font.render(seed, True, self.colors["text"])
@@ -649,8 +653,19 @@ class WorldUI:
             placeholder = self.font.render("Leave empty for random...", True, self.colors["text_dim"])
             self.screen.blit(placeholder, (seed_input_rect.x + 15, seed_input_rect.y + 15))
         
+        # Keyboard instructions
+        instructions_y = 345
+        instructions = [
+            "⌨️ Type with your keyboard | TAB to switch fields | ENTER to create",
+            f"Active field: {'🌍 World Name' if active_field == 'name' else '🎲 Seed'}"
+        ]
+        for i, instruction in enumerate(instructions):
+            inst_text = self.font.render(instruction, True, self.colors["text_secondary"])
+            inst_x = (self.screen.get_width() - inst_text.get_width()) // 2
+            self.screen.blit(inst_text, (inst_x, instructions_y + i * 25))
+        
         # Buttons
-        button_y = 360
+        button_y = 420
         
         # Create world button
         create_btn = self._draw_button("🚀 Create World", 200, button_y, mouse_pos, self.colors["success"])
@@ -663,7 +678,7 @@ class WorldUI:
             "back": back_btn,
             "name_input": name_input_rect,
             "seed_input": seed_input_rect,
-
+            "active_field": active_field
         }
     
     def draw_world_deletion_confirmation(self, world_name: str, mouse_pos: tuple) -> Dict[str, any]:
@@ -819,6 +834,53 @@ class WorldUI:
             max_pages = (len(worlds) - 1) // self.worlds_per_page
             if self.current_page < max_pages:
                 self.current_page += 1
+    
+    def handle_world_creation_keyboard(self, event, world_name: str, seed: str, active_field: str):
+        """
+        Handle keyboard input for world creation screen.
+        
+        Args:
+            event: pygame.KEYDOWN event
+            world_name: Current world name string
+            seed: Current seed string
+            active_field: Which field is active ("name" or "seed")
+            
+        Returns:
+            (new_world_name, new_seed, new_active_field)
+        """
+        if event.type != pygame.KEYDOWN:
+            return world_name, seed, active_field
+        
+        # Handle the active field
+        if active_field == "name":
+            if event.key == pygame.K_BACKSPACE:
+                world_name = world_name[:-1]
+            elif event.key == pygame.K_TAB:
+                active_field = "seed"  # Switch to seed field
+            elif event.key == pygame.K_RETURN:
+                # Submit if name is valid
+                if len(world_name) > 0:
+                    return world_name, seed, "submit"
+            elif event.unicode and len(world_name) < 32:
+                # Add character if valid
+                if event.unicode.isalnum() or event.unicode in [' ', '_', '-']:
+                    world_name += event.unicode
+        
+        elif active_field == "seed":
+            if event.key == pygame.K_BACKSPACE:
+                seed = seed[:-1]
+            elif event.key == pygame.K_TAB:
+                active_field = "name"  # Switch back to name field
+            elif event.key == pygame.K_RETURN:
+                # Submit if name is valid
+                if len(world_name) > 0:
+                    return world_name, seed, "submit"
+            elif event.unicode and len(seed) < 20:
+                # Add character if valid (allow letters and numbers for seeds)
+                if event.unicode.isalnum():
+                    seed += event.unicode
+        
+        return world_name, seed, active_field
     
     def _draw_gradient_background(self):
         """Draw a beautiful gradient background"""
