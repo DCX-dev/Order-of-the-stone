@@ -8131,6 +8131,12 @@ def draw_world():
                 monster_img = textures.get(entity["image"], textures.get("monster", textures["zombie"]))
             else:
                 monster_img = entity["image"]
+            
+            # Flip sprite based on facing direction
+            facing_direction = entity.get("facing_direction", 1)
+            if facing_direction == -1:  # Facing left
+                monster_img = pygame.transform.flip(monster_img, True, False)
+            
             screen.blit(monster_img, (ex, ey))
         elif entity["type"] == "slime":
             # Draw slime with Terraria-style bouncing and squishing
@@ -8183,6 +8189,12 @@ def draw_world():
                 cow_img = textures.get(entity["image"], textures["cow"])
             else:
                 cow_img = entity["image"]
+            
+            # Flip sprite based on facing direction
+            facing_direction = entity.get("facing_direction", 1)
+            if facing_direction == -1:  # Facing left
+                cow_img = pygame.transform.flip(cow_img, True, False)
+            
             screen.blit(cow_img, (ex, ey))
         elif entity["type"] == "mad_pigeon":
             # Draw mad pigeon with visual states
@@ -8214,6 +8226,11 @@ def draw_world():
                 heart_x = ex + TILE_SIZE // 2
                 heart_y = ey - 10
                 pygame.draw.circle(screen, (255, 100, 150), (heart_x, heart_y), 3)
+            
+            # Flip sprite based on facing direction
+            facing_direction = entity.get("facing_direction", 1)
+            if facing_direction == -1:  # Facing left
+                pigeon_image = pygame.transform.flip(pigeon_image, True, False)
             
             screen.blit(pigeon_image, (ex, ey))
         elif entity["type"] == "final_boss":
@@ -12697,7 +12714,8 @@ def spawn_initial_cows():
                     "wander_target": None,
                     "wander_cooldown": 0,
                     "vel_y": 0,
-                    "on_ground": True
+                    "on_ground": True,
+                    "facing_direction": 1  # Default facing right
                 })
                 cows_spawned += 1
     
@@ -12735,7 +12753,8 @@ def spawn_cows_randomly():
                         "wander_target": None,
                         "wander_cooldown": 0,
                         "vel_y": 0,
-                        "on_ground": True
+                        "on_ground": True,
+                        "facing_direction": 1  # Default facing right
                     })
                     print(f"🐄 Cow spawned near spawn at ({spawn_x:.1f}, {spawn_y_ground:.1f})")
         
@@ -12785,6 +12804,12 @@ def update_cow_behavior():
                 if abs(dx) > 0.1:
                     speed = 0.02
                     move_x = speed if dx > 0 else -speed
+                    
+                    # Update facing direction based on movement
+                    if move_x > 0:
+                        cow["facing_direction"] = 1  # Moving right
+                    elif move_x < 0:
+                        cow["facing_direction"] = -1  # Moving left
                     
                     # Check if next position has a block (wall collision)
                     next_x = int(cow["x"] + move_x)
@@ -12847,7 +12872,8 @@ def spawn_initial_pigeons():
                     "tamed": False,
                     "cooldown": 0,
                     "fly_target": None,
-                    "perched": True  # Start perched on tree
+                    "perched": True,  # Start perched on tree
+                    "facing_direction": 1  # Default facing right
                 })
                 pigeons_spawned += 1
                 
@@ -12895,7 +12921,8 @@ def spawn_pigeons_on_trees():
                             "tamed": False,
                             "cooldown": 0,
                             "fly_target": None,
-                            "perched": True  # Start perched on tree
+                            "perched": True,  # Start perched on tree
+                            "facing_direction": 1  # Default facing right
                         })
                         print(f"🐦 Mad Pigeon spawned on tree at ({search_x}, {y})")
                         break
@@ -13007,6 +13034,12 @@ def update_pigeon_behavior():
                     move_x = (dx_fly / dist_fly) * speed if dist_fly > 0 else 0
                     move_y = (dy_fly / dist_fly) * speed if dist_fly > 0 else 0
                     
+                    # Update facing direction based on horizontal movement
+                    if move_x > 0:
+                        pigeon["facing_direction"] = 1  # Moving right
+                    elif move_x < 0:
+                        pigeon["facing_direction"] = -1  # Moving left
+                    
                     # Check collision before moving
                     new_x = pigeon["x"] + move_x
                     new_y = pigeon["y"] + move_y
@@ -13052,6 +13085,12 @@ def update_monster_movement_and_combat():
                 # Calculate movement
                 move_x = speed * dx / dist
                 move_y = speed * dy / dist
+                
+                # Update facing direction based on horizontal movement
+                if move_x > 0:
+                    mob["facing_direction"] = 1  # Moving right
+                elif move_x < 0:
+                    mob["facing_direction"] = -1  # Moving left
                 
                 # Check collision before moving
                 new_x = mob["x"] + move_x
