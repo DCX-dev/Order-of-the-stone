@@ -11768,6 +11768,11 @@ def update_player():
     on_ladder = (get_block(int(px), int(py)) == "ladder" or
                  get_block(int(px), int(py + 0.9)) == "ladder")
 
+    # Check if player is in water
+    player_head_block = get_block(int(px), int(py))
+    player_feet_block = get_block(int(px), int(py + 0.5))
+    in_water = (player_head_block == "water" or player_feet_block == "water")
+    
     if on_ladder:
         # Normal horizontal movement while on ladder
         if move_left:
@@ -11805,6 +11810,63 @@ def update_player():
 
         player["vel_y"] = 0
         player["on_ground"] = False
+    elif in_water:
+        # SWIMMING PHYSICS - player moves differently in water
+        swim_speed = speed * 0.7  # Slower movement in water
+        
+        # Horizontal movement in water
+        if move_left:
+            new_x = px - swim_speed
+            has_collision, block_type, collision_pos = check_collision_at_position(new_x, player["y"], 1.0, 1.0)
+            if not has_collision:
+                player["x"] = new_x
+        if move_right:
+            new_x = px + swim_speed
+            has_collision, block_type, collision_pos = check_collision_at_position(new_x, player["y"], 1.0, 1.0)
+            if not has_collision:
+                player["x"] = new_x
+        
+        # Swimming up/down
+        swim_vertical_speed = 0.10
+        if keys[pygame.K_w] or keys[pygame.K_UP] or keys[pygame.K_SPACE]:
+            # Swim up
+            target_y = player["y"] - swim_vertical_speed
+            head_blk = get_block(int(px), int(target_y))
+            feet_blk = get_block(int(px), int(target_y + 0.9))
+            if is_non_solid_block(head_blk) and is_non_solid_block(feet_blk):
+                player["y"] = target_y
+                player["vel_y"] = -0.05  # Slight upward momentum
+        elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            # Swim down
+            target_y = player["y"] + swim_vertical_speed
+            head_blk = get_block(int(px), int(target_y))
+            feet_blk = get_block(int(px), int(target_y + 0.9))
+            if is_non_solid_block(head_blk) and is_non_solid_block(feet_blk):
+                player["y"] = target_y
+                player["vel_y"] = 0.05  # Slight downward momentum
+        
+        # Water drag - slowly sink or float
+        water_drag = 0.85  # Water resistance
+        player["vel_y"] *= water_drag
+        player["vel_y"] += 0.01  # Gentle sinking when not swimming
+        
+        # Apply water velocity
+        next_y = player["y"] + player["vel_y"]
+        
+        # Check for ground collision in water
+        target_y = int(next_y + 1)
+        has_ground_collision, ground_block, ground_pos = check_collision_at_position(player["x"], target_y, 1.0, 1.0)
+        if has_ground_collision:
+            player["vel_y"] = 0
+            player["on_ground"] = True
+            player["y"] = target_y - 1
+        else:
+            player["on_ground"] = False
+            player["y"] = next_y
+        
+        # Reset fall tracking when in water (no fall damage in water)
+        player["fall_start_y"] = None
+        player["fall_height"] = 0.0
     else:
         # Normal horizontal movement with enhanced collision detection
         if move_left:
@@ -12983,23 +13045,23 @@ def update_monster_movement_and_combat():
                 new_x = mob["x"] + move_x
                 new_y = mob["y"] + move_y
                 
-                # Check if new position is blocked
+                # Check if new position is blocked (mobs can walk through water)
                 block_at_new = get_block(int(new_x), int(new_y))
                 
-                if not block_at_new or block_at_new == "air":
-                    # No collision - move freely
+                if not block_at_new or block_at_new in ["air", "water", "lava"]:
+                    # No collision - move freely through air and water
                     mob["x"] = new_x
                     mob["y"] = new_y
                 else:
                     # Collision detected - try to move around the obstacle
                     # Try horizontal only
                     block_at_x = get_block(int(mob["x"] + move_x), int(mob["y"]))
-                    if not block_at_x or block_at_x == "air":
+                    if not block_at_x or block_at_x in ["air", "water", "lava"]:
                         mob["x"] += move_x
                     
                     # Try vertical only
-                    block_at_y = get_block(int(mob["x"]), int(mob["y"] + move_y))
-                    if not block_at_y or block_at_y == "air":
+                    block_at_y = get_block(int(mob["x"]), int(mob["y"] + move_y"))
+                    if not block_at_y or block_at_y in ["air", "water", "lava"]:
                         mob["y"] += move_y
 
             # Ranged attack: throw rock projectiles every 1.5s
@@ -13062,7 +13124,8 @@ def update_monster_movement_and_combat():
             mob_y = int(mob["y"])
             block_below = get_block(mob_x, mob_y + 1)
             
-            if block_below and block_below not in ["air", None]:
+            # Zombies fall through water (not solid ground)
+            if block_below and block_below not in ["air", None, "water", "lava"]:
                 # On ground - stop falling
                 mob["y"] = float(mob_y)
                 mob["vel_y"] = 0

@@ -103,9 +103,15 @@ class WorldGenerator:
                 surface_y = water_level + 15 + int(3 * math.sin(x * 0.2))  # Varied ocean floor
                 surface_y = max(115, min(130, surface_y))  # Ocean floor range
             elif is_beach:
-                # Beach is gently sloped near water level
-                surface_y = water_level + int(2 * math.sin(x * 0.1))
-                surface_y = max(105, min(112, surface_y))  # Beach range
+                # Beach slopes smoothly from land to water
+                # Calculate distance from ocean boundary for smooth slope
+                beach_progress = (ocean_wave + 0.3) / 0.2  # 0.0 at ocean edge, 1.0 at land edge
+                beach_progress = max(0.0, min(1.0, beach_progress))
+                
+                # Smooth slope: starts at water level, rises gradually to land
+                slope_height = int(beach_progress * 8)  # 8 block rise over beach
+                surface_y = water_level + slope_height + int(math.sin(x * 0.3))  # Add small variations
+                surface_y = max(water_level - 2, min(115, surface_y))  # Beach range with underwater slope
             else:
                 # Normal terrain
                 surface_y = max(100, min(125, surface_y))
