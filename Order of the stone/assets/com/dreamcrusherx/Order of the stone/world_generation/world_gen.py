@@ -99,25 +99,20 @@ class WorldGenerator:
             
             # Modify terrain based on biome
             if is_ocean:
-                # Ocean floor slopes gradually deeper as you go further from shore
-                # Calculate depth based on distance into ocean
-                ocean_depth_factor = abs(ocean_wave + 0.3) / 0.7  # 0.0 at edge, 1.0 at center
-                ocean_depth_factor = max(0.0, min(1.0, ocean_depth_factor))
-                
-                # Gradual slope: starts shallow near beach, gets deeper (up to 20 blocks deep)
-                depth_increase = int(ocean_depth_factor * 20)  # 0 to 20 blocks deeper
-                surface_y = water_level + 8 + depth_increase + int(2 * math.sin(x * 0.2))  # Varied ocean floor with slope
-                surface_y = max(water_level + 8, min(water_level + 30, surface_y))  # Ocean floor range
+                # Ocean floor is flat at water level - no artificial slopes
+                surface_y = water_level + 8 + int(2 * math.sin(x * 0.2))  # Slight variation only
+                surface_y = max(water_level + 6, min(water_level + 12, surface_y))  # Shallow, flat ocean floor
             elif is_beach:
-                # Beach slopes smoothly from land to water
+                # Beach slopes naturally from land down to water level
                 # Calculate distance from ocean boundary for smooth slope
                 beach_progress = (ocean_wave + 0.3) / 0.2  # 0.0 at ocean edge, 1.0 at land edge
                 beach_progress = max(0.0, min(1.0, beach_progress))
                 
-                # Smooth slope: starts at water level, rises gradually to land
-                slope_height = int(beach_progress * 8)  # 8 block rise over beach
-                surface_y = water_level + slope_height + int(math.sin(x * 0.3))  # Add small variations
-                surface_y = max(water_level - 2, min(115, surface_y))  # Beach range with underwater slope
+                # Natural slope: starts at land height, gradually slopes down to water level
+                land_height = base_height + height_variation  # Normal land height
+                slope_height = int(beach_progress * (land_height - water_level))  # Slope from land to water
+                surface_y = water_level + slope_height + int(math.sin(x * 0.3))  # Natural beach slope
+                surface_y = max(water_level - 3, min(land_height, surface_y))  # Between water and land
             else:
                 # Normal terrain
                 surface_y = max(100, min(125, surface_y))
@@ -335,12 +330,9 @@ class WorldGenerator:
             
             # Adjust surface based on biome
             if is_ocean:
-                # Match the sloped ocean floor from terrain generation
-                ocean_depth_factor = abs(ocean_wave + 0.3) / 0.7
-                ocean_depth_factor = max(0.0, min(1.0, ocean_depth_factor))
-                depth_increase = int(ocean_depth_factor * 20)
-                surface_y = water_level + 8 + depth_increase + int(2 * math.sin(x * 0.2))
-                surface_y = max(water_level + 8, min(water_level + 30, surface_y))
+                # Match the flat ocean floor from terrain generation
+                surface_y = water_level + 8 + int(2 * math.sin(x * 0.2))
+                surface_y = max(water_level + 6, min(water_level + 12, surface_y))
             elif is_beach:
                 surface_y = water_level + int(2 * math.sin(x * 0.1))
                 surface_y = max(105, min(112, surface_y))
