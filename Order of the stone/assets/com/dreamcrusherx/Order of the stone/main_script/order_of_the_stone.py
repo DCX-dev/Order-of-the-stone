@@ -13060,7 +13060,7 @@ def update_monster_movement_and_combat():
                         mob["x"] += move_x
                     
                     # Try vertical only
-                    block_at_y = get_block(int(mob["x"]), int(mob["y"] + move_y"))
+                    block_at_y = get_block(int(mob["x"]), int(mob["y"] + move_y))
                     if not block_at_y or block_at_y in ["air", "water", "lava"]:
                         mob["y"] += move_y
 
