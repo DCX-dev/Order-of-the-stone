@@ -12575,8 +12575,8 @@ def update_slime_behavior():
         slime_block_x = int(slime["x"])
         block_below = get_block(slime_block_x, slime_block_y + 1)
         
-        if block_below and block_below != "air":
-            # Slime is on ground
+        if block_below and block_below not in ["air", "water", "lava"]:
+            # Slime is on ground (not in water)
             slime["on_ground"] = True
             slime["vel_y"] = 0
             slime["y"] = float(slime_block_y)  # Snap to ground
@@ -12759,8 +12759,8 @@ def update_cow_behavior():
         cow_y = int(cow["y"])
         block_below = get_block(cow_x, cow_y + 1)
         
-        if block_below and block_below != "air":
-            # On ground - stop falling
+        if block_below and block_below not in ["air", "water", "lava"]:
+            # On ground - stop falling (not in water)
             cow["y"] = float(cow_y)
             cow["vel_y"] = 0
             cow["on_ground"] = True
