@@ -11826,7 +11826,7 @@ def update_player():
             if not has_collision:
                 player["x"] = new_x
         
-        # Swimming up/down
+        # Swimming up/down with buoyancy
         swim_vertical_speed = 0.10
         if keys[pygame.K_w] or keys[pygame.K_UP] or keys[pygame.K_SPACE]:
             # Swim up
@@ -11844,11 +11844,23 @@ def update_player():
             if is_non_solid_block(head_blk) and is_non_solid_block(feet_blk):
                 player["y"] = target_y
                 player["vel_y"] = 0.05  # Slight downward momentum
+        else:
+            # Natural buoyancy - player floats to the surface when not pressing any keys
+            # Check if player's head is still in water
+            head_in_water = get_block(int(px), int(py)) == "water"
+            if head_in_water:
+                # Apply upward buoyancy force to float toward surface
+                player["vel_y"] -= 0.015  # Buoyancy force (negative = upward)
         
-        # Water drag - slowly sink or float
+        # Water drag - resistance to movement
         water_drag = 0.85  # Water resistance
         player["vel_y"] *= water_drag
-        player["vel_y"] += 0.01  # Gentle sinking when not swimming
+        
+        # Limit vertical speed in water
+        if player["vel_y"] > 0.1:
+            player["vel_y"] = 0.1
+        elif player["vel_y"] < -0.1:
+            player["vel_y"] = -0.1
         
         # Apply water velocity
         next_y = player["y"] + player["vel_y"]

@@ -99,9 +99,15 @@ class WorldGenerator:
             
             # Modify terrain based on biome
             if is_ocean:
-                # Ocean floor is much lower
-                surface_y = water_level + 15 + int(3 * math.sin(x * 0.2))  # Varied ocean floor
-                surface_y = max(115, min(130, surface_y))  # Ocean floor range
+                # Ocean floor slopes gradually deeper as you go further from shore
+                # Calculate depth based on distance into ocean
+                ocean_depth_factor = abs(ocean_wave + 0.3) / 0.7  # 0.0 at edge, 1.0 at center
+                ocean_depth_factor = max(0.0, min(1.0, ocean_depth_factor))
+                
+                # Gradual slope: starts shallow near beach, gets deeper (up to 20 blocks deep)
+                depth_increase = int(ocean_depth_factor * 20)  # 0 to 20 blocks deeper
+                surface_y = water_level + 8 + depth_increase + int(2 * math.sin(x * 0.2))  # Varied ocean floor with slope
+                surface_y = max(water_level + 8, min(water_level + 30, surface_y))  # Ocean floor range
             elif is_beach:
                 # Beach slopes smoothly from land to water
                 # Calculate distance from ocean boundary for smooth slope
@@ -329,8 +335,12 @@ class WorldGenerator:
             
             # Adjust surface based on biome
             if is_ocean:
-                surface_y = water_level + 15 + int(3 * math.sin(x * 0.2))
-                surface_y = max(115, min(130, surface_y))
+                # Match the sloped ocean floor from terrain generation
+                ocean_depth_factor = abs(ocean_wave + 0.3) / 0.7
+                ocean_depth_factor = max(0.0, min(1.0, ocean_depth_factor))
+                depth_increase = int(ocean_depth_factor * 20)
+                surface_y = water_level + 8 + depth_increase + int(2 * math.sin(x * 0.2))
+                surface_y = max(water_level + 8, min(water_level + 30, surface_y))
             elif is_beach:
                 surface_y = water_level + int(2 * math.sin(x * 0.1))
                 surface_y = max(105, min(112, surface_y))
