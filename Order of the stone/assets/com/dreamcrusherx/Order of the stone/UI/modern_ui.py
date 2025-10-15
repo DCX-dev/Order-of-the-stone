@@ -201,7 +201,7 @@ class ModernUI:
             button_states[action] = btn_rect
         
         # Version info
-        version_text = self.small_font.render("v1.2 Beta - Modern UI Edition", True, self.colors["text_dim"])
+        version_text = self.small_font.render("v1.3 Beta - Modern UI Edition", True, self.colors["text_dim"])
         self.screen.blit(version_text, (10, self.screen.get_height() - 30))
         
         # Copyright text - Bottom right corner
@@ -617,7 +617,7 @@ class ModernUI:
             "• Python Developers",
             "• All Beta Testers",
             "",
-            "Version 1.2 Beta",
+            "Version 1.3 Beta",
             "© 2025 Team Banana Labs"
         ]
         

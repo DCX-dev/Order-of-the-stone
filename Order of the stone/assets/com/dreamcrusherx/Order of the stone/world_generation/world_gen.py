@@ -101,31 +101,6 @@ class WorldGenerator:
         water_level = 108  # Water level for oceans
         
         for x in range(-world_width//2, world_width//2):
-            # RANDOM OCEAN BIOME - different position each world!
-            is_ocean = False
-            is_beach = False
-            ocean_factor = 0
-            
-            if self.ocean_side == "center":
-                # Ocean in center with beaches on both sides
-                distance_from_center = abs(x)
-                ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (world_width * 0.15) ** 2))
-                is_ocean = ocean_factor > 0.7
-                is_beach = 0.3 <= ocean_factor <= 0.7
-            elif self.ocean_side == "left":
-                # Ocean on left side only
-                if x < -world_width * 0.2:
-                    is_ocean = True
-                elif -world_width * 0.2 <= x < -world_width * 0.1:
-                    is_beach = True
-            elif self.ocean_side == "right":
-                # Ocean on right side only
-                if x > world_width * 0.2:
-                    is_ocean = True
-                elif world_width * 0.1 < x <= world_width * 0.2:
-                    is_beach = True
-            # self.ocean_side == "none" means no ocean at all!
-            
             # TRULY RANDOM TERRAIN using world's unique parameters
             # Each world gets different frequencies and offsets = truly unique terrain!
             primary_wave = 8 * math.sin((x + self.freq1_offset) * self.freq1_mult)
@@ -136,26 +111,50 @@ class WorldGenerator:
             # Combine all waves for truly unique terrain per world
             height_variation = int(primary_wave + secondary_wave + tertiary_wave + detail_wave)
             surface_y = base_height + height_variation
+            surface_y = max(100, min(125, surface_y))  # Normal land terrain
             
-            # Modify terrain based on biome
-            if is_ocean:
-                # Ocean floor is flat at water level - no artificial slopes
-                surface_y = water_level + 8 + int(2 * math.sin(x * 0.2))  # Slight variation only
-                surface_y = max(water_level + 6, min(water_level + 12, surface_y))  # Shallow, flat ocean floor
-            elif is_beach:
-                # Beach slopes naturally from land down to water level
-                # Calculate distance from ocean for smooth slope using ocean_factor
-                beach_progress = (0.7 - ocean_factor) / 0.4  # 0.0 at ocean edge, 1.0 at land edge
-                beach_progress = max(0.0, min(1.0, beach_progress))
-                
-                # Natural slope: starts at land height, gradually slopes down to water level
-                land_height = base_height + height_variation  # Normal land height
-                slope_height = int(beach_progress * (land_height - water_level))  # Slope from land to water
-                surface_y = water_level + slope_height + int(math.sin(x * 0.3))  # Natural beach slope
-                surface_y = max(water_level - 3, min(land_height, surface_y))  # Between water and land
-            else:
-                # Normal terrain
-                surface_y = max(100, min(125, surface_y))
+            # Check if this location should be ocean (based on world's ocean setting)
+            is_ocean = False
+            is_beach = False
+            
+            if self.ocean_side == "center":
+                # Ocean in center with natural beach slopes
+                distance_from_center = abs(x)
+                if distance_from_center < 40:
+                    # Deep ocean in center
+                    is_ocean = True
+                    surface_y = water_level + 8  # Ocean floor 8 blocks below water
+                elif distance_from_center < 80:
+                    # Beach transition zone - gradual slope from land to ocean
+                    is_beach = True
+                    # Calculate beach slope: starts at normal land height, slopes down to ocean
+                    beach_progress = (80 - distance_from_center) / 40  # 1.0 at ocean edge, 0.0 at land edge
+                    normal_height = surface_y
+                    ocean_height = water_level + 8
+                    surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
+            elif self.ocean_side == "left":
+                # Ocean on left with beach transition
+                if x < -60:
+                    is_ocean = True
+                    surface_y = water_level + 8
+                elif -80 < x < -60:
+                    is_beach = True
+                    beach_progress = (x + 80) / 20  # 0.0 at ocean edge, 1.0 at land edge
+                    normal_height = surface_y
+                    ocean_height = water_level + 8
+                    surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
+            elif self.ocean_side == "right":
+                # Ocean on right with beach transition
+                if x > 60:
+                    is_ocean = True
+                    surface_y = water_level + 8
+                elif 60 < x < 80:
+                    is_beach = True
+                    beach_progress = (80 - x) / 20  # 0.0 at ocean edge, 1.0 at land edge
+                    normal_height = surface_y
+                    ocean_height = water_level + 8
+                    surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
+            # self.ocean_side == "none" means no ocean at all - just normal terrain
             
             # NATURAL TERRAIN GENERATION: Build layers from bottom to top
             
@@ -170,45 +169,36 @@ class WorldGenerator:
                 if f"{x},{y}" not in blocks:  # Only place if empty
                     blocks[f"{x},{y}"] = "stone"
             
-            # 3. TERRAIN SURFACE LAYERS based on biome
+            # 3. TERRAIN SURFACE LAYERS - Simple and clean
             if is_ocean:
-                # Ocean floor: sand layers
+                # Ocean floor: sand layers (NO holes)
                 for y in range(surface_y + 1, surface_y + 5):
-                    if f"{x},{y}" not in blocks:
-                        blocks[f"{x},{y}"] = "sand"
+                    blocks[f"{x},{y}"] = "sand"
                 # Ocean floor surface
-                if f"{x},{surface_y}" not in blocks:
-                    blocks[f"{x},{surface_y}"] = "sand"
+                blocks[f"{x},{surface_y}"] = "sand"
                 
-                # Fill with water from ocean floor to water level
+                # Fill with water from ocean floor to water level (NO holes)
                 for y in range(surface_y - 1, water_level - 1, -1):
-                    if f"{x},{y}" not in blocks:
-                        blocks[f"{x},{y}"] = "water"
-                        
+                    blocks[f"{x},{y}"] = "water"
             elif is_beach:
-                # Beach: sand layers
+                # Beach: sand layers that slope down to ocean
                 for y in range(surface_y + 1, surface_y + 4):
-                    if f"{x},{y}" not in blocks:
-                        blocks[f"{x},{y}"] = "sand"
+                    blocks[f"{x},{y}"] = "sand"
                 # Beach surface
-                if f"{x},{surface_y}" not in blocks:
-                    blocks[f"{x},{surface_y}"] = "sand"
+                blocks[f"{x},{surface_y}"] = "sand"
                 
-                # Add water if below water level
+                # Add water if beach is below water level (natural slope)
                 if surface_y < water_level:
                     for y in range(surface_y - 1, water_level - 1, -1):
-                        if f"{x},{y}" not in blocks:
-                            blocks[f"{x},{y}"] = "water"
+                        blocks[f"{x},{y}"] = "water"
             else:
-                # Normal terrain: dirt and grass
+                # Normal terrain: PROPER LAYERS (NO holes)
                 # DIRT LAYER: 2 blocks below surface
                 for y in range(surface_y + 1, surface_y + 3):
-                    if f"{x},{y}" not in blocks:
-                        blocks[f"{x},{y}"] = "dirt"
+                    blocks[f"{x},{y}"] = "dirt"
                 
                 # GRASS: ONLY at exact surface level
-                if f"{x},{surface_y}" not in blocks:
-                    blocks[f"{x},{surface_y}"] = "grass"
+                blocks[f"{x},{surface_y}"] = "grass"
     
     def _generate_simple_trees(self, blocks: Dict[str, str], world_width: int):
         """Generate simple, clean trees in small clusters (not in oceans or beaches)"""
@@ -229,41 +219,43 @@ class WorldGenerator:
                 # Clean position within cluster (within 5 blocks of center)
                 tree_x = cluster_x + self.rng.randint(-5, 5)
                 
-                # Find surface height using the SAME algorithm as terrain generation
-                import math
+                # Find surface by searching for grass block from top down
+                surface_y = None
+                for y in range(80, 130):
+                    block = blocks.get(f"{tree_x},{y}")
+                    if block == "grass":
+                        surface_y = y
+                        break
                 
-                # Check if this is ocean or beach biome - no trees there
-                center_x = 0
-                ocean_width = world_width * 0.6
-                distance_from_center = abs(tree_x - center_x)
-                ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
-                
-                is_ocean = ocean_factor > 0.7
-                is_beach = 0.3 <= ocean_factor <= 0.7
-                
-                if is_ocean or is_beach:
-                    continue  # Skip tree placement in oceans and beaches
-                
-                # Normal terrain tree placement
-                base_height = 115
-                primary_wave = 6 * math.sin(tree_x * 0.05)  # Match clean terrain
-                secondary_wave = 3 * math.sin(tree_x * 0.15)
-                tertiary_wave = 2 * math.sin(tree_x * 0.3)
-                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-                surface_y = base_height + height_variation
-                surface_y = max(100, min(125, surface_y))
+                # Skip if no grass surface found (might be ocean/sand)
+                if surface_y is None:
+                    continue
                 
                 if (tree_x, surface_y) not in placed_positions:
-                    # Check if area is clear for tree
+                    # Check if area is clear for tree (must have air above and grass below)
                     area_clear = True
-                    for dx in range(-1, 2):
-                        for dy in range(-1, 3):
-                            check_x, check_y = tree_x + dx, surface_y + dy
-                            if f"{check_x},{check_y}" in blocks and blocks[f"{check_x},{check_y}"] in ["log", "leaves", "red_brick", "stone", "door"]:
-                                area_clear = False
-                                break
-                        if not area_clear:
+                    
+                    # Check that there's grass at surface
+                    if blocks.get(f"{tree_x},{surface_y}") != "grass":
+                        continue
+                    
+                    # Check that there's air above for tree to grow
+                    for dy in range(-1, -6, -1):  # Check 5 blocks above
+                        check_block = blocks.get(f"{tree_x},{surface_y + dy}")
+                        if check_block and check_block != "air":
+                            area_clear = False
                             break
+                    
+                    # Check nearby area for obstacles
+                    if area_clear:
+                        for dx in range(-1, 2):
+                            for dy in range(-1, 3):
+                                check_x, check_y = tree_x + dx, surface_y + dy
+                                if f"{check_x},{check_y}" in blocks and blocks[f"{check_x},{check_y}"] in ["log", "leaves", "red_brick", "stone", "door"]:
+                                    area_clear = False
+                                    break
+                            if not area_clear:
+                                break
                     
                     if area_clear:
                         # Place clean, organized tree
@@ -298,27 +290,17 @@ class WorldGenerator:
                 if abs(x) < spawn_safe_zone:
                     continue
                 
-                # Check if this is ocean or beach - no fortresses there
-                import math
-                center_x = 0
-                ocean_width = world_width * 0.6
-                distance_from_center = abs(x - center_x)
-                ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+                # Find surface by searching for grass block from top down
+                surface_y = None
+                for y in range(80, 130):
+                    block = blocks.get(f"{x},{y}")
+                    if block == "grass":
+                        surface_y = y
+                        break
                 
-                is_ocean = ocean_factor > 0.7
-                is_beach = 0.3 <= ocean_factor <= 0.7
-                
-                if is_ocean or is_beach:
-                    continue  # Skip fortress in ocean/beach
-                    
-                # Find surface height using the SAME algorithm as terrain generation
-                base_height = 115
-                primary_wave = 6 * math.sin(x * 0.05)
-                secondary_wave = 3 * math.sin(x * 0.15)
-                tertiary_wave = 2 * math.sin(x * 0.3)
-                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-                surface_y = base_height + height_variation
-                surface_y = max(100, min(125, surface_y))
+                # Skip if no grass surface found (might be ocean/sand)
+                if surface_y is None:
+                    continue
                 
                 # Place fortress at calculated surface
                 # Place larger fortress
@@ -364,36 +346,17 @@ class WorldGenerator:
         
         # Generate ores for each column in the world
         for x in range(-world_width//2, world_width//2):
-            # Calculate surface height using the same algorithm as terrain generation
-            center_x = 0
-            ocean_width = world_width * 0.6
-            distance_from_center = abs(x - center_x)
-            ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+            # Find surface by searching for any solid block from top down
+            surface_y = None
+            for y in range(80, 140):
+                block = blocks.get(f"{x},{y}")
+                if block in ["grass", "sand", "stone", "dirt"]:
+                    surface_y = y
+                    break
             
-            is_ocean = ocean_factor > 0.7
-            is_beach = 0.3 <= ocean_factor <= 0.7
-            
-            base_height = 115
-            primary_wave = 6 * math.sin(x * 0.05)
-            secondary_wave = 3 * math.sin(x * 0.15)
-            tertiary_wave = 2 * math.sin(x * 0.3)
-            height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-            surface_y = base_height + height_variation
-            
-            # Adjust surface based on biome
-            if is_ocean:
-                # Match the flat ocean floor from terrain generation
-                surface_y = water_level + 8 + int(2 * math.sin(x * 0.2))
-                surface_y = max(water_level + 6, min(water_level + 12, surface_y))
-            elif is_beach:
-                beach_progress = (0.7 - ocean_factor) / 0.4
-                beach_progress = max(0.0, min(1.0, beach_progress))
-                land_height = base_height + height_variation
-                slope_height = int(beach_progress * (land_height - water_level))
-                surface_y = water_level + slope_height + int(math.sin(x * 0.3))
-                surface_y = max(water_level - 3, min(land_height, surface_y))
-            else:
-                surface_y = max(100, min(125, surface_y))
+            # Skip if no surface found
+            if surface_y is None:
+                continue
             
             bedrock_y = surface_y + 200
             
@@ -440,45 +403,28 @@ class WorldGenerator:
         print(f"⛏️ Generated {ore_count} ore veins with proper rarity distribution (coal=common, iron=uncommon, gold=slightly rare, diamond=rare)")
     
     def _find_spawn_location(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
-        """Find a good spawn location on land (not in ocean)"""
-        import math
+        """Find a good spawn location on grass land"""
+        # Search from center outward for a grass block
+        for spawn_x in range(0, 100, 5):
+            # Find grass surface at this x
+            for y in range(80, 130):
+                block = blocks.get(f"{spawn_x},{y}")
+                if block == "grass":
+                    # Found grass! Spawn here
+                    print(f"🏠 Spawn location found on grass at ({spawn_x}, {y})")
+                    return spawn_x, y - 2  # Spawn 2 blocks above surface
         
-        # Try to find a spawn location on land, not in ocean
-        for spawn_x in range(0, 100, 5):  # Search from center outward
-            # Check if this is ocean or beach
-            center_x = 0
-            ocean_width = world_width * 0.6
-            distance_from_center = abs(spawn_x - center_x)
-            ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
-            
-            is_ocean = ocean_factor > 0.7
-            is_beach = 0.3 <= ocean_factor <= 0.7
-            
-            # Skip ocean and beach, find normal land
-            if not is_ocean and not is_beach:
-                # Calculate surface for normal land
-                base_height = 115
-                primary_wave = 6 * math.sin(spawn_x * 0.05)
-                secondary_wave = 3 * math.sin(spawn_x * 0.15)
-                tertiary_wave = 2 * math.sin(spawn_x * 0.3)
-                height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-                surface_y = base_height + height_variation
-                surface_y = max(100, min(125, surface_y))
-                
-                print(f"🏠 Spawn location found on land at x={spawn_x}")
-                return spawn_x, surface_y - 2  # Spawn 2 blocks above surface
+        # Fallback - search harder
+        for spawn_x in range(-50, 50):
+            for y in range(80, 130):
+                block = blocks.get(f"{spawn_x},{y}")
+                if block == "grass":
+                    print(f"🏠 Fallback spawn found at ({spawn_x}, {y})")
+                    return spawn_x, y - 2
         
-        # Fallback to center if no good land found (shouldn't happen)
-        x = 0
-        base_height = 115
-        primary_wave = 6 * math.sin(x * 0.05)
-        secondary_wave = 3 * math.sin(x * 0.15)
-        tertiary_wave = 2 * math.sin(x * 0.3)
-        height_variation = int(primary_wave + secondary_wave + tertiary_wave)
-        surface_y = base_height + height_variation
-        surface_y = max(100, min(125, surface_y))
-        
-        return x, surface_y - 2  # Spawn 2 blocks above surface
+        # Last resort - spawn at center
+        print("⚠️ No grass found, spawning at default location")
+        return 0, 100
 
 def generate_world(seed: str = None, world_width: int = 400) -> Dict:
     """
