@@ -14,7 +14,26 @@ class WorldGenerator:
             import time
             seed = int(time.time() * 1000) % 1000000 + random.randint(1, 1000)
         self.rng = random.Random(seed)
+        self.seed = seed
+        
+        # TRULY RANDOM TERRAIN: Generate random terrain parameters for this world
+        self.freq1_offset = self.rng.uniform(0, 1000)
+        self.freq2_offset = self.rng.uniform(0, 1000)
+        self.freq3_offset = self.rng.uniform(0, 1000)
+        self.freq4_offset = self.rng.uniform(0, 1000)
+        
+        # Random frequency multipliers (how wavy the terrain is)
+        self.freq1_mult = self.rng.uniform(0.03, 0.07)   # Large rolling hills
+        self.freq2_mult = self.rng.uniform(0.1, 0.2)     # Medium hills
+        self.freq3_mult = self.rng.uniform(0.25, 0.35)   # Small variations
+        self.freq4_mult = self.rng.uniform(0.4, 0.6)     # Fine details
+        
+        # Random ocean placement
+        self.ocean_side = self.rng.choice(["left", "right", "center", "none"])
+        
         print(f"🌍 World Generator initialized with seed: {seed}")
+        print(f"🎲 Truly random terrain: freq offsets=({self.freq1_offset:.1f}, {self.freq2_offset:.1f}, {self.freq3_offset:.1f}, {self.freq4_offset:.1f})")
+        print(f"🌊 Ocean placement: {self.ocean_side}")
     
     def generate_world(self, world_width: int = 400, world_height: int = 200) -> Dict:
         """Generate a simple, clean world"""
@@ -82,26 +101,40 @@ class WorldGenerator:
         water_level = 108  # Water level for oceans
         
         for x in range(-world_width//2, world_width//2):
-            # OCEAN BIOME DETECTION - create a natural lake/bay shape
-            # Use a bell curve to create ocean in the center with beaches on both sides
-            center_x = 0  # Center of the world
-            ocean_width = world_width * 0.6  # Ocean takes up 60% of world width
-            distance_from_center = abs(x - center_x)
+            # RANDOM OCEAN BIOME - different position each world!
+            is_ocean = False
+            is_beach = False
+            ocean_factor = 0
             
-            # Create bell curve for natural lake shape
-            ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (ocean_width / 4) ** 2))
+            if self.ocean_side == "center":
+                # Ocean in center with beaches on both sides
+                distance_from_center = abs(x)
+                ocean_factor = math.exp(-(distance_from_center ** 2) / (2 * (world_width * 0.15) ** 2))
+                is_ocean = ocean_factor > 0.7
+                is_beach = 0.3 <= ocean_factor <= 0.7
+            elif self.ocean_side == "left":
+                # Ocean on left side only
+                if x < -world_width * 0.2:
+                    is_ocean = True
+                elif -world_width * 0.2 <= x < -world_width * 0.1:
+                    is_beach = True
+            elif self.ocean_side == "right":
+                # Ocean on right side only
+                if x > world_width * 0.2:
+                    is_ocean = True
+                elif world_width * 0.1 < x <= world_width * 0.2:
+                    is_beach = True
+            # self.ocean_side == "none" means no ocean at all!
             
-            is_ocean = ocean_factor > 0.7  # Deep ocean in center
-            is_beach = 0.3 <= ocean_factor <= 0.7  # Beach transition zones on both sides
+            # TRULY RANDOM TERRAIN using world's unique parameters
+            # Each world gets different frequencies and offsets = truly unique terrain!
+            primary_wave = 8 * math.sin((x + self.freq1_offset) * self.freq1_mult)
+            secondary_wave = 4 * math.sin((x + self.freq2_offset) * self.freq2_mult)
+            tertiary_wave = 2 * math.sin((x + self.freq3_offset) * self.freq3_mult)
+            detail_wave = 1 * math.sin((x + self.freq4_offset) * self.freq4_mult)
             
-            # Clean terrain waves - same pattern per world but different between worlds
-            # Use the world seed to create consistent but varied terrain
-            primary_wave = 6 * math.sin(x * 0.05)  # Large hills/valleys
-            secondary_wave = 3 * math.sin(x * 0.15)  # Medium variations  
-            tertiary_wave = 2 * math.sin(x * 0.3)   # Small details
-            
-            # Combine waves for natural but clean terrain
-            height_variation = int(primary_wave + secondary_wave + tertiary_wave)
+            # Combine all waves for truly unique terrain per world
+            height_variation = int(primary_wave + secondary_wave + tertiary_wave + detail_wave)
             surface_y = base_height + height_variation
             
             # Modify terrain based on biome

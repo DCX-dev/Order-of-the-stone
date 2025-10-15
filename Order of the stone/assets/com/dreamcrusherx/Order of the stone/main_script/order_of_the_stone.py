@@ -9029,7 +9029,14 @@ def break_block(mx, my):
         return True
 
 def draw_block_breaking_animation():
-    """Draw cracking animation overlay on the block being broken"""
+    """
+    Draw cracking animation overlay on the block being broken.
+    
+    ⚠️ IMPORTANT: This function MUST be called in the main game rendering loop
+    after blocks are drawn but before UI elements. Add this line in the 
+    GameState.GAME rendering section:
+        draw_block_breaking_animation()
+    """
     global breaking_block_pos, breaking_progress
     
     if breaking_block_pos is None or breaking_progress <= 0:
@@ -9049,8 +9056,8 @@ def draw_block_breaking_animation():
     crack_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
     
     # Draw cracks - more cracks as progress increases
-    crack_color = (0, 0, 0, 150)  # Semi-transparent black
-    num_cracks = int(breaking_progress * 10) + 1
+    crack_color = (0, 0, 0, 200)  # Semi-transparent black cracks
+    num_cracks = int(breaking_progress * 8) + 2  # 2-10 cracks
     
     for i in range(num_cracks):
         # Random-looking but consistent cracks based on progress
@@ -9059,10 +9066,16 @@ def draw_block_breaking_animation():
         end_x = int(((i + 1) * 13 + bx * 7) % TILE_SIZE)
         end_y = int(((i + 1) * 17 + by * 11) % TILE_SIZE)
         
-        pygame.draw.line(crack_surface, crack_color, (start_x, start_y), (end_x, end_y), 2)
+        pygame.draw.line(crack_surface, crack_color, (start_x, start_y), (end_x, end_y), 3)
+        
+        # Add crossing cracks for more Minecraft-like appearance
+        if i % 2 == 0:
+            cross_x = int(((i + 2) * 19 + bx * 5) % TILE_SIZE)
+            cross_y = int(((i + 2) * 23 + by * 7) % TILE_SIZE)
+            pygame.draw.line(crack_surface, crack_color, (end_x, end_y), (cross_x, cross_y), 2)
     
-    # White overlay that gets brighter as breaking progresses
-    white_alpha = int(breaking_progress * 100)
+    # White overlay that gets brighter as breaking progresses (Minecraft style)
+    white_alpha = int(breaking_progress * 120)
     white_overlay = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
     white_overlay.fill((255, 255, 255, white_alpha))
     crack_surface.blit(white_overlay, (0, 0))
