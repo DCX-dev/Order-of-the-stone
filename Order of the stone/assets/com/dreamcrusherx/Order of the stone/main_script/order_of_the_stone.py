@@ -16130,22 +16130,100 @@ while running:
                         # Start hosting server with selected world
                         world_name = multiplayer_ui.get_world_name_input()
                         if world_name:
-                            print(f"🌐 Starting multiplayer server for world: {world_name}")
-                            # TODO: Implement actual server hosting
-                            # For now, just show a message
-                            print("⚠️ Server hosting will be implemented")
+                            print(f"🌐 Starting LAN server for world: {world_name}")
+                            
+                            # Import LAN server
+                            try:
+                                from multiplayer.lan_server import LANServer
+                                
+                                # Get current username
+                                host_username = get_current_username() or "Host"
+                                
+                                # Create and start LAN server
+                                lan_server = LANServer(host_username, world_name)
+                                
+                                # Get current world data or load the selected world
+                                if world_name in [w["name"] for w in world_system.get_world_list()]:
+                                    # Load existing world
+                                    world_system.load_world(world_name)
+                                    load_world_data()
+                                    server_world_data = {
+                                        "blocks": blocks.copy(),
+                                        "player": player.copy(),
+                                        "width": 400,
+                                        "height": 200
+                                    }
+                                else:
+                                    # Use current world data
+                                    server_world_data = {
+                                        "blocks": blocks.copy(),
+                                        "player": player.copy(),
+                                        "width": 400,
+                                        "height": 200
+                                    }
+                                
+                                if lan_server.start(server_world_data):
+                                    # Store server reference
+                                    multiplayer_ui.set_lan_server(lan_server)
+                                    
+                                    # Go to game
+                                    game_state = GameState.GAME
+                                    update_pause_state()
+                                    print(f"✅ LAN Server started! Players can now join on port {lan_server.port}")
+                                else:
+                                    print("❌ Failed to start LAN server")
+                            except Exception as e:
+                                print(f"❌ Error starting server: {e}")
+                            
                             multiplayer_ui.set_current_screen("main")
                         else:
                             print("⚠️ Please enter a world name to host")
                     
                     elif action == "join_selected":
                         # Join the selected server
-                        selected_server = multiplayer_ui.get_selected_server()
-                        if selected_server:
-                            print(f"🔗 Joining server: {selected_server}")
-                            # TODO: Implement actual client joining
-                            # For now, just show a message
-                            print("⚠️ Server joining will be implemented")
+                        server_info = multiplayer_ui.get_selected_server_info()
+                        if server_info:
+                            print(f"🔗 Joining server: {server_info['name']}")
+                            
+                            # Import LAN client
+                            try:
+                                from multiplayer.lan_client import LANClient
+                                
+                                # Get current username
+                                client_username = get_current_username() or "Player"
+                                
+                                # Create and connect LAN client
+                                lan_client = LANClient(client_username)
+                                
+                                server_ip = server_info.get("host")
+                                server_port = server_info.get("port", 25565)
+                                
+                                if lan_client.connect_to_server(server_ip, server_port):
+                                    # Store client reference
+                                    multiplayer_ui.set_lan_client(lan_client)
+                                    
+                                    # Wait a moment for world data
+                                    import time
+                                    time.sleep(0.5)
+                                    
+                                    # Load world data from server
+                                    if lan_client.world_data:
+                                        # Update game with server's world
+                                        blocks.clear()
+                                        blocks.update(lan_client.world_data.get("blocks", {}))
+                                        player.update(lan_client.world_data.get("player", {}))
+                                        
+                                        print("✅ Loaded world data from server")
+                                    
+                                    # Go to game
+                                    game_state = GameState.GAME
+                                    update_pause_state()
+                                    print(f"✅ Connected to {server_info['name']}!")
+                                else:
+                                    print("❌ Failed to connect to server")
+                            except Exception as e:
+                                print(f"❌ Error joining server: {e}")
+                            
                             multiplayer_ui.set_current_screen("main")
                         else:
                             print("⚠️ Please select a server to join")

@@ -6,15 +6,14 @@ from typing import List, Dict, Optional, Tuple
 # Add parent directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-# Import network modules
+# Import LAN multiplayer modules
 try:
-    from network.network_client import NetworkClient, ServerDiscovery
-    from network.network_server import NetworkServer
+    from multiplayer.lan_client import LANClient
+    from multiplayer.lan_server import LANServer
 except ImportError:
-    print("⚠️ Warning: Network modules not found, multiplayer features unavailable")
-    NetworkClient = None
-    ServerDiscovery = None
-    NetworkServer = None
+    print("⚠️ Warning: LAN multiplayer modules not found")
+    LANClient = None
+    LANServer = None
 
 class MultiplayerUI:
     def __init__(self, screen_width: int, screen_height: int):
@@ -31,9 +30,8 @@ class MultiplayerUI:
         self.refresh_timer = 0
         
         # Multiplayer components
-        self.server_discovery = ServerDiscovery() if ServerDiscovery else None
-        self.network_server = None
-        self.network_client = None
+        self.lan_server = None
+        self.lan_client = None
         
         # Input fields
         self.world_name_input = ""
@@ -139,7 +137,7 @@ class MultiplayerUI:
         screen.blit(title_text, (self.screen_width // 2 - title_text.get_width() // 2, 80))
         
         # Server discovery info
-        info_text = self.font.render("Searching for servers...", True, (255, 255, 255))
+        info_text = self.font.render("Available LAN Servers:", True, (255, 255, 255))
         screen.blit(info_text, (50, 150))
         
         # Server list
@@ -147,17 +145,25 @@ class MultiplayerUI:
             y_offset = 200
             for server_key, server_info in self.server_list.items():
                 # Server entry background
-                server_rect = pygame.Rect(50, y_offset, 500, 60)
-                color = (100, 100, 100) if server_key == self.selected_server else (70, 70, 70)
-                pygame.draw.rect(screen, color, server_rect)
-                pygame.draw.rect(screen, (255, 255, 255), server_rect, 2)
+                server_rect = pygame.Rect(50, y_offset, 700, 80)
+                color = (80, 120, 80) if server_key == self.selected_server else (60, 60, 70)
+                pygame.draw.rect(screen, color, server_rect, border_radius=10)
+                pygame.draw.rect(screen, (255, 255, 255) if server_key == self.selected_server else (150, 150, 150), server_rect, 2, border_radius=10)
                 
-                # Server info
-                name_text = self.font.render(server_info.get("name", "Unknown"), True, (255, 255, 255))
-                screen.blit(name_text, (server_rect.x + 10, server_rect.y + 5))
+                # Server name and host
+                name_text = self.font.render(server_info.get("name", "Unknown Server"), True, (255, 255, 255))
+                screen.blit(name_text, (server_rect.x + 15, server_rect.y + 10))
                 
-                status_text = self.small_font.render(f"Players: {server_info.get('players', 0)}/{server_info.get('max_players', 8)}", True, (200, 200, 200))
-                screen.blit(status_text, (server_rect.x + 10, server_rect.y + 35))
+                # World and host info
+                world_text = self.small_font.render(f"World: {server_info.get('world_name', 'Unknown')}", True, (200, 200, 200))
+                screen.blit(world_text, (server_rect.x + 15, server_rect.y + 35))
+                
+                host_text = self.small_font.render(f"Host: {server_info.get('host_player', 'Unknown')}", True, (200, 200, 200))
+                screen.blit(host_text, (server_rect.x + 15, server_rect.y + 55))
+                
+                # Players count (right side)
+                players_text = self.font.render(f"👥 {server_info.get('players', 0)}/{server_info.get('max_players', 10)}", True, (100, 255, 100))
+                screen.blit(players_text, (server_rect.x + server_rect.width - 100, server_rect.y + 25))
                 
                 # Click to select
                 if pygame.mouse.get_pressed()[0]:
@@ -165,10 +171,13 @@ class MultiplayerUI:
                     if server_rect.collidepoint(mouse_pos):
                         self.selected_server = server_key
                 
-                y_offset += 70
+                y_offset += 90
         else:
-            no_servers_text = self.font.render("No servers found", True, (128, 128, 128))
+            no_servers_text = self.font.render("No servers found on local network", True, (128, 128, 128))
             screen.blit(no_servers_text, (50, 200))
+            
+            hint_text = self.small_font.render("Make sure the host is on the same Wi-Fi network", True, (100, 100, 100))
+            screen.blit(hint_text, (50, 230))
         
         # Buttons
         button_y = 500
@@ -252,21 +261,25 @@ class MultiplayerUI:
     def refresh_server_list(self):
         """Refresh the list of available servers (LAN discovery)"""
         try:
-            if self.server_discovery:
-                # Discover servers on local network
-                servers = self.server_discovery.discover_servers(timeout=2.0)
+            if LANClient:
+                # Create temporary client for discovery
+                temp_client = LANClient("Discovery")
+                servers = temp_client.discover_servers(timeout=2.0)
+                
                 self.server_list = {}
                 for i, server in enumerate(servers):
                     self.server_list[f"server_{i}"] = {
-                        "name": server.name,
-                        "host": server.host,
-                        "port": server.port,
-                        "players": server.players,
-                        "max_players": server.max_players,
-                        "version": server.version,
-                        "uptime": server.uptime
+                        "name": server.get("server_name", "Unknown Server"),
+                        "host": server.get("ip_address", "Unknown"),
+                        "port": server.get("port", 25565),
+                        "players": server.get("players", 0),
+                        "max_players": server.get("max_players", 10),
+                        "world_name": server.get("world_name", "World"),
+                        "host_player": server.get("host_player", "Unknown")
                     }
                 print(f"🔍 Found {len(self.server_list)} LAN servers")
+            else:
+                print("⚠️ LAN multiplayer not available")
         except Exception as e:
             print(f"⚠️ Error refreshing server list: {e}")
     
@@ -301,3 +314,25 @@ class MultiplayerUI:
     def get_world_name_input(self) -> str:
         """Get the world name input"""
         return self.world_name_input
+    
+    def get_selected_server_info(self) -> Optional[Dict]:
+        """Get the full info of the selected server"""
+        if self.selected_server and self.selected_server in self.server_list:
+            return self.server_list[self.selected_server]
+        return None
+    
+    def set_lan_server(self, server: 'LANServer'):
+        """Set the LAN server instance"""
+        self.lan_server = server
+    
+    def set_lan_client(self, client: 'LANClient'):
+        """Set the LAN client instance"""
+        self.lan_client = client
+    
+    def get_lan_server(self) -> Optional['LANServer']:
+        """Get the LAN server instance"""
+        return self.lan_server
+    
+    def get_lan_client(self) -> Optional['LANClient']:
+        """Get the LAN client instance"""
+        return self.lan_client
