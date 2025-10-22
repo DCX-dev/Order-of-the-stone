@@ -7934,6 +7934,41 @@ def draw_multiplayer_server_list():
     global multiplayer_server_list_back_btn
     multiplayer_server_list_back_btn = back_btn
 
+def draw_player_nametag(px, py):
+    """Draw the player's nametag above their character"""
+    # Get the current username
+    current_username = get_current_username()
+    if not current_username or current_username == "Player":
+        # Use default if no username set
+        current_username = "Player"
+    
+    # Render the nametag text with a shadow for visibility
+    nametag_font = small_font if small_font else font
+    nametag_text = nametag_font.render(current_username, True, (255, 255, 255))
+    nametag_shadow = nametag_font.render(current_username, True, (0, 0, 0))
+    
+    # Calculate nametag position (centered above player's head)
+    nametag_x = px + (TILE_SIZE // 2) - (nametag_text.get_width() // 2)
+    nametag_y = py - 20  # 20 pixels above player
+    
+    # Draw semi-transparent background for better readability
+    bg_padding = 4
+    bg_rect = pygame.Rect(
+        nametag_x - bg_padding,
+        nametag_y - bg_padding,
+        nametag_text.get_width() + bg_padding * 2,
+        nametag_text.get_height() + bg_padding * 2
+    )
+    bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+    bg_surface.fill((0, 0, 0, 128))  # Semi-transparent black background
+    screen.blit(bg_surface, (bg_rect.x, bg_rect.y))
+    
+    # Draw shadow first (offset by 1 pixel)
+    screen.blit(nametag_shadow, (nametag_x + 1, nametag_y + 1))
+    
+    # Draw the nametag text
+    screen.blit(nametag_text, (nametag_x, nametag_y))
+
 def draw_player_armor(px, py):
     """EXTREME ENGINEERING: Draw layered armor pieces with proper positioning and visual effects"""
     # EXTREME ENGINEERING: Layer armor pieces in proper order (boots -> leggings -> chestplate -> helmet)
@@ -8421,7 +8456,8 @@ def draw_world():
     # Draw block particles
     draw_block_particles()
     
-    # Name tag removed - no more floating name above player
+    # Draw nametag above player (for both single-player and multiplayer)
+    draw_player_nametag(px, py)
     
     # Draw multiplayer chat if connected
     if is_connected:
@@ -14343,7 +14379,7 @@ def update_loading_progress():
         game_state = GameState.TITLE
 
 def draw_title_screen():
-    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn
+    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, multiplayer_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14354,6 +14390,7 @@ def draw_title_screen():
         
         # Store button references for click handling
         play_btn = button_states.get("play")
+        multiplayer_btn = button_states.get("multiplayer")
         username_btn = button_states.get("username")
         controls_btn = button_states.get("controls")
         about_btn = button_states.get("about")
@@ -14721,44 +14758,38 @@ def draw_game_menu():
 
 # --- Multiplayer Screen Drawing Function ---
 def draw_multiplayer_screen():
-    """Draw the multiplayer menu screen"""
-    screen.fill((0, 0, 64))  # Dark blue background
+    """Draw the multiplayer menu screen using MultiplayerUI"""
+    global multiplayer_ui
     
-    # Title
-    title_text = BIG_FONT.render("🌐 Multiplayer", True, (255, 255, 255))
-    screen.blit(title_text, (center_x(title_text.get_width()), 80))
+    screen.fill((20, 40, 80))  # Dark blue background
     
-    # Buttons
-    button_y = 200
-    button_height = 50
-    button_width = 300
-    
-    # Host Server button
-    host_rect = pygame.Rect(center_x(button_width), button_y, button_width, button_height)
-    pygame.draw.rect(screen, (0, 100, 0), host_rect)
-    pygame.draw.rect(screen, (255, 255, 255), host_rect, 2)
-    host_text = font.render("🏠 Host Server", True, (255, 255, 255))
-    screen.blit(host_text, (host_rect.centerx - host_text.get_width() // 2, host_rect.centery - host_text.get_height() // 2))
-    
-    # Join Server button
-    join_rect = pygame.Rect(center_x(button_width), button_y + 70, button_width, button_height)
-    pygame.draw.rect(screen, (0, 0, 100), join_rect)
-    pygame.draw.rect(screen, (255, 255, 255), join_rect, 2)
-    join_text = font.render("🔗 Join Server", True, (255, 255, 255))
-    screen.blit(join_text, (join_rect.centerx - join_text.get_width() // 2, join_rect.centery - join_text.get_height() // 2))
-    
-    # Back button
-    back_rect = pygame.Rect(center_x(button_width), button_y + 140, button_width, button_height)
-    pygame.draw.rect(screen, (100, 0, 0), back_rect)
-    pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
-    back_text = font.render("⬅️ Back", True, (255, 255, 255))
-    screen.blit(back_text, (back_rect.centerx - back_text.get_width() // 2, back_rect.centery - back_text.get_height() // 2))
-    
-    # Store button references for click handling
-    global multiplayer_host_btn, multiplayer_join_btn, multiplayer_back_btn
-    multiplayer_host_btn = host_rect
-    multiplayer_join_btn = join_rect
-    multiplayer_back_btn = back_rect
+    if multiplayer_ui:
+        # Draw the appropriate screen based on current state
+        current_screen = multiplayer_ui.get_current_screen()
+        
+        if current_screen == "main":
+            multiplayer_ui.draw_main_menu(screen)
+        elif current_screen == "host":
+            multiplayer_ui.draw_host_server(screen)
+        elif current_screen == "join":
+            multiplayer_ui.draw_join_server(screen)
+    else:
+        # Fallback if multiplayer UI is not available
+        title_text = title_font.render("🌐 Multiplayer (Not Available)", True, (255, 255, 255))
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 200))
+        
+        info_text = font.render("Multiplayer features are not currently available", True, (200, 200, 200))
+        screen.blit(info_text, (SCREEN_WIDTH // 2 - info_text.get_width() // 2, 300))
+        
+        # Back button
+        back_rect = pygame.Rect(SCREEN_WIDTH // 2 - 150, 400, 300, 50)
+        pygame.draw.rect(screen, (100, 0, 0), back_rect)
+        pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
+        back_text = font.render("⬅️ Back to Title", True, (255, 255, 255))
+        screen.blit(back_text, (back_rect.centerx - back_text.get_width() // 2, back_rect.centery - back_text.get_height() // 2))
+        
+        global multiplayer_back_btn
+        multiplayer_back_btn = back_rect
 
 # --- Main Game Loop ---
 # Add game menu toggle state
@@ -15171,6 +15202,17 @@ if WorldSystem and WorldUI:
 else:
     world_system = None
     world_ui = None
+
+# Initialize multiplayer UI
+try:
+    from ui.multiplayer_ui import MultiplayerUI
+    multiplayer_ui = MultiplayerUI(SCREEN_WIDTH, SCREEN_HEIGHT)
+    multiplayer_ui.set_fonts(font, small_font, title_font)
+    print("✅ Multiplayer UI initialized")
+except Exception as e:
+    print(f"⚠️ Warning: Multiplayer UI not available: {e}")
+    MultiplayerUI = None
+    multiplayer_ui = None
 
 # Game state variables
 game_state = GameState.STUDIO_LOADING  # Start with studio loading screen
@@ -15775,6 +15817,11 @@ while running:
                     game_state = GameState.WORLD_SELECTION
                     update_pause_state()  # Pause time when leaving title
                     print("🌍 Opening world selection screen!")
+                elif multiplayer_btn and multiplayer_btn.collidepoint(event.pos):
+                    # Open multiplayer menu
+                    game_state = GameState.MULTIPLAYER
+                    update_pause_state()  # Pause time when leaving title
+                    print("🌐 Opening multiplayer menu!")
                 elif username_btn.collidepoint(event.pos):
                     # If changing username, save the current one first
                     current_username = get_current_username()
@@ -16057,65 +16104,56 @@ while running:
                     credits_from_boss_defeat = False  # Reset the flag
                     print("🎮 Returned to title screen from credits!")
             elif game_state == GameState.MULTIPLAYER:
-                # EXTREME ENGINEERING: Professional multiplayer click handling
-                if multiplayer_menu_state == "main":
-                    if multiplayer_host_btn and multiplayer_host_btn.collidepoint(event.pos):
-                        multiplayer_menu_state = "host"
+                # Multiplayer menu click handling using MultiplayerUI
+                if multiplayer_ui:
+                    action = multiplayer_ui.handle_click(event.pos)
+                    
+                    if action == "host":
+                        # Switch to host server screen
+                        multiplayer_ui.set_current_screen("host")
                         print("🌐 Switching to host server menu")
-                    elif multiplayer_join_btn and multiplayer_join_btn.collidepoint(event.pos):
-                        multiplayer_menu_state = "join"
-                        print("🔗 Switching to join server menu")
-                    elif multiplayer_back_btn and multiplayer_back_btn.collidepoint(event.pos):
+                    
+                    elif action == "join":
+                        # Switch to join server screen and start discovery
+                        multiplayer_ui.set_current_screen("join")
+                        multiplayer_ui.start_server_discovery()
+                        print("🔗 Switching to join server menu (searching for LAN servers...)")
+                    
+                    elif action == "back":
+                        # Return to title screen
+                        multiplayer_ui.set_current_screen("main")
                         game_state = GameState.TITLE
                         update_pause_state()
                         print("⬅️ Returning to title screen from multiplayer")
-                
-                elif multiplayer_menu_state == "host":
-                    if multiplayer_start_host_btn and multiplayer_start_host_btn.collidepoint(event.pos):
+                    
+                    elif action == "start_server":
                         # Start hosting server with selected world
-                        if start_multiplayer_server("Default World"):
-                            game_state = GameState.GAME
-                            update_pause_state()
-                            show_message(" Multiplayer server started! Players can now join!", 3000)
-                            print("🌐 Multiplayer server started successfully")
+                        world_name = multiplayer_ui.get_world_name_input()
+                        if world_name:
+                            print(f"🌐 Starting multiplayer server for world: {world_name}")
+                            # TODO: Implement actual server hosting
+                            # For now, just show a message
+                            print("⚠️ Server hosting will be implemented")
+                            multiplayer_ui.set_current_screen("main")
                         else:
-                            show_message(" Failed to start server")
-                    elif multiplayer_host_back_btn and multiplayer_host_back_btn.collidepoint(event.pos):
-                        game_state = GameState.TITLE
-                        update_pause_state()
-                        print("⬅️ Returning to title screen from multiplayer host")
-                
-                elif multiplayer_menu_state == "join":
-                    if multiplayer_search_btn and multiplayer_search_btn.collidepoint(event.pos):
-                        # Search for available servers
-                        discover_servers()
-                        multiplayer_menu_state = "server_list"
-                        show_message(" Searching for servers...", 2000)
-                        print("🔍 Server search initiated")
-                    elif multiplayer_join_back_btn and multiplayer_join_back_btn.collidepoint(event.pos):
-                        game_state = GameState.TITLE
-                        update_pause_state()
-                        print("⬅️ Returning to title screen from multiplayer join")
-                
-                elif multiplayer_menu_state == "server_list":
-                    if multiplayer_server_list_back_btn and multiplayer_server_list_back_btn.collidepoint(event.pos):
-                        game_state = GameState.TITLE
-                        update_pause_state()
-                        print("⬅️ Returning to title screen from server list")
-                    elif server_list:
-                        # Check if player clicked on a server
-                        for i, server in enumerate(server_list[:5]):
-                            server_btn = pygame.Rect(100, 150 + i * 120, SCREEN_WIDTH - 200, 100)
-                            if server_btn.collidepoint(event.pos):
-                                # Join the selected server
-                                if join_multiplayer_server(server):
-                                    game_state = GameState.GAME
-                                    update_pause_state()
-                                    show_message(f" Joined server: {server['name']}!", 3000)
-                                    print(f"🔗 Successfully joined server: {server['name']}")
-                                else:
-                                    show_message(" Failed to join server", 2000)
-                                break
+                            print("⚠️ Please enter a world name to host")
+                    
+                    elif action == "join_selected":
+                        # Join the selected server
+                        selected_server = multiplayer_ui.get_selected_server()
+                        if selected_server:
+                            print(f"🔗 Joining server: {selected_server}")
+                            # TODO: Implement actual client joining
+                            # For now, just show a message
+                            print("⚠️ Server joining will be implemented")
+                            multiplayer_ui.set_current_screen("main")
+                        else:
+                            print("⚠️ Please select a server to join")
+                    
+                    elif action == "refresh":
+                        # Refresh server list
+                        multiplayer_ui.refresh_server_list()
+                        print("🔄 Refreshing server list...")
             elif game_state == GameState.SHOP:
                 # Handle shop clicks
                 handle_shop_click(event.pos)

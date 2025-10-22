@@ -1,6 +1,20 @@
 import pygame
+import sys
+import os
 from typing import List, Dict, Optional, Tuple
-from network.multiplayer_server import MultiplayerServer, MultiplayerClient, ServerDiscovery
+
+# Add parent directory to path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+# Import network modules
+try:
+    from network.network_client import NetworkClient, ServerDiscovery
+    from network.network_server import NetworkServer
+except ImportError:
+    print("⚠️ Warning: Network modules not found, multiplayer features unavailable")
+    NetworkClient = None
+    ServerDiscovery = None
+    NetworkServer = None
 
 class MultiplayerUI:
     def __init__(self, screen_width: int, screen_height: int):
@@ -17,9 +31,9 @@ class MultiplayerUI:
         self.refresh_timer = 0
         
         # Multiplayer components
-        self.server_discovery = ServerDiscovery()
-        self.multiplayer_server = None
-        self.multiplayer_client = None
+        self.server_discovery = ServerDiscovery() if ServerDiscovery else None
+        self.network_server = None
+        self.network_client = None
         
         # Input fields
         self.world_name_input = ""
@@ -236,26 +250,37 @@ class MultiplayerUI:
                 self.refresh_server_list()
     
     def refresh_server_list(self):
-        """Refresh the list of available servers"""
+        """Refresh the list of available servers (LAN discovery)"""
         try:
-            self.server_list = self.server_discovery.discover_servers()
-            print(f"🔍 Found {len(self.server_list)} servers")
+            if self.server_discovery:
+                # Discover servers on local network
+                servers = self.server_discovery.discover_servers(timeout=2.0)
+                self.server_list = {}
+                for i, server in enumerate(servers):
+                    self.server_list[f"server_{i}"] = {
+                        "name": server.name,
+                        "host": server.host,
+                        "port": server.port,
+                        "players": server.players,
+                        "max_players": server.max_players,
+                        "version": server.version,
+                        "uptime": server.uptime
+                    }
+                print(f"🔍 Found {len(self.server_list)} LAN servers")
         except Exception as e:
             print(f"⚠️ Error refreshing server list: {e}")
     
     def start_server_discovery(self):
-        """Start server discovery"""
+        """Start server discovery (refresh the list)"""
         try:
-            self.server_discovery.start_discovery()
+            self.refresh_server_list()
         except Exception as e:
             print(f"⚠️ Error starting server discovery: {e}")
     
     def stop_server_discovery(self):
-        """Stop server discovery"""
-        try:
-            self.server_discovery.stop_discovery()
-        except Exception as e:
-            print(f"⚠️ Error stopping server discovery: {e}")
+        """Stop server discovery (clear the list)"""
+        # No continuous discovery needed, just clear the list
+        pass
     
     def get_current_screen(self) -> str:
         """Get the current UI screen"""

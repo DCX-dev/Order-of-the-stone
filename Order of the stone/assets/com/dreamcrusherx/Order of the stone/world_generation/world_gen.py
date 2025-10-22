@@ -177,8 +177,10 @@ class WorldGenerator:
                 # Ocean floor surface
                 blocks[f"{x},{surface_y}"] = "sand"
                 
-                # Fill with water from ocean floor to water level (NO holes)
-                for y in range(surface_y - 1, water_level - 1, -1):
+                # Fill with water from water level DOWN to ocean floor (NO holes)
+                # Water level is at y=108, ocean floor is deeper (higher y value like 116)
+                # Stop before surface_y to not overwrite the sand floor
+                for y in range(water_level, int(surface_y)):
                     blocks[f"{x},{y}"] = "water"
             elif is_beach:
                 # Beach: sand layers that slope down to ocean
@@ -189,7 +191,8 @@ class WorldGenerator:
                 
                 # Add water if beach is below water level (natural slope)
                 if surface_y < water_level:
-                    for y in range(surface_y - 1, water_level - 1, -1):
+                    # Fill from water level DOWN to beach floor (not overwriting sand surface)
+                    for y in range(water_level, int(surface_y)):
                         blocks[f"{x},{y}"] = "water"
             else:
                 # Normal terrain: PROPER LAYERS (NO holes)
