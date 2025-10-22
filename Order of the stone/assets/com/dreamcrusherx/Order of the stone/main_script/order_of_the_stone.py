@@ -15366,6 +15366,12 @@ while running:
                 apply_display_mode()
                 update_chest_ui_geometry()
             
+            # Handle multiplayer text input
+            if game_state == GameState.MULTIPLAYER and multiplayer_ui:
+                if multiplayer_ui.get_current_screen() == "host":
+                    # Handle keyboard input for world name
+                    multiplayer_ui.handle_key_input(event)
+            
             # A and D keys now work through the movement system for both movement and character flipping
             
             # Drop item with Q key
@@ -16106,6 +16112,10 @@ while running:
             elif game_state == GameState.MULTIPLAYER:
                 # Multiplayer menu click handling using MultiplayerUI
                 if multiplayer_ui:
+                    # Check if clicking on input fields first
+                    multiplayer_ui.handle_input_field_click(event.pos)
+                    
+                    # Then handle button clicks
                     action = multiplayer_ui.handle_click(event.pos)
                     
                     if action == "host":
