@@ -16113,7 +16113,14 @@ while running:
                 # Multiplayer menu click handling using MultiplayerUI
                 if multiplayer_ui:
                     # Check if clicking on input fields first
-                    multiplayer_ui.handle_input_field_click(event.pos)
+                    if multiplayer_ui.handle_input_field_click(event.pos):
+                        # Input field was clicked, don't process button clicks
+                        continue
+                    
+                    # Check if clicking on server list
+                    if multiplayer_ui.handle_server_click(event.pos):
+                        # Server was clicked, don't process button clicks
+                        continue
                     
                     # Then handle button clicks
                     action = multiplayer_ui.handle_click(event.pos)

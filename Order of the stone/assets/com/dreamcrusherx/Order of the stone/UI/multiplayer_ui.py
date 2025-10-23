@@ -52,11 +52,8 @@ class MultiplayerUI:
     
     def draw_main_menu(self, screen):
         """Draw the main multiplayer menu with modern styling"""
-        # Draw gradient background
-        for y in range(0, self.screen_height, 2):
-            alpha = int(30 + (y / self.screen_height) * 20)
-            color = (20 + alpha, 40 + alpha, 80 + alpha)
-            pygame.draw.line(screen, color, (0, y), (self.screen_width, y))
+        # Solid background for better performance
+        screen.fill((30, 50, 90))
         
         # Title with glow effect
         title_text = self.title_font.render("🌐 LAN Multiplayer", True, (255, 255, 255))
@@ -126,11 +123,8 @@ class MultiplayerUI:
     
     def draw_host_server(self, screen):
         """Draw the host server interface with modern styling"""
-        # Draw gradient background
-        for y in range(0, self.screen_height, 2):
-            alpha = int(30 + (y / self.screen_height) * 20)
-            color = (20 + alpha, 50 + alpha, 40 + alpha)
-            pygame.draw.line(screen, color, (0, y), (self.screen_width, y))
+        # Solid background for better performance
+        screen.fill((30, 60, 50))
         
         # Title
         title_text = self.title_font.render("🏠 Host LAN Server", True, (255, 255, 255))
@@ -229,11 +223,8 @@ class MultiplayerUI:
     
     def draw_join_server(self, screen):
         """Draw the join server interface with modern styling"""
-        # Draw gradient background
-        for y in range(0, self.screen_height, 2):
-            alpha = int(30 + (y / self.screen_height) * 20)
-            color = (20 + alpha, 40 + alpha, 60 + alpha)
-            pygame.draw.line(screen, color, (0, y), (self.screen_width, y))
+        # Solid background for better performance
+        screen.fill((30, 50, 70))
         
         # Title
         title_text = self.title_font.render("🔗 Join LAN Server", True, (255, 255, 255))
@@ -258,15 +249,11 @@ class MultiplayerUI:
             server_items = list(self.server_list.items())[:max_visible]
             
             for server_key, server_info in server_items:
-                # Server card with shadow
-                server_rect = pygame.Rect(50, y_offset, 700, 90)
+                # Server card
+                server_rect = pygame.Rect(50, y_offset, min(700, self.screen_width - 100), 90)
                 is_selected = server_key == self.selected_server
                 
-                # Shadow
-                shadow_rect = pygame.Rect(server_rect.x + 4, server_rect.y + 4, server_rect.width, server_rect.height)
-                pygame.draw.rect(screen, (0, 0, 0, 80), shadow_rect, border_radius=12)
-                
-                # Card background
+                # Card background (no shadow for performance)
                 if is_selected:
                     card_color = (60, 100, 140)
                     border_color = (100, 200, 255)
@@ -304,11 +291,7 @@ class MultiplayerUI:
                 players_text = self.font.render(players_str, True, (255, 255, 255))
                 screen.blit(players_text, (badge_rect.centerx - players_text.get_width() // 2, badge_rect.centery - players_text.get_height() // 2))
                 
-                # Click to select
-                if pygame.mouse.get_pressed()[0]:
-                    mouse_pos = pygame.mouse.get_pos()
-                    if server_rect.collidepoint(mouse_pos):
-                        self.selected_server = server_key
+                # Don't handle clicks here - let handle_click do it
                 
                 y_offset += 100
         else:
@@ -326,9 +309,9 @@ class MultiplayerUI:
             screen.blit(hint2, (no_server_panel.x + 30, no_server_panel.y + 85))
         
         # Modern buttons at bottom - responsive positioning
-        button_y = min(self.screen_height - 100, 550)  # Don't go too low on small screens
+        button_y = min(self.screen_height - 100, 520)  # Adjusted for better fit
         button_height = 50
-        button_width = 180
+        button_width = 170
         
         mouse_pos = pygame.mouse.get_pos()
         
@@ -386,21 +369,40 @@ class MultiplayerUI:
     
     def handle_click(self, mouse_pos: Tuple[int, int]) -> Optional[str]:
         """Handle mouse clicks on UI elements"""
-        for button_name, button_rect in self.buttons.items():
+        # Check buttons in reverse order so overlapping buttons work correctly
+        for button_name, button_rect in list(self.buttons.items()):
             if button_rect.collidepoint(mouse_pos):
+                print(f"🖱️ Button clicked: {button_name}")
                 return button_name
         return None
     
-    def handle_input_field_click(self, mouse_pos: Tuple[int, int]):
-        """Handle clicks on input fields"""
+    def handle_input_field_click(self, mouse_pos: Tuple[int, int]) -> bool:
+        """Handle clicks on input fields. Returns True if an input was clicked."""
         for field_name, field_rect in self.input_fields.items():
             if field_rect.collidepoint(mouse_pos):
                 # Focus on this input field
                 self.focused_field = field_name
                 print(f"📝 Input field focused: {field_name}")
-                return
+                return True
         # Click outside - unfocus
         self.focused_field = None
+        return False
+    
+    def handle_server_click(self, mouse_pos: Tuple[int, int]) -> bool:
+        """Handle clicks on server list items. Returns True if a server was clicked."""
+        if not self.server_list:
+            return False
+        
+        y_offset = 200
+        for server_key, server_info in list(self.server_list.items())[:3]:  # Only first 3 visible
+            server_rect = pygame.Rect(50, y_offset, 700, 90)
+            if server_rect.collidepoint(mouse_pos):
+                self.selected_server = server_key
+                print(f"🖱️ Server selected: {server_info.get('name')}")
+                return True
+            y_offset += 100
+        
+        return False
     
     def handle_key_input(self, event) -> Optional[str]:
         """Handle keyboard input for input fields"""
