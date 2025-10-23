@@ -7984,18 +7984,19 @@ def draw_multiplayer_server_list():
     global multiplayer_server_list_back_btn
     multiplayer_server_list_back_btn = back_btn
 
-def draw_player_nametag(px, py):
-    """Draw the player's nametag above their character"""
-    # Get the current username
-    current_username = get_current_username()
-    if not current_username or current_username == "Player":
-        # Use default if no username set
-        current_username = "Player"
+def draw_player_nametag(px, py, username=None):
+    """Draw a player's nametag above their character"""
+    # Get the username
+    if username is None:
+        username = get_current_username()
+    
+    if not username or username == "Player":
+        username = "Player"
     
     # Render the nametag text with a shadow for visibility
     nametag_font = small_font if small_font else font
-    nametag_text = nametag_font.render(current_username, True, (255, 255, 255))
-    nametag_shadow = nametag_font.render(current_username, True, (0, 0, 0))
+    nametag_text = nametag_font.render(username, True, (255, 255, 255))
+    nametag_shadow = nametag_font.render(username, True, (0, 0, 0))
     
     # Calculate nametag position (centered above player's head)
     nametag_x = px + (TILE_SIZE // 2) - (nametag_text.get_width() // 2)
@@ -8018,6 +8019,65 @@ def draw_player_nametag(px, py):
     
     # Draw the nametag text
     screen.blit(nametag_text, (nametag_x, nametag_y))
+
+def send_multiplayer_updates():
+    """Send player position updates to server (throttled)"""
+    if not multiplayer_ui:
+        return
+    
+    # Only send updates every few frames to avoid spam
+    if frame_count % 3 != 0:  # Send 20 times per second instead of 60
+        return
+    
+    # Get LAN client (if we're connected as a client)
+    lan_client = multiplayer_ui.get_lan_client()
+    
+    if lan_client and lan_client.is_connected():
+        # Send our position update to server
+        position = (player["x"], player["y"])
+        health = player.get("health", 10)
+        facing_direction = player.get("facing_direction", 1)
+        
+        lan_client.send_player_update(position, health, facing_direction)
+
+def draw_multiplayer_players():
+    """Draw all other players in multiplayer"""
+    if not multiplayer_ui:
+        return
+    
+    # Get LAN client (if we're connected as a client)
+    lan_client = multiplayer_ui.get_lan_client()
+    
+    if lan_client and lan_client.is_connected():
+        # Get other players from the client
+        other_players = lan_client.get_other_players()
+        
+        for username, player_data in other_players.items():
+            # Get player position
+            position = player_data.get("position", (0, 0))
+            health = player_data.get("health", 10)
+            facing_direction = player_data.get("facing_direction", 1)
+            
+            # Calculate screen position
+            other_px = int(position[0] * TILE_SIZE) - camera_x
+            other_py = int(position[1] * TILE_SIZE) - camera_y
+            
+            # Only draw if on screen
+            if -TILE_SIZE < other_px < SCREEN_WIDTH + TILE_SIZE and -TILE_SIZE < other_py < SCREEN_HEIGHT + TILE_SIZE:
+                # Draw the other player using the same method as local player
+                _draw_player_fallback(other_px, other_py, facing_direction)
+                
+                # Draw their nametag
+                draw_player_nametag(other_px, other_py, username)
+                
+                # Draw small health bar above nametag
+                health_bar_y = other_py - 35
+                for i in range(10):
+                    heart_x = other_px + (i * 8) - 40
+                    if i < health:
+                        pygame.draw.rect(screen, (255, 0, 0), (heart_x, health_bar_y, 6, 6))
+                    else:
+                        pygame.draw.rect(screen, (80, 0, 0), (heart_x, health_bar_y, 6, 6))
 
 def draw_player_armor(px, py):
     """EXTREME ENGINEERING: Draw layered armor pieces with proper positioning and visual effects"""
@@ -8508,6 +8568,12 @@ def draw_world():
     
     # Draw nametag above player (for both single-player and multiplayer)
     draw_player_nametag(px, py)
+    
+    # Draw other players in multiplayer
+    draw_multiplayer_players()
+    
+    # Send position updates in multiplayer
+    send_multiplayer_updates()
     
     # Draw multiplayer chat if connected
     if is_connected:
