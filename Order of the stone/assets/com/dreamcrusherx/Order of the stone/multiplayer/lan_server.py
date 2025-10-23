@@ -42,6 +42,17 @@ class LANServer:
         try:
             self.world_data = world_data
             
+            # Add host as a player (so clients can see them!)
+            with self.player_lock:
+                self.players[self.host_player_name] = {
+                    "socket": None,  # Host doesn't have a socket
+                    "address": ("localhost", 0),
+                    "position": (world_data.get("player", {}).get("x", 0), world_data.get("player", {}).get("y", 100)),
+                    "health": world_data.get("player", {}).get("health", 10),
+                    "facing_direction": 1
+                }
+            print(f"👤 Added host player: {self.host_player_name}")
+            
             # Start main game server
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
