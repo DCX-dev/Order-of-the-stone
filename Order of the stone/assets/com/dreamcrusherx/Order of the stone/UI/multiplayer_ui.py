@@ -485,9 +485,18 @@ class MultiplayerUI:
     
     def set_current_screen(self, screen: str):
         """Set the current UI screen"""
+        print(f"🔄 Changing screen from '{self.current_screen}' to '{screen}'")
         self.current_screen = screen
+        
+        # Clear buttons when changing screens to avoid conflicts
+        self.buttons = {}
+        self.input_fields = {}
+        
         if screen == "join":
             self.start_server_discovery()
+        elif screen == "host":
+            # Reset input field and focus
+            self.focused_field = None
         else:
             self.stop_server_discovery()
     
