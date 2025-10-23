@@ -5927,7 +5927,7 @@ def start_world_generation():
 
 def update_world_generation():
     """Update world generation progress"""
-    global world_generation_progress, world_generation_status, game_state
+    global world_generation_progress, world_generation_status, game_state, pending_multiplayer_world_name
     
     if world_generation_progress >= world_generation_total:
         # World generation complete
@@ -5941,6 +5941,35 @@ def update_world_generation():
         spawn_initial_pigeons()
         
         world_generation_status = "World generation complete!"
+        
+        # Check if this is for multiplayer server
+        if 'pending_multiplayer_world_name' in globals() and pending_multiplayer_world_name:
+            print(f"🌐 Starting LAN server for generated world: {pending_multiplayer_world_name}")
+            
+            # Get the server that was created earlier
+            lan_server = multiplayer_ui.get_lan_server() if multiplayer_ui else None
+            
+            if lan_server:
+                # Now start the server with the generated world
+                server_world_data = {
+                    "blocks": world_data.copy() if world_data else {},
+                    "player": player.copy() if player else {},
+                    "width": 400,
+                    "height": 200
+                }
+                
+                                if lan_server.start(server_world_data):
+                                    # Mark as multiplayer host
+                                    global is_multiplayer_host
+                                    is_multiplayer_host = True
+                                    
+                                    print(f"✅ LAN Server started with fresh world!")
+                                    print(f"📡 Players can now join on port {lan_server.port}")
+                                else:
+                                    print("❌ Failed to start LAN server after world gen")
+            
+            # Clear the pending flag
+            pending_multiplayer_world_name = None
         
         # Switch to game state
         game_state = GameState.GAME
@@ -15221,6 +15250,11 @@ except Exception as e:
 # Game state variables
 game_state = GameState.STUDIO_LOADING  # Start with studio loading screen
 
+# Multiplayer state variables
+pending_multiplayer_world_name = None  # World name for multiplayer server after generation
+is_multiplayer_host = False  # Whether this game is hosting a server
+is_multiplayer_client = False  # Whether this game is connected as a client
+
 # Studio loading screen variables
 loading_progress = 0
 loading_stage = 0  # 0 = assets, 1 = sounds, 2 = logic
@@ -15333,6 +15367,34 @@ while running:
                     map_open = False
                     print("🗺️ Map closed")
                 elif game_state == GameState.GAME:
+                    # Check if this is a multiplayer game
+                    if multiplayer_ui:
+                        lan_server = multiplayer_ui.get_lan_server()
+                        lan_client = multiplayer_ui.get_lan_client()
+                        
+                        if lan_server or lan_client:
+                            # Multiplayer game - show confirmation or just quit
+                            print("🌐 Leaving multiplayer game...")
+                            
+                            # Cleanup multiplayer
+                            if lan_server:
+                                print("🛑 Shutting down LAN server (host left)")
+                                lan_server.stop()
+                                multiplayer_ui.set_lan_server(None)
+                            
+                            if lan_client:
+                                print("🔌 Disconnecting from server (client left)")
+                                lan_client.disconnect()
+                                multiplayer_ui.set_lan_client(None)
+                            
+                            # Go back to title
+                            reset_game_state_to_title()
+                            game_state = GameState.TITLE
+                            update_pause_state()
+                            print("✅ Left multiplayer game")
+                            continue
+                    
+                    # Normal single-player - pause
                     # Auto-save when leaving game to prevent losing progress
                     try:
                         save_game()
@@ -16043,6 +16105,23 @@ while running:
                     else:
                         show_message(" Failed to save game!")
                 elif quit_btn.collidepoint(event.pos):
+                    # Cleanup multiplayer before quitting
+                    if multiplayer_ui:
+                        lan_server = multiplayer_ui.get_lan_server()
+                        lan_client = multiplayer_ui.get_lan_client()
+                        
+                        if lan_server:
+                            print("🛑 Shutting down LAN server (host left)")
+                            lan_server.stop()
+                            multiplayer_ui.set_lan_server(None)
+                            is_multiplayer_host = False
+                        
+                        if lan_client:
+                            print("🔌 Disconnecting from server (client left)")
+                            lan_client.disconnect()
+                            multiplayer_ui.set_lan_client(None)
+                            is_multiplayer_client = False
+                    
                     save_game()
                     reset_game_state_to_title()  # Reset everything before returning
                     game_state = GameState.TITLE
@@ -16152,63 +16231,35 @@ while running:
                         print("⬅️ Returning to title screen from multiplayer")
                     
                     elif action == "start_server":
-                        # Start hosting server with selected world
+                        # Start hosting server with NEW WORLD every time
                         world_name = multiplayer_ui.get_world_name_input()
                         if world_name:
-                            print(f"🌐 Starting LAN server for world: {world_name}")
+                            print(f"🌐 Starting LAN server with NEW world: {world_name}")
                             
-                            # Import LAN server
                             try:
                                 from multiplayer.lan_server import LANServer
                                 
                                 # Get current username
                                 host_username = get_current_username() or "Host"
                                 
-                                # Create and start LAN server
+                                # ALWAYS create a NEW world for multiplayer
+                                print(f"🌍 Generating fresh world for multiplayer...")
+                                
+                                # Create and start LAN server (will be started after world gen)
                                 lan_server = LANServer(host_username, world_name)
+                                multiplayer_ui.set_lan_server(lan_server)
                                 
-                                # Check if world exists, otherwise create new one
-                                world_exists = world_name in [w["name"] for w in world_system.get_world_list()]
+                                # Store the world name for after generation
+                                global pending_multiplayer_world_name
+                                pending_multiplayer_world_name = world_name
                                 
-                                if world_exists:
-                                    # Load existing world
-                                    print(f"📂 Loading existing world: {world_name}")
-                                    if world_system.load_world(world_name):
-                                        if load_world_data():
-                                            print(f"✅ World loaded successfully")
-                                        else:
-                                            print("⚠️ Failed to load world data")
-                                else:
-                                    # Create new world with world generation
-                                    print(f"🌍 Creating new world: {world_name}")
-                                    # Start world generation
-                                    start_world_generation()
-                                    game_state = GameState.WORLD_GENERATION
-                                    
-                                    # Store world name for after generation
-                                    multiplayer_ui.world_name_input = world_name
+                                # Start world generation
+                                start_world_generation()
+                                game_state = GameState.WORLD_GENERATION
+                                update_pause_state()
                                 
-                                # Get current world data
-                                server_world_data = {
-                                    "blocks": world_data.copy() if world_data else {},
-                                    "player": player.copy() if player else {},
-                                    "width": 400,
-                                    "height": 200
-                                }
+                                print(f"🎮 World generation started, server will start when ready")
                                 
-                                if lan_server.start(server_world_data):
-                                    # Store server reference
-                                    multiplayer_ui.set_lan_server(lan_server)
-                                    
-                                    # Go to game if world already exists
-                                    if world_exists:
-                                        game_state = GameState.GAME
-                                        update_pause_state()
-                                    
-                                    print(f"✅ LAN Server started! Players can now join on port {lan_server.port}")
-                                    print(f"📡 Server name: {lan_server.server_name}")
-                                else:
-                                    print("❌ Failed to start LAN server")
                             except Exception as e:
                                 print(f"❌ Error starting server: {e}")
                                 import traceback
@@ -16250,13 +16301,18 @@ while running:
                                     if lan_client.world_data:
                                         print(f"📦 Received world data: {len(lan_client.world_data.get('blocks', {}))} blocks")
                                         
-                                        # Update game with server's world
+                                        # Clear and update game with server's world
+                                        global world_data, player
                                         world_data.clear()
                                         world_data.update(lan_client.world_data.get("blocks", {}))
                                         
                                         # Update player data
                                         server_player = lan_client.world_data.get("player", {})
                                         player.update(server_player)
+                                        
+                                        # Mark as multiplayer client
+                                        global is_multiplayer_client
+                                        is_multiplayer_client = True
                                         
                                         print("✅ Loaded world data from server")
                                         
