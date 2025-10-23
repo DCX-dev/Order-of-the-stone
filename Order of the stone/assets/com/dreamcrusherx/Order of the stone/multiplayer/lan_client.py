@@ -41,23 +41,22 @@ class LANClient:
         
         print(f"🔗 LAN Client initialized for user: {username}")
     
-    def discover_servers(self, timeout: float = 3.0) -> List[Dict]:
-        """Discover available LAN servers on the network"""
+    def discover_servers(self, timeout: float = 1.0) -> List[Dict]:
+        """Discover available LAN servers on the network (fast, non-blocking)"""
         discovered_servers = []
         
         try:
             # Create UDP socket for broadcasting
             discover_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             discover_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            discover_socket.settimeout(1.0)
+            discover_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            discover_socket.settimeout(0.3)  # Very short timeout per attempt
             
             # Broadcast discovery message
             message = "DISCOVER_SERVER".encode('utf-8')
             discover_socket.sendto(message, ('<broadcast>', self.discovery_port))
             
-            print("🔍 Broadcasting server discovery request...")
-            
-            # Listen for responses
+            # Listen for responses - quick scan only
             start_time = time.time()
             while time.time() - start_time < timeout:
                 try:
@@ -83,13 +82,12 @@ class LANClient:
                 except socket.timeout:
                     continue
                 except Exception as e:
-                    print(f"⚠️ Error receiving discovery response: {e}")
+                    pass  # Silently ignore errors during discovery
             
             discover_socket.close()
-            print(f"🔍 Discovery complete: Found {len(discovered_servers)} server(s)")
             
         except Exception as e:
-            print(f"❌ Server discovery failed: {e}")
+            pass  # Silently fail
         
         return discovered_servers
     

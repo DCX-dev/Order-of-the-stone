@@ -430,34 +430,38 @@ class MultiplayerUI:
     
     def update(self, dt: float):
         """Update the multiplayer UI"""
-        self.refresh_timer += dt
-        
-        # Auto-refresh server list every 5 seconds
-        if self.refresh_timer >= 5.0:
-            self.refresh_timer = 0
-            if self.current_screen == "join":
-                self.refresh_server_list()
+        # DON'T auto-refresh - it causes lag!
+        # Only refresh when user clicks the refresh button
+        pass
     
     def refresh_server_list(self):
-        """Refresh the list of available servers (LAN discovery)"""
+        """Refresh the list of available servers (LAN discovery) - ASYNC to avoid lag"""
         try:
             if LANClient:
-                # Create temporary client for discovery
-                temp_client = LANClient("Discovery")
-                servers = temp_client.discover_servers(timeout=2.0)
+                # Run discovery in background thread to avoid blocking
+                def discover_async():
+                    temp_client = LANClient("Discovery")
+                    servers = temp_client.discover_servers(timeout=1.0)  # Reduced timeout
+                    
+                    # Update server list
+                    self.server_list = {}
+                    for i, server in enumerate(servers):
+                        self.server_list[f"server_{i}"] = {
+                            "name": server.get("server_name", "Unknown Server"),
+                            "host": server.get("ip_address", "Unknown"),
+                            "port": server.get("port", 25565),
+                            "players": server.get("players", 0),
+                            "max_players": server.get("max_players", 10),
+                            "world_name": server.get("world_name", "World"),
+                            "host_player": server.get("host_player", "Unknown")
+                        }
+                    print(f"🔍 Found {len(self.server_list)} LAN servers")
                 
-                self.server_list = {}
-                for i, server in enumerate(servers):
-                    self.server_list[f"server_{i}"] = {
-                        "name": server.get("server_name", "Unknown Server"),
-                        "host": server.get("ip_address", "Unknown"),
-                        "port": server.get("port", 25565),
-                        "players": server.get("players", 0),
-                        "max_players": server.get("max_players", 10),
-                        "world_name": server.get("world_name", "World"),
-                        "host_player": server.get("host_player", "Unknown")
-                    }
-                print(f"🔍 Found {len(self.server_list)} LAN servers")
+                # Run in background
+                import threading
+                discovery_thread = threading.Thread(target=discover_async, daemon=True)
+                discovery_thread.start()
+                print("🔍 Server discovery started in background...")
             else:
                 print("⚠️ LAN multiplayer not available")
         except Exception as e:
