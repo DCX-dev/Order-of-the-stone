@@ -14529,7 +14529,7 @@ def update_loading_progress():
         game_state = GameState.TITLE
 
 def draw_title_screen():
-    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, multiplayer_btn
+    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14540,7 +14540,7 @@ def draw_title_screen():
         
         # Store button references for click handling
         play_btn = button_states.get("play")
-        multiplayer_btn = button_states.get("multiplayer")
+        # multiplayer_btn = button_states.get("multiplayer")  # Disabled for now
         username_btn = button_states.get("username")
         controls_btn = button_states.get("controls")
         about_btn = button_states.get("about")
@@ -16013,11 +16013,11 @@ while running:
                     game_state = GameState.WORLD_SELECTION
                     update_pause_state()  # Pause time when leaving title
                     print("🌍 Opening world selection screen!")
-                elif multiplayer_btn and multiplayer_btn.collidepoint(event.pos):
-                    # Open multiplayer menu
-                    game_state = GameState.MULTIPLAYER
-                    update_pause_state()  # Pause time when leaving title
-                    print("🌐 Opening multiplayer menu!")
+                # elif multiplayer_btn and multiplayer_btn.collidepoint(event.pos):
+                #     # Open multiplayer menu (disabled for now)
+                #     game_state = GameState.MULTIPLAYER
+                #     update_pause_state()
+                #     print("🌐 Opening multiplayer menu!")
                 elif username_btn.collidepoint(event.pos):
                     # If changing username, save the current one first
                     current_username = get_current_username()
