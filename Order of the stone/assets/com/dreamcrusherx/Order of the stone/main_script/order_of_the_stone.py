@@ -707,12 +707,18 @@ if parent_dir not in sys.path:
 # Now import our modules with error handling
 try:
     from managers.character_manager import CharacterManager
-    from network.multiplayer_server import MultiplayerServer
+except ImportError as e:
+    print(f"⚠️ Warning: Could not import character manager: {e}")
+    CharacterManager = None
+
+try:
     from ui.multiplayer_ui import MultiplayerUI
 except ImportError as e:
-    print(f"⚠️ Warning: Could not import some modules: {e}")
-    print("🎮 Game will run in basic mode without advanced features")
-    CharacterManager = None
+    print(f"⚠️ Warning: Could not import multiplayer UI: {e}")
+    MultiplayerUI = None
+
+# Don't import old network modules - we use the new multiplayer folder now
+if CharacterManager is None:
     MultiplayerServer = None
     MultiplayerUI = None
 
@@ -5259,12 +5265,17 @@ def start_multiplayer_server(world_name):
         return False
 
 def join_multiplayer_server(server_ip, server_port):
-    """Join a multiplayer server"""
+    """Join a multiplayer server (OLD - use new LAN system instead)"""
     global multiplayer_client, is_connected
     
+    # This function is deprecated - use the new LAN multiplayer system
+    print("⚠️ Old multiplayer function called - use new LAN system instead")
+    return False
+    
     try:
-        from network.multiplayer_server import MultiplayerClient
-        multiplayer_client = MultiplayerClient()
+        # OLD CODE - DISABLED
+        pass
+        multiplayer_client = None
         
         # Get username from saved data
         username = get_current_username()
@@ -5958,15 +5969,15 @@ def update_world_generation():
                     "height": 200
                 }
                 
-                                if lan_server.start(server_world_data):
-                                    # Mark as multiplayer host
-                                    global is_multiplayer_host
-                                    is_multiplayer_host = True
-                                    
-                                    print(f"✅ LAN Server started with fresh world!")
-                                    print(f"📡 Players can now join on port {lan_server.port}")
-                                else:
-                                    print("❌ Failed to start LAN server after world gen")
+                if lan_server.start(server_world_data):
+                    # Mark as multiplayer host
+                    global is_multiplayer_host
+                    is_multiplayer_host = True
+                    
+                    print(f"✅ LAN Server started with fresh world!")
+                    print(f"📡 Players can now join on port {lan_server.port}")
+                else:
+                    print("❌ Failed to start LAN server after world gen")
             
             # Clear the pending flag
             pending_multiplayer_world_name = None
@@ -6987,12 +6998,18 @@ def stop_multiplayer_server():
         print("🌐 Multiplayer server stopped")
 
 def discover_servers():
-    """EXTREME ENGINEERING: Discover available multiplayer servers"""
+    """EXTREME ENGINEERING: Discover available multiplayer servers (OLD - use new LAN system)"""
     global server_list
     
+    # This function is deprecated - use the new LAN multiplayer system
+    print("⚠️ Old server discovery called - use new LAN system instead")
+    server_list = []
+    return
+    
     try:
-        from network.multiplayer_server import ServerDiscovery
-        discovery = ServerDiscovery()
+        # OLD CODE - DISABLED
+        pass
+        discovery = None
         discovered_servers = discovery.discover_servers()
         
         # Convert to our format
@@ -15303,6 +15320,10 @@ def auto_save_game():
 
 # Main game loop
 while running:
+    # Declare global variables at the start of the main loop
+    global pending_multiplayer_world_name, is_multiplayer_host, is_multiplayer_client
+    global world_data, player
+    
     frame_count += 1
     
     # Initialize clouds on first frame
@@ -15330,6 +15351,7 @@ while running:
 
 
     for event in pygame.event.get():
+        
         if event.type == pygame.QUIT:
             print("🔄 Quit event received, closing game...")
             try:
@@ -16250,7 +16272,6 @@ while running:
                                 multiplayer_ui.set_lan_server(lan_server)
                                 
                                 # Store the world name for after generation
-                                global pending_multiplayer_world_name
                                 pending_multiplayer_world_name = world_name
                                 
                                 # Start world generation
@@ -16302,7 +16323,6 @@ while running:
                                         print(f"📦 Received world data: {len(lan_client.world_data.get('blocks', {}))} blocks")
                                         
                                         # Clear and update game with server's world
-                                        global world_data, player
                                         world_data.clear()
                                         world_data.update(lan_client.world_data.get("blocks", {}))
                                         
@@ -16311,7 +16331,6 @@ while running:
                                         player.update(server_player)
                                         
                                         # Mark as multiplayer client
-                                        global is_multiplayer_client
                                         is_multiplayer_client = True
                                         
                                         print("✅ Loaded world data from server")
