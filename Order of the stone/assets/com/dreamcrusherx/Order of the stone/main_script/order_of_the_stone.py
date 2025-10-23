@@ -8021,7 +8021,7 @@ def draw_player_nametag(px, py, username=None):
     screen.blit(nametag_text, (nametag_x, nametag_y))
 
 def send_multiplayer_updates():
-    """Send player position updates to server (throttled)"""
+    """Send player position updates to server/clients (throttled)"""
     if not multiplayer_ui:
         return
     
@@ -8039,45 +8039,79 @@ def send_multiplayer_updates():
         facing_direction = player.get("facing_direction", 1)
         
         lan_client.send_player_update(position, health, facing_direction)
+    
+    # Also update server if we're hosting (so clients can see us)
+    lan_server = multiplayer_ui.get_lan_server()
+    if lan_server:
+        # Update our position in the server's player list
+        host_username = get_current_username() or "Host"
+        with lan_server.player_lock:
+            if host_username in lan_server.players:
+                lan_server.players[host_username]["position"] = (player["x"], player["y"])
+                lan_server.players[host_username]["health"] = player.get("health", 10)
+                lan_server.players[host_username]["facing_direction"] = player.get("facing_direction", 1)
+        
+        # Broadcast our position to all clients
+        lan_server._broadcast({
+            "type": "player_update",
+            "username": host_username,
+            "position": (player["x"], player["y"]),
+            "health": player.get("health", 10),
+            "facing_direction": player.get("facing_direction", 1)
+        })
 
 def draw_multiplayer_players():
     """Draw all other players in multiplayer"""
     if not multiplayer_ui:
         return
     
+    other_players = {}
+    
     # Get LAN client (if we're connected as a client)
     lan_client = multiplayer_ui.get_lan_client()
-    
     if lan_client and lan_client.is_connected():
         # Get other players from the client
         other_players = lan_client.get_other_players()
+    
+    # Also check if we're hosting (so host can see clients)
+    lan_server = multiplayer_ui.get_lan_server()
+    if lan_server:
+        # Get connected players from server
+        connected_players = lan_server.get_players()
+        for player_username in connected_players:
+            if player_username not in other_players:
+                # Get player data from server
+                with lan_server.player_lock:
+                    if player_username in lan_server.players:
+                        other_players[player_username] = lan_server.players[player_username]
+    
+    # Draw all other players
+    for username, player_data in other_players.items():
+        # Get player position
+        position = player_data.get("position", (0, 0))
+        health = player_data.get("health", 10)
+        facing_direction = player_data.get("facing_direction", 1)
         
-        for username, player_data in other_players.items():
-            # Get player position
-            position = player_data.get("position", (0, 0))
-            health = player_data.get("health", 10)
-            facing_direction = player_data.get("facing_direction", 1)
+        # Calculate screen position
+        other_px = int(position[0] * TILE_SIZE) - camera_x
+        other_py = int(position[1] * TILE_SIZE) - camera_y
+        
+        # Only draw if on screen
+        if -TILE_SIZE < other_px < SCREEN_WIDTH + TILE_SIZE and -TILE_SIZE < other_py < SCREEN_HEIGHT + TILE_SIZE:
+            # Draw the other player using the same method as local player
+            _draw_player_fallback(other_px, other_py, facing_direction)
             
-            # Calculate screen position
-            other_px = int(position[0] * TILE_SIZE) - camera_x
-            other_py = int(position[1] * TILE_SIZE) - camera_y
+            # Draw their nametag
+            draw_player_nametag(other_px, other_py, username)
             
-            # Only draw if on screen
-            if -TILE_SIZE < other_px < SCREEN_WIDTH + TILE_SIZE and -TILE_SIZE < other_py < SCREEN_HEIGHT + TILE_SIZE:
-                # Draw the other player using the same method as local player
-                _draw_player_fallback(other_px, other_py, facing_direction)
-                
-                # Draw their nametag
-                draw_player_nametag(other_px, other_py, username)
-                
-                # Draw small health bar above nametag
-                health_bar_y = other_py - 35
-                for i in range(10):
-                    heart_x = other_px + (i * 8) - 40
-                    if i < health:
-                        pygame.draw.rect(screen, (255, 0, 0), (heart_x, health_bar_y, 6, 6))
-                    else:
-                        pygame.draw.rect(screen, (80, 0, 0), (heart_x, health_bar_y, 6, 6))
+            # Draw small health bar above nametag
+            health_bar_y = other_py - 35
+            for i in range(10):
+                heart_x = other_px + (i * 8) - 40
+                if i < health:
+                    pygame.draw.rect(screen, (255, 0, 0), (heart_x, health_bar_y, 6, 6))
+                else:
+                    pygame.draw.rect(screen, (80, 0, 0), (heart_x, health_bar_y, 6, 6))
 
 def draw_player_armor(px, py):
     """EXTREME ENGINEERING: Draw layered armor pieces with proper positioning and visual effects"""
