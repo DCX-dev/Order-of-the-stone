@@ -126,14 +126,23 @@ class LANServer:
     def _handle_client(self, client_socket: socket.socket, address: tuple):
         """Handle communication with a connected player"""
         username = None
+        buffer = ""  # Buffer for incomplete messages
         
         try:
+            # Set socket to non-blocking mode to avoid hanging
+            client_socket.settimeout(30.0)
+            
             # First message should be login
             data = client_socket.recv(4096).decode('utf-8')
             if not data:
                 return
             
-            message = json.loads(data)
+            buffer += data
+            if '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                message = json.loads(line)
+            else:
+                message = json.loads(data)
             
             if message.get("type") == "join":
                 username = message.get("username", f"Player_{address[1]}")
@@ -165,16 +174,27 @@ class LANServer:
                     "position": self.players[username]["position"]
                 }, exclude_username=username)
                 
-                print(f"👋 {username} joined the game!")
+                print(f"👋 {username} joined the game! ({len(self.players)} players total)")
                 
                 # Keep receiving messages from this client
                 while self.running:
-                    data = client_socket.recv(4096).decode('utf-8')
-                    if not data:
-                        break
+                    try:
+                        data = client_socket.recv(4096).decode('utf-8')
+                        if not data:
+                            break
+                        
+                        buffer += data
+                        while '\n' in buffer:
+                            line, buffer = buffer.split('\n', 1)
+                            if line.strip():
+                                try:
+                                    message = json.loads(line)
+                                    self._process_client_message(username, message)
+                                except json.JSONDecodeError:
+                                    pass  # Ignore malformed messages
                     
-                    message = json.loads(data)
-                    self._process_client_message(username, message)
+                    except socket.timeout:
+                        continue  # Keep connection alive
         
         except Exception as e:
             print(f"⚠️ Error handling client {username}: {e}")
@@ -257,7 +277,7 @@ class LANServer:
         """Broadcast a message to all connected players"""
         with self.player_lock:
             for username, player_data in self.players.items():
-                if username != exclude_username:
+                if username != exclude_username and player_data["socket"] is not None:
                     self._send_to_client(player_data["socket"], message)
     
     def _discovery_responder(self):
