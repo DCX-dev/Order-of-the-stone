@@ -16175,8 +16175,8 @@ while running:
                                 
                                 # Get current world data
                                 server_world_data = {
-                                    "blocks": blocks.copy(),
-                                    "player": player.copy(),
+                                    "blocks": world_data.copy() if world_data else {},
+                                    "player": player.copy() if player else {},
                                     "width": 400,
                                     "height": 200
                                 }
@@ -16236,8 +16236,8 @@ while running:
                                         print(f"📦 Received world data: {len(lan_client.world_data.get('blocks', {}))} blocks")
                                         
                                         # Update game with server's world
-                                        blocks.clear()
-                                        blocks.update(lan_client.world_data.get("blocks", {}))
+                                        world_data.clear()
+                                        world_data.update(lan_client.world_data.get("blocks", {}))
                                         
                                         # Update player data
                                         server_player = lan_client.world_data.get("player", {})
