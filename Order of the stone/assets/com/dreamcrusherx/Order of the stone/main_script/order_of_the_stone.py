@@ -14761,6 +14761,7 @@ def draw_multiplayer_screen():
     """Draw the multiplayer menu screen using MultiplayerUI"""
     global multiplayer_ui
     
+    # Clear the entire screen first to avoid artifacts
     screen.fill((20, 40, 80))  # Dark blue background
     
     if multiplayer_ui:
@@ -14773,6 +14774,9 @@ def draw_multiplayer_screen():
             multiplayer_ui.draw_host_server(screen)
         elif current_screen == "join":
             multiplayer_ui.draw_join_server(screen)
+        else:
+            print(f"⚠️ Unknown multiplayer screen: {current_screen}")
+            multiplayer_ui.draw_main_menu(screen)
     else:
         # Fallback if multiplayer UI is not available
         title_text = title_font.render("🌐 Multiplayer (Not Available)", True, (255, 255, 255))
@@ -16128,13 +16132,17 @@ while running:
                     if action == "host":
                         # Switch to host server screen
                         multiplayer_ui.set_current_screen("host")
-                        print("🌐 Switching to host server menu")
+                        print("🌐 Switching to HOST server menu")
+                        print(f"Current screen is now: {multiplayer_ui.get_current_screen()}")
                     
                     elif action == "join":
+                        print("🔗 JOIN button clicked!")
+                        print(f"Current screen before: {multiplayer_ui.get_current_screen()}")
                         # Switch to join server screen and start discovery
                         multiplayer_ui.set_current_screen("join")
+                        print(f"Current screen after: {multiplayer_ui.get_current_screen()}")
                         multiplayer_ui.start_server_discovery()
-                        print("🔗 Switching to join server menu (searching for LAN servers...)")
+                        print("✅ Now on JOIN SERVER screen (searching for LAN servers...)")
                     
                     elif action == "back":
                         # Return to title screen
