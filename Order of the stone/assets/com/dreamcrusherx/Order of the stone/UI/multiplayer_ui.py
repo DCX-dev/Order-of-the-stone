@@ -144,11 +144,11 @@ class MultiplayerUI:
         subtitle_x = self.screen_width // 2 - subtitle.get_width() // 2
         screen.blit(subtitle, (subtitle_x, 120))
         
-        # Info panel
-        panel_width = 600
+        # Info panel - responsive sizing
+        panel_width = min(600, self.screen_width - 100)
         panel_x = self.screen_width // 2 - panel_width // 2
-        panel_y = 180
-        panel_height = 180
+        panel_y = 170
+        panel_height = 170
         
         # Panel background with shadow
         shadow_rect = pygame.Rect(panel_x + 5, panel_y + 5, panel_width, panel_height)
@@ -190,10 +190,10 @@ class MultiplayerUI:
         hint_text = self.small_font.render("💡 Click the box and type your world name", True, (180, 220, 200))
         screen.blit(hint_text, (panel_x + 30, panel_y + 135))
         
-        # Buttons
-        button_y = panel_y + panel_height + 50
-        button_height = 60
-        button_width = 250
+        # Buttons - responsive positioning
+        button_y = panel_y + panel_height + 40
+        button_height = 55
+        button_width = min(230, (self.screen_width - 100) // 2 - 30)
         
         mouse_pos = pygame.mouse.get_pos()
         
@@ -251,10 +251,13 @@ class MultiplayerUI:
         info_text = self.font.render("Available Servers:", True, (200, 220, 255))
         screen.blit(info_text, (50, 160))
         
-        # Server list with modern cards
+        # Server list with modern cards - scrollable
         if self.server_list:
             y_offset = 200
-            for server_key, server_info in self.server_list.items():
+            max_visible = 3  # Show max 3 servers at once to fit screen
+            server_items = list(self.server_list.items())[:max_visible]
+            
+            for server_key, server_info in server_items:
                 # Server card with shadow
                 server_rect = pygame.Rect(50, y_offset, 700, 90)
                 is_selected = server_key == self.selected_server
@@ -322,10 +325,10 @@ class MultiplayerUI:
             screen.blit(hint1, (no_server_panel.x + 30, no_server_panel.y + 60))
             screen.blit(hint2, (no_server_panel.x + 30, no_server_panel.y + 85))
         
-        # Modern buttons at bottom
-        button_y = self.screen_height - 100
-        button_height = 55
-        button_width = 200
+        # Modern buttons at bottom - responsive positioning
+        button_y = min(self.screen_height - 100, 550)  # Don't go too low on small screens
+        button_height = 50
+        button_width = 180
         
         mouse_pos = pygame.mouse.get_pos()
         
