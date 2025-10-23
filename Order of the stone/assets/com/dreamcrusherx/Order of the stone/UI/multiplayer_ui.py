@@ -390,12 +390,13 @@ class MultiplayerUI:
     
     def handle_server_click(self, mouse_pos: Tuple[int, int]) -> bool:
         """Handle clicks on server list items. Returns True if a server was clicked."""
-        if not self.server_list:
+        if not self.server_list or self.current_screen != "join":
             return False
         
         y_offset = 200
         for server_key, server_info in list(self.server_list.items())[:3]:  # Only first 3 visible
-            server_rect = pygame.Rect(50, y_offset, 700, 90)
+            # Use same rect as in draw function
+            server_rect = pygame.Rect(50, y_offset, min(700, self.screen_width - 100), 90)
             if server_rect.collidepoint(mouse_pos):
                 self.selected_server = server_key
                 print(f"🖱️ Server selected: {server_info.get('name')}")
