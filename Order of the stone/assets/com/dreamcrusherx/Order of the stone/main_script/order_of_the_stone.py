@@ -5953,6 +5953,10 @@ def update_world_generation():
         
         world_generation_status = "World generation complete!"
         
+        # FIX PLAYER SPAWN: Make sure player is on the ground, not in the air!
+        fix_player_spawn_position()
+        print(f"✅ Player spawn fixed to ground level at ({player['x']}, {player['y']})")
+        
         # Check if this is for multiplayer server
         if 'pending_multiplayer_world_name' in globals() and pending_multiplayer_world_name:
             print(f"🌐 Starting LAN server for generated world: {pending_multiplayer_world_name}")
@@ -15320,9 +15324,7 @@ def auto_save_game():
 
 # Main game loop
 while running:
-    # Declare global variables at the start of the main loop
-    global pending_multiplayer_world_name, is_multiplayer_host, is_multiplayer_client
-    global world_data, player
+    # No need for global declarations - we're already at module level
     
     frame_count += 1
     
