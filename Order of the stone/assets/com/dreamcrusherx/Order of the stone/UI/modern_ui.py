@@ -512,11 +512,13 @@ class ModernUI:
         # Buttons
         fullscreen_btn = self.draw_modern_button("Toggle Fullscreen", 300, mouse_pos, self.colors["info"])
         fps_btn = self.draw_modern_button("Change FPS", 400, mouse_pos, self.colors["warning"])
-        back_btn = self.draw_modern_button("⬅️ Back to Title", 500, mouse_pos, self.colors["button"])
+        website_btn = self.draw_modern_button("🌐 Visit Website", 500, mouse_pos, self.colors["accent"])
+        back_btn = self.draw_modern_button("⬅️ Back to Title", 600, mouse_pos, self.colors["button"])
         
         return {
             "fullscreen": fullscreen_btn,
             "fps": fps_btn,
+            "website": website_btn,
             "back": back_btn
         }
     
@@ -653,8 +655,8 @@ class ModernUI:
             "back": back_btn
         }
 
-    def draw_achievements_screen(self, mouse_pos: tuple, achievements: dict) -> Dict[str, pygame.Rect]:
-        """Draw beautiful achievements screen"""
+    def draw_achievements_screen(self, mouse_pos: tuple, achievements: dict, scroll_offset: int = 0) -> Dict[str, pygame.Rect]:
+        """Draw beautiful achievements screen with scrolling"""
         # Enhanced background
         self.draw_gradient_background()
         self.draw_decorative_elements()
@@ -695,7 +697,7 @@ class ModernUI:
         }
         
         # Draw achievements by category
-        y_offset = 150
+        y_offset = 150 - scroll_offset  # Apply scroll offset
         category_colors = {
             "Mining": (255, 215, 0),      # Gold
             "Combat": (220, 20, 60),       # Crimson
@@ -704,10 +706,23 @@ class ModernUI:
             "Special": (138, 43, 226)      # Blue Violet
         }
         
+        # Calculate total content height to determine if scrolling is needed
+        total_content_height = 0
         for category, achievement_list in categories.items():
-            # Category title
-            category_title = self.title_font.render(f"📋 {category}", True, category_colors[category])
-            self.screen.blit(category_title, (50, y_offset))
+            total_content_height += 40  # Category title
+            total_content_height += len(achievement_list) * 70  # Achievements
+            total_content_height += 20  # Space between categories
+        
+        # Only draw achievements that are visible on screen
+        screen_height = self.screen.get_height()
+        visible_start = scroll_offset
+        visible_end = scroll_offset + screen_height - 200  # Leave space for title and back button
+        
+        for category, achievement_list in categories.items():
+            # Only draw category title if it's visible
+            if 150 <= y_offset <= screen_height - 100:
+                category_title = self.title_font.render(f"📋 {category}", True, category_colors[category])
+                self.screen.blit(category_title, (50, y_offset))
             y_offset += 40
             
             # Draw achievements in this category
@@ -716,31 +731,33 @@ class ModernUI:
                     name, description, reward = achievement_info[achievement_id]
                     is_unlocked = achievements.get(achievement_id, False)
                     
-                    # Achievement background
-                    achievement_rect = pygame.Rect(50, y_offset, self.screen.get_width() - 100, 60)
-                    if is_unlocked:
-                        pygame.draw.rect(self.screen, (50, 150, 50), achievement_rect, border_radius=10)
-                        pygame.draw.rect(self.screen, (100, 200, 100), achievement_rect, 3, border_radius=10)
-                        status_icon = "✅"
-                    else:
-                        pygame.draw.rect(self.screen, (50, 50, 50), achievement_rect, border_radius=10)
-                        pygame.draw.rect(self.screen, (100, 100, 100), achievement_rect, 3, border_radius=10)
-                        status_icon = "❌"
-                    
-                    # Achievement text
-                    achievement_text = f"{status_icon} {name}"
-                    text_surface = self.font.render(achievement_text, True, self.colors["text"])
-                    self.screen.blit(text_surface, (achievement_rect.x + 10, achievement_rect.y + 10))
-                    
-                    # Description
-                    desc_surface = self.small_font.render(description, True, self.colors["text_secondary"])
-                    self.screen.blit(desc_surface, (achievement_rect.x + 10, achievement_rect.y + 30))
-                    
-                    # Reward
-                    reward_text = f"+{reward} coins"
-                    reward_surface = self.small_font.render(reward_text, True, (255, 215, 0))
-                    reward_x = achievement_rect.right - reward_surface.get_width() - 10
-                    self.screen.blit(reward_surface, (reward_x, achievement_rect.y + 20))
+                    # Only draw achievement if it's visible on screen
+                    if 150 <= y_offset <= screen_height - 100:
+                        # Achievement background
+                        achievement_rect = pygame.Rect(50, y_offset, self.screen.get_width() - 100, 60)
+                        if is_unlocked:
+                            pygame.draw.rect(self.screen, (50, 150, 50), achievement_rect, border_radius=10)
+                            pygame.draw.rect(self.screen, (100, 200, 100), achievement_rect, 3, border_radius=10)
+                            status_icon = "✅"
+                        else:
+                            pygame.draw.rect(self.screen, (50, 50, 50), achievement_rect, border_radius=10)
+                            pygame.draw.rect(self.screen, (100, 100, 100), achievement_rect, 3, border_radius=10)
+                            status_icon = "❌"
+                        
+                        # Achievement text
+                        achievement_text = f"{status_icon} {name}"
+                        text_surface = self.font.render(achievement_text, True, self.colors["text"])
+                        self.screen.blit(text_surface, (achievement_rect.x + 10, achievement_rect.y + 10))
+                        
+                        # Description
+                        desc_surface = self.small_font.render(description, True, self.colors["text_secondary"])
+                        self.screen.blit(desc_surface, (achievement_rect.x + 10, achievement_rect.y + 30))
+                        
+                        # Reward
+                        reward_text = f"+{reward} coins"
+                        reward_surface = self.small_font.render(reward_text, True, (255, 215, 0))
+                        reward_x = achievement_rect.right - reward_surface.get_width() - 10
+                        self.screen.blit(reward_surface, (reward_x, achievement_rect.y + 20))
                     
                     y_offset += 70
             

@@ -5523,6 +5523,9 @@ achievement_progress = {
     "fortresses_found": 0
 }
 
+# Achievements screen scrolling
+achievements_scroll_offset = 0
+
 # --- Character selection system ---
 # Character manager handles all character-related functionality
 character_manager = None
@@ -7595,8 +7598,8 @@ def draw_about():
     back_btn = button_states.get("back")
 
 def draw_options():
-    """Options page: toggle fullscreen, FPS limiter, or go back to title."""
-    global back_btn, fullscreen_btn, fps_btn
+    """Options page: toggle fullscreen, FPS limiter, website, or go back to title."""
+    global back_btn, fullscreen_btn, fps_btn, website_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -7607,6 +7610,7 @@ def draw_options():
     # Store button references for click handling
     fullscreen_btn = button_states.get("fullscreen")
     fps_btn = button_states.get("fps")
+    website_btn = button_states.get("website")
     back_btn = button_states.get("back")
 
 # Name tag function removed - no more floating name above player
@@ -14668,14 +14672,14 @@ def draw_title_screen():
 
 # --- Credits Screen Drawing Function ---
 def draw_achievements_screen():
-    global achievements_back_btn
+    global achievements_back_btn, achievements_scroll_offset
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
     
     # Draw modern achievements screen
     if modern_ui:
-        button_states = modern_ui.draw_achievements_screen(mouse_pos, achievements)
+        button_states = modern_ui.draw_achievements_screen(mouse_pos, achievements, achievements_scroll_offset)
         
         # Store button references for click handling
         achievements_back_btn = button_states.get("back")
@@ -16425,6 +16429,11 @@ while running:
                         fps_limit = 0  # Unlimited (0 means no limit)
                     else:
                         fps_limit = 30  # Back to 30
+                elif website_btn.collidepoint(event.pos):
+                    # Open website in default browser
+                    import webbrowser
+                    webbrowser.open("https://www.dreamcrusherx.com")
+                    print("🌐 Opening website: www.dreamcrusherx.com")
                 elif back_btn.collidepoint(event.pos):
                     game_state = GameState.TITLE
                     update_pause_state()  # Pause time when returning to title
@@ -16624,6 +16633,11 @@ while running:
             # Handle scrolling in about page
             if game_state == GameState.ABOUT:
                 modern_ui.handle_about_scroll(event.y)
+            # Handle scrolling in achievements page
+            elif game_state == GameState.ACHIEVEMENTS:
+                achievements_scroll_offset -= event.y * 30  # Scroll speed
+                achievements_scroll_offset = max(0, achievements_scroll_offset)  # Don't scroll above top
+                print(f"🏆 Achievements scrolled: {achievements_scroll_offset}")
             # Mouse wheel scrolling for backpack removed - using View All button instead
         
         # EXTREME ENGINEERING: Handle multiplayer chat input
