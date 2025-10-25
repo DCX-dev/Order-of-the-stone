@@ -120,39 +120,39 @@ class WorldGenerator:
             if self.ocean_side == "center":
                 # Ocean in center with natural beach slopes
                 distance_from_center = abs(x)
-                if distance_from_center < 40:
+                if distance_from_center < 30:
                     # Deep ocean in center
                     is_ocean = True
-                    surface_y = water_level + 8  # Ocean floor 8 blocks below water
-                elif distance_from_center < 80:
+                    surface_y = water_level + 6  # Ocean floor 6 blocks below water level
+                elif distance_from_center < 60:
                     # Beach transition zone - gradual slope from land to ocean
                     is_beach = True
                     # Calculate beach slope: starts at normal land height, slopes down to ocean
-                    beach_progress = (80 - distance_from_center) / 40  # 1.0 at ocean edge, 0.0 at land edge
+                    beach_progress = (60 - distance_from_center) / 30  # 1.0 at ocean edge, 0.0 at land edge
                     normal_height = surface_y
-                    ocean_height = water_level + 8
+                    ocean_height = water_level + 6  # Ocean floor depth
                     surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
             elif self.ocean_side == "left":
                 # Ocean on left with beach transition
-                if x < -60:
+                if x < -50:
                     is_ocean = True
-                    surface_y = water_level + 8
-                elif -80 < x < -60:
+                    surface_y = water_level + 6  # Ocean floor 6 blocks below water level
+                elif -70 < x < -50:
                     is_beach = True
-                    beach_progress = (x + 80) / 20  # 0.0 at ocean edge, 1.0 at land edge
+                    beach_progress = (x + 70) / 20  # 0.0 at ocean edge, 1.0 at land edge
                     normal_height = surface_y
-                    ocean_height = water_level + 8
+                    ocean_height = water_level + 6  # Ocean floor depth
                     surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
             elif self.ocean_side == "right":
                 # Ocean on right with beach transition
-                if x > 60:
+                if x > 50:
                     is_ocean = True
-                    surface_y = water_level + 8
-                elif 60 < x < 80:
+                    surface_y = water_level + 6  # Ocean floor 6 blocks below water level
+                elif 50 < x < 70:
                     is_beach = True
-                    beach_progress = (80 - x) / 20  # 0.0 at ocean edge, 1.0 at land edge
+                    beach_progress = (70 - x) / 20  # 0.0 at ocean edge, 1.0 at land edge
                     normal_height = surface_y
-                    ocean_height = water_level + 8
+                    ocean_height = water_level + 6  # Ocean floor depth
                     surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
             # self.ocean_side == "none" means no ocean at all - just normal terrain
             
@@ -178,8 +178,8 @@ class WorldGenerator:
                 blocks[f"{x},{surface_y}"] = "sand"
                 
                 # Fill with water from water level DOWN to ocean floor (NO holes)
-                # Water level is at y=108, ocean floor is deeper (higher y value like 116)
-                # Stop before surface_y to not overwrite the sand floor
+                # Water level is at y=108, ocean floor is at y=114 (deeper)
+                # Fill from water_level (108) down to surface_y (114)
                 for y in range(water_level, int(surface_y)):
                     blocks[f"{x},{y}"] = "water"
             elif is_beach:
@@ -214,6 +214,13 @@ class WorldGenerator:
         for x in range(-world_width//2, world_width//2, tree_spacing):
             if self.rng.random() < 0.6:  # 60% chance for cluster
                 cluster_centers.append(x)
+        
+        # Generate VERY sparse desert trees (much rarer)
+        desert_tree_centers = []
+        desert_tree_spacing = 80  # Much wider spacing for desert trees
+        for x in range(-world_width//2, world_width//2, desert_tree_spacing):
+            if self.rng.random() < 0.15:  # Only 15% chance for desert tree cluster
+                desert_tree_centers.append(x)
         
         for cluster_x in cluster_centers:
             # Generate 2-3 trees in each cluster (clean, organized)
@@ -279,6 +286,71 @@ class WorldGenerator:
                         tree_count += 1
         
         print(f"🌳 Generated {tree_count} simple trees in {len(cluster_centers)} clusters")
+        
+        # Generate VERY sparse desert trees (only on sand)
+        desert_tree_count = 0
+        for cluster_x in desert_tree_centers:
+            # Generate only 1 tree per desert cluster (very sparse)
+            tree_x = cluster_x + self.rng.randint(-10, 10)
+            
+            # Find surface by searching for sand block from top down
+            surface_y = None
+            for y in range(80, 130):
+                block = blocks.get(f"{tree_x},{y}")
+                if block == "sand":  # Only on sand (desert)
+                    surface_y = y
+                    break
+            
+            # Skip if no sand surface found
+            if surface_y is None:
+                continue
+            
+            if (tree_x, surface_y) not in placed_positions:
+                # Check if area is clear for tree (must have air above and sand below)
+                area_clear = True
+                
+                # Check that there's sand at surface
+                if blocks.get(f"{tree_x},{surface_y}") != "sand":
+                    continue
+                
+                # Check that there's air above for tree to grow
+                for dy in range(-1, -6, -1):  # Check 5 blocks above
+                    check_block = blocks.get(f"{tree_x},{surface_y + dy}")
+                    if check_block and check_block != "air":
+                        area_clear = False
+                        break
+                
+                # Check nearby area for obstacles
+                if area_clear:
+                    for dx in range(-1, 2):
+                        for dy in range(-1, 3):
+                            check_x, check_y = tree_x + dx, surface_y + dy
+                            if f"{check_x},{check_y}" in blocks and blocks[f"{check_x},{check_y}"] in ["log", "leaves", "red_brick", "stone", "door"]:
+                                area_clear = False
+                                break
+                        if not area_clear:
+                            break
+                
+                if area_clear:
+                    # Place desert tree (smaller than regular trees)
+                    # Trunk (1-2 blocks tall - smaller for desert)
+                    trunk_height = self.rng.randint(1, 2)
+                    for y in range(surface_y - 1, surface_y - trunk_height - 1, -1):
+                        blocks[f"{tree_x},{y}"] = "log"
+                    
+                    # Leaves (smaller canopy for desert)
+                    for dx in range(-1, 2):
+                        for dy in range(-trunk_height - 1, -trunk_height - 3, -1):
+                            if dx == 0 or dy == -trunk_height - 1:  # Smaller leaf pattern
+                                blocks[f"{tree_x + dx},{surface_y + dy}"] = "leaves"
+                    
+                    # Add top leaf for better appearance
+                    blocks[f"{tree_x},{surface_y - trunk_height - 2}"] = "leaves"
+                    
+                    placed_positions.add((tree_x, surface_y))
+                    desert_tree_count += 1
+        
+        print(f"🌵 Generated {desert_tree_count} sparse desert trees")
     
     def _generate_simple_fortresses(self, blocks: Dict[str, str], world_width: int):
         """Generate larger, rarer fortresses away from spawn (not in oceans)"""

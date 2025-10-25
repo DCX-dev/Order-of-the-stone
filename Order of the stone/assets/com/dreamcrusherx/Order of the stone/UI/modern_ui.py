@@ -143,12 +143,17 @@ class ModernUI:
         self.draw_gradient_background()
         self.draw_decorative_elements()
         
-        # Title with glow effect
-        title = self.big_font.render("Order of the Stone", True, self.colors["text"])
+        # Title with glow effect - April Fools' Day easter egg!
+        import datetime
+        today = datetime.date.today()
+        is_april_fools = today.month == 4 and today.day == 1
+        
+        title_text = "Doritos of the Stone" if is_april_fools else "Order of the Stone"
+        title = self.big_font.render(title_text, True, self.colors["text"])
         title_x = (self.screen.get_width() - title.get_width()) // 2
         
         # Title glow
-        glow_surface = self.big_font.render("Order of the Stone", True, self.colors["accent_glow"])
+        glow_surface = self.big_font.render(title_text, True, self.colors["accent_glow"])
         self.screen.blit(glow_surface, (title_x + 3, 53))
         self.screen.blit(title, (title_x, 50))
         

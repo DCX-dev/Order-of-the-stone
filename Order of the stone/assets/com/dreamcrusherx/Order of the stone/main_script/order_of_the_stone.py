@@ -12598,7 +12598,7 @@ def draw_night_overlay():
         
         # Add some intensity text during night
         if not is_day and night_overlay_alpha > 100:
-            monster_count = sum(1 for mob in entities if mob["type"] in ["monster", "zombie"])
+            monster_count = sum(1 for mob in entities if mob["type"] in ["monster", "zombie", "pigeon"])
             if monster_count > 0:
                 intensity_text = f"👹 NIGHT INTENSITY: {monster_count} monsters nearby!"
                 text_surface = font.render(intensity_text, True, (255, 100, 100))
@@ -12641,8 +12641,22 @@ def spawn_monsters_everywhere_at_night():
             
             # Spawn a monster if none nearby
             if not nearby_monster and random.random() < 0.7:  # 70% chance to spawn at night
-                # Randomly choose between monster and zombie (30% chance for zombie)
-                if random.random() < 0.3:  # 30% chance for zombie
+                # Check if this is a desert biome (sand blocks nearby)
+                is_desert = False
+                for check_x in range(x - 5, x + 6):
+                    for check_y in range(surface_y - 2, surface_y + 3):
+                        if f"{check_x},{check_y}" in world_data and world_data[f"{check_x},{check_y}"] == "sand":
+                            is_desert = True
+                            break
+                    if is_desert:
+                        break
+                
+                # Choose monster type based on biome
+                if is_desert and random.random() < 0.4:  # 40% chance for mad pigeon in desert
+                    monster_type = "pigeon"
+                    monster_hp = 6  # Pigeons are weaker but faster
+                    monster_img = textures["monster"]  # Use monster texture for now
+                elif random.random() < 0.3:  # 30% chance for zombie
                     monster_type = "zombie"
                     monster_hp = 12  # Zombies are stronger
                     monster_img = textures["zombie"]  # Use original zombie texture
@@ -12699,9 +12713,23 @@ def spawn_night_monster_near_player():
                     break
                         
         if not too_close:
-            # Randomly choose between monster and zombie (30% chance for zombie)
+            # Check if this is a desert biome (sand blocks nearby)
+            is_desert = False
+            for check_x in range(int(spawn_x) - 5, int(spawn_x) + 6):
+                for check_y in range(surface_y - 2, surface_y + 3):
+                    if f"{check_x},{check_y}" in world_data and world_data[f"{check_x},{check_y}"] == "sand":
+                        is_desert = True
+                        break
+                if is_desert:
+                    break
+            
+            # Choose monster type based on biome
             import random
-            if random.random() < 0.3:  # 30% chance for zombie
+            if is_desert and random.random() < 0.4:  # 40% chance for mad pigeon in desert
+                monster_type = "pigeon"
+                monster_hp = 6  # Pigeons are weaker but faster
+                monster_img = textures["monster"]  # Use monster texture for now
+            elif random.random() < 0.3:  # 30% chance for zombie
                 monster_type = "zombie"
                 monster_hp = 12  # Zombies are stronger
                 monster_img = textures["zombie"]  # Use original zombie texture
@@ -12721,7 +12749,7 @@ def spawn_night_monster_near_player():
                 "night_spawned": True  # Mark as night-spawned
             })
             
-            monster_count = sum(1 for mob in entities if mob["type"] in ["monster", "zombie"])
+            monster_count = sum(1 for mob in entities if mob["type"] in ["monster", "zombie", "pigeon"])
             print(f"👹 Night {monster_type} spawned near player at ({int(spawn_x)}, {int(spawn_y)}) - Total: {monster_count}/{max_night_monsters}")
 
 def find_ground_level(x):
