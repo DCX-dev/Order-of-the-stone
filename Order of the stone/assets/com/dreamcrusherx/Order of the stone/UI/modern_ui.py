@@ -855,8 +855,8 @@ class ModernUI:
             "input": input_rect
         }
     
-    def draw_achievements_screen(self, mouse_pos: tuple, achievements: dict) -> Dict[str, pygame.Rect]:
-        """Draw beautiful achievements screen"""
+    def draw_multiplayer_screen(self, mouse_pos: tuple) -> Dict[str, pygame.Rect]:
+        """Draw beautiful multiplayer screen"""
         # Enhanced background
         self.draw_gradient_background()
         self.draw_decorative_elements()
