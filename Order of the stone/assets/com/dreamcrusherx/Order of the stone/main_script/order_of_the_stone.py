@@ -3298,6 +3298,19 @@ except Exception as e:
     print(f"❌ Error loading damage sound: {e}")
     damage_sound = None
 
+# Load achievement sound
+try:
+    achievement_sound_path = os.path.join("achievement_sound", "achievement_unlock.wav")
+    if os.path.exists(achievement_sound_path):
+        achievement_sound = pygame.mixer.Sound(achievement_sound_path)
+        print(f"🏆 Loaded achievement sound: {achievement_sound_path}")
+    else:
+        print(f"⚠️ Achievement sound file not found: {achievement_sound_path}")
+        achievement_sound = None
+except Exception as e:
+    print(f"❌ Error loading achievement sound: {e}")
+    achievement_sound = None
+
 def play_damage_sound():
     """Safely play damage sound if available"""
     try:
@@ -3305,6 +3318,15 @@ def play_damage_sound():
             damage_sound.play()
     except Exception as e:
         print(f"⚠️ Could not play damage sound: {e}")
+
+def play_achievement_sound():
+    """Safely play achievement sound if available"""
+    try:
+        if achievement_sound:
+            achievement_sound.play()
+            print("🏆 Achievement sound played!")
+    except Exception as e:
+        print(f"⚠️ Could not play achievement sound: {e}")
 
 
 # Fonts
@@ -5523,8 +5545,12 @@ achievement_progress = {
     "fortresses_found": 0
 }
 
-# Achievements screen scrolling
+# Achievements screen scrolling and animation
 achievements_scroll_offset = 0
+achievements_animation_offset = 0
+achievements_animation_speed = 15
+achievements_animation_direction = 1  # 1 for sliding in, -1 for sliding out
+achievements_animation_active = False
 
 # --- Character selection system ---
 # Character manager handles all character-related functionality
@@ -11043,6 +11069,8 @@ def check_achievement(achievement_name, coin_reward, message):
             coins_manager.add_coins(coin_reward)
         show_message(f" {message} +{coin_reward} coins!")
         print(f"🏆 Achievement unlocked: {achievement_name} - {message} (+{coin_reward} coins)")
+        # Play achievement sound
+        play_achievement_sound()
         return True
     return False
 
@@ -15714,11 +15742,6 @@ while running:
             if event.key == pygame.K_b:
                 print("🧪 Manual block breaking test triggered!")
                 test_block_breaking()
-            
-            # Nuclear option with N key
-            if event.key == pygame.K_n:
-                print("🚨 NUCLEAR OPTION TRIGGERED!")
-                nuclear_block_removal()
             
             # Force quit with Ctrl+Q
             if event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
