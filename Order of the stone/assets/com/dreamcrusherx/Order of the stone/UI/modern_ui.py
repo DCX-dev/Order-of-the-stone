@@ -193,6 +193,7 @@ class ModernUI:
         buttons = [
             ("Play", "play", self.colors["success"]),
             # ("Multiplayer", "multiplayer", (100, 100, 255)),  # Disabled for now - will add back later
+            ("Achievements", "achievements", self.colors["accent"]),
             ("Username", "username", self.colors["info"]),
             ("Controls", "controls", self.colors["button"]),
             ("About", "about", self.colors["button"]),
@@ -644,6 +645,106 @@ class ModernUI:
                 self.screen.blit(text_surface, (text_x, y_offset))
             
             y_offset += 30
+        
+        # Back button
+        back_btn = self.draw_modern_button("Back", self.screen.get_height() - 100, mouse_pos, self.colors["button"])
+        
+        return {
+            "back": back_btn
+        }
+
+    def draw_achievements_screen(self, mouse_pos: tuple, achievements: dict) -> Dict[str, pygame.Rect]:
+        """Draw beautiful achievements screen"""
+        # Enhanced background
+        self.draw_gradient_background()
+        self.draw_decorative_elements()
+        
+        # Title
+        title = self.big_font.render("🏆 Achievements", True, self.colors["text"])
+        title_x = (self.screen.get_width() - title.get_width()) // 2
+        self.screen.blit(title, (title_x, 50))
+        
+        # Achievement categories
+        categories = {
+            "Mining": ["first_diamond", "first_gold", "first_iron", "first_coal"],
+            "Combat": ["first_monster_kill", "monster_hunter", "zombie_slayer", "pigeon_hunter"],
+            "Exploration": ["first_carrot", "first_sleep", "explorer", "fortress_finder"],
+            "Building": ["first_torch", "builder"],
+            "Special": ["diamond_chest", "night_survivor", "ultimate_achievement"]
+        }
+        
+        # Achievement descriptions and rewards
+        achievement_info = {
+            "first_diamond": ("💎 First Diamond", "Mine your first diamond", 50),
+            "first_gold": ("🥇 First Gold", "Mine your first gold ore", 25),
+            "first_iron": ("⚒️ First Iron", "Mine your first iron ore", 15),
+            "first_coal": ("⚫ First Coal", "Mine your first coal", 10),
+            "first_monster_kill": ("⚔️ First Kill", "Defeat your first monster", 30),
+            "monster_hunter": ("👹 Monster Hunter", "Defeat 10 monsters", 100),
+            "zombie_slayer": ("🧟 Zombie Slayer", "Defeat 5 zombies", 75),
+            "pigeon_hunter": ("🐦 Pigeon Hunter", "Defeat 3 mad pigeons", 50),
+            "first_carrot": ("🥕 First Carrot", "Eat your first carrot", 15),
+            "first_sleep": ("🛏️ First Sleep", "Sleep in a bed for the first time", 25),
+            "explorer": ("🗺️ Explorer", "Walk 1000 blocks", 100),
+            "fortress_finder": ("🏰 Fortress Finder", "Find a fortress", 200),
+            "first_torch": ("🔥 First Torch", "Place your first torch", 20),
+            "builder": ("🏗️ Builder", "Place 50 blocks", 150),
+            "diamond_chest": ("💎 Diamond Chest", "Find diamond in a chest", 500),
+            "night_survivor": ("🌙 Night Survivor", "Survive 5 nights", 200),
+            "ultimate_achievement": ("👑 Ultimate", "Complete the ultimate challenge", 1000)
+        }
+        
+        # Draw achievements by category
+        y_offset = 150
+        category_colors = {
+            "Mining": (255, 215, 0),      # Gold
+            "Combat": (220, 20, 60),       # Crimson
+            "Exploration": (34, 139, 34),  # Forest Green
+            "Building": (255, 140, 0),     # Dark Orange
+            "Special": (138, 43, 226)      # Blue Violet
+        }
+        
+        for category, achievement_list in categories.items():
+            # Category title
+            category_title = self.title_font.render(f"📋 {category}", True, category_colors[category])
+            self.screen.blit(category_title, (50, y_offset))
+            y_offset += 40
+            
+            # Draw achievements in this category
+            for achievement_id in achievement_list:
+                if achievement_id in achievement_info:
+                    name, description, reward = achievement_info[achievement_id]
+                    is_unlocked = achievements.get(achievement_id, False)
+                    
+                    # Achievement background
+                    achievement_rect = pygame.Rect(50, y_offset, self.screen.get_width() - 100, 60)
+                    if is_unlocked:
+                        pygame.draw.rect(self.screen, (50, 150, 50), achievement_rect, border_radius=10)
+                        pygame.draw.rect(self.screen, (100, 200, 100), achievement_rect, 3, border_radius=10)
+                        status_icon = "✅"
+                    else:
+                        pygame.draw.rect(self.screen, (50, 50, 50), achievement_rect, border_radius=10)
+                        pygame.draw.rect(self.screen, (100, 100, 100), achievement_rect, 3, border_radius=10)
+                        status_icon = "❌"
+                    
+                    # Achievement text
+                    achievement_text = f"{status_icon} {name}"
+                    text_surface = self.font.render(achievement_text, True, self.colors["text"])
+                    self.screen.blit(text_surface, (achievement_rect.x + 10, achievement_rect.y + 10))
+                    
+                    # Description
+                    desc_surface = self.small_font.render(description, True, self.colors["text_secondary"])
+                    self.screen.blit(desc_surface, (achievement_rect.x + 10, achievement_rect.y + 30))
+                    
+                    # Reward
+                    reward_text = f"+{reward} coins"
+                    reward_surface = self.small_font.render(reward_text, True, (255, 215, 0))
+                    reward_x = achievement_rect.right - reward_surface.get_width() - 10
+                    self.screen.blit(reward_surface, (reward_x, achievement_rect.y + 20))
+                    
+                    y_offset += 70
+            
+            y_offset += 20  # Space between categories
         
         # Back button
         back_btn = self.draw_modern_button("Back", self.screen.get_height() - 100, mouse_pos, self.colors["button"])

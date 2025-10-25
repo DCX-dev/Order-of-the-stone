@@ -354,7 +354,6 @@ class GameState(Enum):
     GAME = "game"
     PAUSED = "paused"
     BACKPACK = "backpack"
-    SHOP = "shop"
     MULTIPLAYER = "multiplayer"
     OPTIONS = "options"
     CONTROLS = "controls"
@@ -362,6 +361,7 @@ class GameState(Enum):
     CREDITS = "credits"
     USERNAME_CREATE = "username_create"
     SKIN_CREATOR = "skin_creator"
+    ACHIEVEMENTS = "achievements"  # New achievements screen
     LOADING = "loading"
     ERROR = "error"
 
@@ -2592,12 +2592,15 @@ def is_area_dark(x, y):
 
 def add_torch(x, y):
     """Add a torch as a light source"""
-    global light_sources
+    global light_sources, achievement_progress
     
     # Add to light sources list
     if (x, y) not in light_sources:
         light_sources.append((x, y))
         print(f"🔥 Torch placed at ({x}, {y}) - lights up area!")
+        
+        # Check for first torch achievement
+        check_achievement("first_torch", 20, "Placed your first torch!")
 
 def remove_torch(x, y):
     """Remove a torch light source"""
@@ -5481,15 +5484,43 @@ current_character_index = 0
 
 # --- Achievement tracking for special coin rewards ---
 achievements = {
-    "first_diamond": False,  # First diamond found (5 coins)
-    "diamond_chest": False,  # Diamond found in natural chest (1,000,000 coins)
-    "first_gold": False,     # First gold found (3 coins)
-    "first_iron": False,     # First iron found (2 coins)
-    "first_coal": False,     # First coal found (1 coin)
-    "first_monster_kill": False,  # First monster defeated (25 coins)
-    "first_carrot": False,   # First carrot eaten (10 coins)
-    "first_sleep": False,    # First time sleeping in bed (20 coins)
-    "ultimate_achievement": False  # Most special achievement (1,000,000 coins)
+    # Mining Achievements
+    "first_diamond": False,  # First diamond found (50 coins)
+    "first_gold": False,     # First gold found (25 coins)
+    "first_iron": False,     # First iron found (15 coins)
+    "first_coal": False,     # First coal found (10 coins)
+    
+    # Combat Achievements
+    "first_monster_kill": False,  # First monster defeated (30 coins)
+    "monster_hunter": False,      # Kill 10 monsters (100 coins)
+    "zombie_slayer": False,       # Kill 5 zombies (75 coins)
+    "pigeon_hunter": False,       # Kill 3 mad pigeons (50 coins)
+    
+    # Exploration Achievements
+    "first_carrot": False,   # First carrot eaten (15 coins)
+    "first_sleep": False,    # First time sleeping in bed (25 coins)
+    "explorer": False,       # Walk 1000 blocks (100 coins)
+    "fortress_finder": False, # Find a fortress (200 coins)
+    
+    # Building Achievements
+    "first_torch": False,    # Place first torch (20 coins)
+    "builder": False,        # Place 50 blocks (150 coins)
+    
+    # Special Achievements
+    "diamond_chest": False,  # Diamond found in natural chest (500 coins)
+    "night_survivor": False, # Survive 5 nights (200 coins)
+    "ultimate_achievement": False  # Most special achievement (1000 coins)
+}
+
+# Achievement progress tracking
+achievement_progress = {
+    "monsters_killed": 0,
+    "zombies_killed": 0,
+    "pigeons_killed": 0,
+    "blocks_walked": 0,
+    "blocks_placed": 0,
+    "nights_survived": 0,
+    "fortresses_found": 0
 }
 
 # --- Character selection system ---
@@ -6459,15 +6490,27 @@ def check_underground_fortress_trigger():
 # =============================================================================
 
 def track_monster_kill():
-    """Track when a monster is killed and check for ability unlocks"""
-    global monsters_killed, total_monsters_killed
+    """Track when a monster is killed and check for achievements"""
+    global monsters_killed, total_monsters_killed, achievement_progress
     
     monsters_killed += 1
     total_monsters_killed += 1
+    achievement_progress["monsters_killed"] += 1
     
     print(f"👹 Monster killed! Total: {total_monsters_killed}")
     
-    # Ability system removed
+    # Check for combat achievements
+    check_achievement("first_monster_kill", 30, "Defeated your first monster!")
+    
+    if achievement_progress["monsters_killed"] >= 10:
+        check_achievement("monster_hunter", 100, "Defeated 10 monsters!")
+    
+    # Check for specific monster type achievements
+    if achievement_progress["zombies_killed"] >= 5:
+        check_achievement("zombie_slayer", 75, "Defeated 5 zombies!")
+    
+    if achievement_progress["pigeons_killed"] >= 3:
+        check_achievement("pigeon_hunter", 50, "Defeated 3 mad pigeons!")
 
 # Wall jump system removed - no more abilities
 
@@ -9026,13 +9069,13 @@ def break_block(mx, my):
         
         # Check for mining achievements
         if block == "diamond":
-            check_achievement("first_diamond", 5, "Mined first diamond!")
+            check_achievement("first_diamond", 50, "Mined first diamond!")
         elif block == "gold":
-            check_achievement("first_gold", 3, "Mined first gold!")
+            check_achievement("first_gold", 25, "Mined first gold!")
         elif block == "iron":
-            check_achievement("first_iron", 2, "Mined first iron!")
+            check_achievement("first_iron", 15, "Mined first iron!")
         elif block == "coal":
-            check_achievement("first_coal", 1, "Mined first coal!")
+            check_achievement("first_coal", 10, "Mined first coal!")
         
         # Chance to drop coins from valuable ores
         if block in ["gold", "diamond"] and coins_manager:
@@ -9084,16 +9127,16 @@ def break_block(mx, my):
                 # Check for special achievements in natural chests
                 if is_natural_chest:
                     if item_type == "diamond":
-                        check_achievement("diamond_chest", 1000000, "Found diamond in chest! +1,000,000 coins!")
-                        if check_achievement("ultimate_achievement", 1000000, "ULTIMATE: Found diamond in chest!"):
+                        check_achievement("diamond_chest", 500, "Found diamond in chest! +500 coins!")
+                        if check_achievement("ultimate_achievement", 1000, "ULTIMATE: Found diamond in chest!"):
                             if character_manager:
                                 success, cost = character_manager.unlock_character("hacker", coins_manager.get_coins())
                     elif item_type == "gold":
-                        check_achievement("first_gold", 3, "Found gold in chest!")
+                        check_achievement("first_gold", 25, "Found gold in chest!")
                     elif item_type == "iron":
-                        check_achievement("first_iron", 2, "Found iron in chest!")
+                        check_achievement("first_iron", 15, "Found iron in chest!")
                     elif item_type == "coal":
-                        check_achievement("first_coal", 1, "Found coal in chest!")
+                        check_achievement("first_coal", 10, "Found coal in chest!")
         
         # Remove the chest from the chest system
         chest_system.chest_inventories.pop((bx, by), None)
@@ -9283,6 +9326,10 @@ def place_block(mx, my):
         player["inventory"].pop(player["selected"])
         normalize_inventory()
     
+    # Track block placement for achievements
+    achievement_progress["blocks_placed"] += 1
+    if achievement_progress["blocks_placed"] >= 50:
+        check_achievement("builder", 150, "Placed 50 blocks!")
     
     return True  # Success
 
@@ -9681,9 +9728,15 @@ def attack_monsters(mx, my):
         # Show health bar when hit
         show_monster_health(closest_monster)
         if closest_monster["hp"] <= 0:
-            # Track monster kill (only for actual monsters)
-            if closest_monster["type"] in ["monster", "zombie"]:
+            # Track monster kill with specific type tracking
+            monster_type = closest_monster.get("type", "monster")
+            if monster_type in ["monster", "zombie", "pigeon"]:
                 track_monster_kill()
+                # Track specific monster types
+                if monster_type == "zombie":
+                    achievement_progress["zombies_killed"] += 1
+                elif monster_type == "pigeon":
+                    achievement_progress["pigeons_killed"] += 1
             
             # Create death effect
             death_x = (closest_monster["x"] * TILE_SIZE) - camera_x
@@ -9749,7 +9802,7 @@ def update_world_interactions():
             print(f"🥕 Carrot collected and added to inventory")
             
             # Check for first carrot achievement
-            check_achievement("first_carrot", 10, "Collected first carrot!")
+            check_achievement("first_carrot", 15, "Collected first carrot!")
     elif block_below == "carrot":
         add_to_inventory("carrot")
         # Remove carrot completely from world data (turns into air)
@@ -11783,7 +11836,7 @@ def sleep_in_bed():
     day_start_time = time.time()
 
     # Check for first sleep achievement
-    check_achievement("first_sleep", 20, "Slept in bed for the first time!")
+    check_achievement("first_sleep", 25, "Slept in bed for the first time!")
 
     # Small notification
     show_message("You feel rested.")
@@ -14557,7 +14610,7 @@ def update_loading_progress():
         game_state = GameState.TITLE
 
 def draw_title_screen():
-    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn
+    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, achievements_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14569,6 +14622,7 @@ def draw_title_screen():
         # Store button references for click handling
         play_btn = button_states.get("play")
         # multiplayer_btn = button_states.get("multiplayer")  # Disabled for now
+        achievements_btn = button_states.get("achievements")
         username_btn = button_states.get("username")
         controls_btn = button_states.get("controls")
         about_btn = button_states.get("about")
@@ -14613,6 +14667,42 @@ def draw_title_screen():
         credits_btn = None
 
 # --- Credits Screen Drawing Function ---
+def draw_achievements_screen():
+    global achievements_back_btn
+    
+    # Get mouse position for hover detection
+    mouse_pos = pygame.mouse.get_pos()
+    
+    # Draw modern achievements screen
+    if modern_ui:
+        button_states = modern_ui.draw_achievements_screen(mouse_pos, achievements)
+        
+        # Store button references for click handling
+        achievements_back_btn = button_states.get("back")
+    else:
+        # Fallback: Draw basic achievements screen
+        title_text = title_font.render("Achievements", True, (255, 255, 255))
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 100))
+        
+        # Simple achievement list
+        y_offset = 200
+        for achievement_name, is_unlocked in achievements.items():
+            status = "✅" if is_unlocked else "❌"
+            achievement_text = f"{status} {achievement_name}"
+            text_surface = font.render(achievement_text, True, (255, 255, 255))
+            screen.blit(text_surface, (50, y_offset))
+            y_offset += 30
+        
+        # Back button
+        achievements_back_btn = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT - 100, 200, 50)
+        pygame.draw.rect(screen, (100, 100, 100), achievements_back_btn)
+        pygame.draw.rect(screen, (255, 255, 255), achievements_back_btn, 2)
+        
+        back_text = font.render("Back", True, (255, 255, 255))
+        back_text_x = achievements_back_btn.x + (achievements_back_btn.width - back_text.get_width()) // 2
+        back_text_y = achievements_back_btn.y + (achievements_back_btn.height - back_text.get_height()) // 2
+        screen.blit(back_text, (back_text_x, back_text_y))
+
 def draw_credits_screen():
     """Draw the credits screen"""
     global credits_back_btn, credits_from_boss_defeat
@@ -16046,6 +16136,10 @@ while running:
                 #     game_state = GameState.MULTIPLAYER
                 #     update_pause_state()
                 #     print("🌐 Opening multiplayer menu!")
+                elif achievements_btn.collidepoint(event.pos):
+                    game_state = GameState.ACHIEVEMENTS
+                    update_pause_state()  # Pause time when leaving title
+                    print("🏆 Opening achievements screen!")
                 elif username_btn.collidepoint(event.pos):
                     # If changing username, save the current one first
                     current_username = get_current_username()
@@ -16344,6 +16438,11 @@ while running:
                     update_pause_state()  # Pause time when returning to title
                     credits_from_boss_defeat = False  # Reset the flag
                     print("🎮 Returned to title screen from credits!")
+            elif game_state == GameState.ACHIEVEMENTS:
+                if achievements_back_btn.collidepoint(event.pos):
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Pause time when returning to title
+                    print("🎮 Returned to title screen from achievements!")
             elif game_state == GameState.MULTIPLAYER:
                 # Multiplayer menu click handling using MultiplayerUI
                 if multiplayer_ui:
@@ -16720,8 +16819,6 @@ while running:
         draw_about()
     elif game_state == GameState.OPTIONS:
         draw_options()
-    elif game_state == GameState.SHOP:
-        draw_shop_ui()
     elif game_state == GameState.BACKPACK:
         draw_backpack_ui()
     elif game_state == GameState.SKIN_CREATOR:
@@ -16730,6 +16827,8 @@ while running:
         draw_multiplayer_screen()
     elif game_state == GameState.CREDITS:
         draw_credits_screen()
+    elif game_state == GameState.ACHIEVEMENTS:
+        draw_achievements_screen()
 
     # Draw nighttime overlay effect
     draw_night_overlay()
