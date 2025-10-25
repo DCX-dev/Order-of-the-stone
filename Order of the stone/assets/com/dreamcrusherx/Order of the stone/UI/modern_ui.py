@@ -363,7 +363,6 @@ class ModernUI:
             "I - Inventory",
             "L - Achievements",
             "B - Test Block Breaking",
-            "N - Nuclear Option (Clear All Blocks)",
             "F3 - Toggle FPS Display",
             "F11 - Toggle Fullscreen"
         ]

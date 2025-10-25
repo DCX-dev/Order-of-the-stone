@@ -120,39 +120,45 @@ class WorldGenerator:
             if self.ocean_side == "center":
                 # Ocean in center with natural beach slopes
                 distance_from_center = abs(x)
-                if distance_from_center < 30:
-                    # Deep ocean in center
+                if distance_from_center < 40:
+                    # Deep ocean in center - MUCH DEEPER with natural variation
                     is_ocean = True
-                    surface_y = water_level + 6  # Ocean floor 6 blocks below water level
-                elif distance_from_center < 60:
-                    # Beach transition zone - gradual slope from land to ocean
+                    # Add natural variation to ocean depth (10-20 blocks deep)
+                    depth_variation = self.rng.randint(-3, 3)
+                    surface_y = water_level + 15 + depth_variation  # Ocean floor 12-18 blocks below water level
+                elif distance_from_center < 80:
+                    # Beach transition zone - WIDER transition for smoother slopes
                     is_beach = True
                     # Calculate beach slope: starts at normal land height, slopes down to ocean
-                    beach_progress = (60 - distance_from_center) / 30  # 1.0 at ocean edge, 0.0 at land edge
+                    beach_progress = (80 - distance_from_center) / 40  # 1.0 at ocean edge, 0.0 at land edge
                     normal_height = surface_y
-                    ocean_height = water_level + 6  # Ocean floor depth
+                    ocean_height = water_level + 15  # Ocean floor depth
                     surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
             elif self.ocean_side == "left":
                 # Ocean on left with beach transition
-                if x < -50:
+                if x < -60:
                     is_ocean = True
-                    surface_y = water_level + 6  # Ocean floor 6 blocks below water level
-                elif -70 < x < -50:
+                    # Add natural variation to ocean depth
+                    depth_variation = self.rng.randint(-3, 3)
+                    surface_y = water_level + 15 + depth_variation  # Ocean floor 12-18 blocks below water level
+                elif -90 < x < -60:
                     is_beach = True
-                    beach_progress = (x + 70) / 20  # 0.0 at ocean edge, 1.0 at land edge
+                    beach_progress = (x + 90) / 30  # 0.0 at ocean edge, 1.0 at land edge (wider transition)
                     normal_height = surface_y
-                    ocean_height = water_level + 6  # Ocean floor depth
+                    ocean_height = water_level + 15  # Ocean floor depth
                     surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
             elif self.ocean_side == "right":
                 # Ocean on right with beach transition
-                if x > 50:
+                if x > 60:
                     is_ocean = True
-                    surface_y = water_level + 6  # Ocean floor 6 blocks below water level
-                elif 50 < x < 70:
+                    # Add natural variation to ocean depth
+                    depth_variation = self.rng.randint(-3, 3)
+                    surface_y = water_level + 15 + depth_variation  # Ocean floor 12-18 blocks below water level
+                elif 60 < x < 90:
                     is_beach = True
-                    beach_progress = (70 - x) / 20  # 0.0 at ocean edge, 1.0 at land edge
+                    beach_progress = (90 - x) / 30  # 0.0 at ocean edge, 1.0 at land edge (wider transition)
                     normal_height = surface_y
-                    ocean_height = water_level + 6  # Ocean floor depth
+                    ocean_height = water_level + 15  # Ocean floor depth
                     surface_y = int(normal_height - (beach_progress * (normal_height - ocean_height)))
             # self.ocean_side == "none" means no ocean at all - just normal terrain
             
