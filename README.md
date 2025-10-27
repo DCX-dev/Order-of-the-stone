@@ -10,12 +10,13 @@ A 2D sandbox survival adventure game built with Python and Pygame, featuring pro
 ## 🌟 Features
 
 ### 🎯 Core Gameplay
-- **Procedural World Generation**: Infinite terrain with varied biomes, caves, and structures
+- **Procedural World Generation**: Infinite terrain with varied biomes, caves, and deep oceans
 - **Advanced Combat System**: Distance-based combat with sword throwing and close-range slashing
 - **Comprehensive Crafting**: Tools, weapons, armor, and building materials
+- **Achievement System**: Unlock achievements and earn coins for various accomplishments
 - **Survival Mechanics**: Health, hunger, stamina, and day/night cycles
 - **Building & Mining**: Place and destroy blocks, construct elaborate structures
-- **Multiple Worlds**: Create and manage up to 12 different worlds with preview screenshots
+- **Multiple Worlds**: Create and manage multiple worlds with preview screenshots
 
 ### ⚔️ Combat System
 - **Sword Throwing**: Throw swords at distant enemies - they return automatically!
@@ -25,18 +26,21 @@ A 2D sandbox survival adventure game built with Python and Pygame, featuring pro
 - **Blood Effects**: Visual feedback with particle effects on hits
 
 ### 🏗️ World Features
+- **Procedural Biomes**: Grasslands, deserts, forests, and beaches with distinct characteristics
+- **Deep Oceans**: Realistic ocean generation with natural depth variation and smooth beach transitions
 - **Villages**: Procedurally generated with friendly NPCs and trading
 - **Fortresses**: Dangerous but rewarding structures filled with loot
 - **Underground Caves**: Rich in ores and hidden treasures
-- **Boss Arena**: Legendary boss fight hidden under bedrock at world center
-- **Chess Pieces**: Special entities that drop valuable loot when collected
+- **Mad Pigeons**: Special mobs that spawn in desert biomes
+- **Sparse Desert Trees**: Natural tree generation in desert areas
 
 ### 🎨 Visual & Audio
 - **GIF Animations**: Support for custom character and entity animations
 - **Particle Effects**: Blood, dust, and environmental effects
 - **Dynamic Lighting**: Day/night cycle with atmospheric changes
-- **Sound Effects**: Damage sounds and environmental audio
-- **Modern UI**: Clean, responsive interface with drag-and-drop inventory
+- **Sound Effects**: Damage sounds, achievement unlocks, and environmental audio
+- **Modern UI**: Clean, responsive interface with drag-and-drop inventory and scrolling achievements screen
+- **Easter Eggs**: Special April Fool's Day title change ("Doritos of the Stone")
 
 ## 🚀 Quick Start
 
@@ -73,6 +77,7 @@ A 2D sandbox survival adventure game built with Python and Pygame, featuring pro
 | **Chat** | H | Open chat system |
 | **Hotbar** | 1-9 | Select inventory slots |
 | **Pause** | ESC | Pause menu / Back |
+| **Achievements** | L | View achievements screen |
 | **Debug** | F3 | Toggle FPS and coordinates |
 | **Fullscreen** | F11 | Toggle fullscreen mode |
 
@@ -100,6 +105,27 @@ The game features an innovative distance-based combat system:
 | **Diamond Sword** | 4 | Medium | High durability |
 | **Gold Sword** | 3 | Fast | Quick attacks |
 | **Enchanted Sword** | 5 | Slow | Ultimate weapon |
+
+## 🏆 Achievement System
+
+Unlock achievements by completing various in-game tasks and earn coins as rewards!
+
+### Achievement Categories
+- **🏗️ Builder**: Master the art of placing blocks and structures
+- **💰 Explorer**: Discover hidden secrets and travel the world
+- **⚔️ Warrior**: Defeat monsters and survive the dangerous wilderness
+- **⛏️ Miner**: Dig deep and find valuable resources
+- **🎮 Miscellaneous**: Special achievements for unique accomplishments
+
+### Example Achievements
+- **First Steps**: Place your first block (25 coins)
+- **Adventurer**: Travel 1000 blocks (50 coins)
+- **Monster Slayer**: Kill 50 monsters (100 coins)
+- **Deep Diver**: Mine 500 stone blocks (50 coins)
+- **Torch Master**: Place 100 torches (25 coins)
+- **Boss Conqueror**: Defeat the legendary boss (500 coins)
+
+View all achievements and track your progress in the Achievements screen accessible from the title screen!
 
 ## 🏗️ Crafting System
 
@@ -148,18 +174,21 @@ The game features an innovative distance-based combat system:
 
 ## 🌍 World Management
 
-### Multiple Worlds
-- **Create Worlds**: Generate up to 12 unique worlds
+### World Generation
+- **Multiple Worlds**: Create and explore multiple unique worlds
 - **World Selection**: Choose from available worlds with preview screenshots
-- **Auto-Screenshots**: Automatic preview generation every 5 minutes
+- **Auto-Screenshots**: Automatic preview generation
 - **World Persistence**: Each world saves independently
+- **Procedural Generation**: Infinite terrain with varied biomes
+- **Biome System**: Grasslands, deserts with sparse trees, beaches, and deep oceans
+- **Ocean Generation**: Realistic oceans with natural depth (12-18 blocks) and smooth beach transitions
+- **Natural Features**: Desert pigeons, varied terrain, and realistic water flow
 
 ### World Features
-- **Procedural Generation**: Infinite terrain with varied biomes
 - **Village Generation**: NPCs, trading, and quests
 - **Underground Caves**: Rich in ores and hidden treasures
 - **Boss Arena**: Legendary boss fight at world center (0,0)
-- **Chess Pieces**: Special collectible entities with unique loot
+- **Dungeon Fortresses**: Dangerous but rewarding structures
 
 ## 🎨 Customization
 
@@ -185,16 +214,18 @@ assets/player/animations/
 ## 🏆 Game Objectives
 
 ### Short Term Goals
-1. **Escape the Starting Fortress** - Find your way out of the spawn fortress
-2. **Gather Resources** - Collect wood, stone, and basic materials
-3. **Craft Equipment** - Build better tools and weapons
-4. **Explore the World** - Discover villages, caves, and structures
+1. **Escape the Starting Area** - Find your way out and explore
+2. **Unlock First Achievement** - Place your first block and earn coins!
+3. **Gather Resources** - Collect wood, stone, and basic materials
+4. **Craft Equipment** - Build better tools and weapons
+5. **Explore the World** - Discover villages, caves, and deep oceans
 
 ### Long Term Goals
-1. **Defeat the Boss** - Find and defeat the legendary boss at world center
+1. **Defeat the Boss** - Find and defeat the legendary boss at world center (500 coin achievement!)
 2. **Collect All Items** - Gather every weapon, tool, and armor piece
 3. **Build Epic Structures** - Create magnificent buildings and fortresses
-4. **Master All Worlds** - Explore and conquer all 12 available worlds
+4. **Master Achievement System** - Unlock all achievements and earn maximum coins
+5. **Explore All Biomes** - Visit grasslands, deserts, oceans, and underground caves
 
 ## 🔧 Technical Features
 
@@ -203,18 +234,20 @@ assets/player/animations/
 - **Lazy Generation**: Worlds generate as you explore
 - **Memory Management**: Optimized for long play sessions
 - **60 FPS Target**: Smooth gameplay experience
+- **Optimized UI**: Efficient rendering with removed shadows and gradients for better performance
 
 ### Save System
-- **Auto-Save**: Automatic saving every 5 minutes
+- **Auto-Save**: Automatic saving during gameplay
 - **Multiple Worlds**: Independent save files for each world
 - **Legacy Support**: Compatible with older save files
 - **Backup System**: Automatic backup creation
+- **Achievement Tracking**: Persistent achievement progress and coin balance
 
-### Multiplayer (Experimental)
-- **Network Play**: Connect with other players
-- **Server Hosting**: Host your own game server
-- **Chat System**: Communicate with other players
-- **Synchronized Worlds**: Shared world state
+### Options & Settings
+- **Graphics Settings**: Customize FPS and display options
+- **Fullscreen Mode**: Toggle fullscreen for immersive gameplay
+- **Website Link**: Direct link to www.dreamcrusherx.com from the options menu
+- **Performance**: Optimized for smooth 60 FPS gameplay
 
 ## 🐛 Troubleshooting
 
@@ -247,20 +280,49 @@ Order of the stone/
 ├── assets/
 │   ├── com/dreamcrusherx/Order of the stone/
 │   │   ├── main_script/
-│   │   │   └── order_of_the_stone.py    # Main game file
-│   │   ├── managers/                     # Game managers
-│   │   ├── network/                      # Multiplayer code
-│   │   ├── system/                       # Game systems
-│   │   ├── ui/                          # User interface
-│   │   └── world_generation/            # World generation
-│   ├── player/                          # Character assets
-│   ├── tiles/                           # Block textures
-│   ├── items/                           # Item textures
-│   ├── mobs/                            # Monster assets
-│   └── music/                           # Audio files
-├── guides/                              # Game documentation
-└── README.md                            # This file
+│   │   │   └── order_of_the_stone.py       # Main game file
+│   │   ├── managers/                        # Game managers
+│   │   ├── multiplayer/                     # Multiplayer code (LAN)
+│   │   ├── system/                          # Game systems
+│   │   ├── ui/                             # User interface
+│   │   └── world_generation/               # World generation
+│   ├── player/                             # Character assets
+│   ├── tiles/                              # Block textures
+│   ├── items/                              # Item textures
+│   ├── mobs/                               # Monster assets
+│   └── music/                              # Audio files
+├── guides/                                 # Game documentation
+└── README.md                               # This file
 ```
+
+## 🆕 Recent Updates (v1.3.1+)
+
+### 🏆 Achievements System
+- **Comprehensive Achievement Tracking**: Unlock achievements across multiple categories
+- **Coin Rewards**: Earn coins for completing various tasks
+- **Beautiful UI**: Scrolling achievements screen with progress tracking
+- **Sound Effects**: Achievement unlock sounds (when sound file is added)
+
+### 🌊 World Generation Improvements
+- **Deep Oceans**: Natural ocean depths (12-18 blocks) with smooth variations
+- **Smooth Beach Transitions**: 30-block wide beach zones for realistic slopes
+- **Desert Biomes**: Sparse trees and mad pigeon spawns for desert exploration
+- **Natural Depth Variation**: Ocean floors with realistic hills and valleys
+
+### 🎨 UI Enhancements
+- **Achievements Button**: Access achievements from the title screen
+- **Website Link**: Direct link to www.dreamcrusherx.com in options
+- **Removed Shop State**: Streamlined menu system
+- **Performance Optimizations**: Removed expensive UI effects for better FPS
+
+### 🎪 Easter Eggs
+- **April Fool's Day**: Special title change to "Doritos of the Stone" on April 1st
+
+### 🐛 Bug Fixes
+- Fixed player spawn position after world generation
+- Improved ocean generation and beach transitions
+- Fixed achievements screen rendering issues
+- Removed debug features (N key block removal)
 
 ## 🤝 Contributing
 
