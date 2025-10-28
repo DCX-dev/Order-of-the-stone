@@ -671,7 +671,7 @@ class ModernUI:
             "Combat": ["first_monster_kill", "monster_hunter", "zombie_slayer", "pigeon_hunter"],
             "Exploration": ["first_carrot", "first_sleep", "explorer", "fortress_finder"],
             "Building": ["first_torch", "builder"],
-            "Special": ["diamond_chest", "night_survivor", "ultimate_achievement"]
+            "Special": ["night_survivor", "ultimate_achievement"]
         }
         
         # Achievement descriptions and rewards
@@ -690,7 +690,6 @@ class ModernUI:
             "fortress_finder": ("🏰 Fortress Finder", "Find a fortress", 200),
             "first_torch": ("🔥 First Torch", "Place your first torch", 20),
             "builder": ("🏗️ Builder", "Place 50 blocks", 150),
-            "diamond_chest": ("💎 Diamond Chest", "Find diamond in a chest", 500),
             "night_survivor": ("🌙 Night Survivor", "Survive 5 nights", 200),
             "ultimate_achievement": ("👑 Ultimate", "Complete the ultimate challenge", 1000)
         }

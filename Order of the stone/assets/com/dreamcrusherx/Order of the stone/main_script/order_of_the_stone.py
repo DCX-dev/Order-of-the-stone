@@ -5529,7 +5529,6 @@ achievements = {
     "builder": False,        # Place 50 blocks (150 coins)
     
     # Special Achievements
-    "diamond_chest": False,  # Diamond found in natural chest (500 coins)
     "night_survivor": False, # Survive 5 nights (200 coins)
     "ultimate_achievement": False  # Most special achievement (1000 coins)
 }
@@ -9157,10 +9156,8 @@ def break_block(mx, my):
                 # Check for special achievements in natural chests
                 if is_natural_chest:
                     if item_type == "diamond":
-                        check_achievement("diamond_chest", 500, "Found diamond in chest! +500 coins!")
-                        if check_achievement("ultimate_achievement", 1000, "ULTIMATE: Found diamond in chest!"):
-                            if character_manager:
-                                success, cost = character_manager.unlock_character("hacker", coins_manager.get_coins())
+                        # Diamond chest achievement removed - chests don't naturally spawn
+                        pass
                     elif item_type == "gold":
                         check_achievement("first_gold", 25, "Found gold in chest!")
                     elif item_type == "iron":
