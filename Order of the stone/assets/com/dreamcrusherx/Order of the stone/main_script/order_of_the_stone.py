@@ -14832,7 +14832,7 @@ def import_world_from_file():
 
 def draw_world_selection_screen():
     """EXTREME ENGINEERING: Draw the world selection screen with username validation"""
-    global world_play_btn, world_delete_btn, world_create_btn, world_back_btn, world_import_btn
+    global world_play_btn, world_delete_btn, world_create_btn, world_back_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14847,7 +14847,6 @@ def draw_world_selection_screen():
     world_play_btn = button_states.get("play_world")
     world_delete_btn = button_states.get("delete_world")
     world_create_btn = button_states.get("create_world")
-    world_import_btn = button_states.get("import_world")
     world_back_btn = button_states.get("back")
 
 # --- World Naming Screen Drawing Function ---
@@ -16205,7 +16204,6 @@ while running:
                     "play_world": world_play_btn,
                     "delete_world": world_delete_btn,
                     "create_world": world_create_btn,
-                    "import_world": world_import_btn,
                     "back": world_back_btn
                 }
                 
