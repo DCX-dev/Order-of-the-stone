@@ -436,22 +436,21 @@ class StateManager:
         """Check if state transition is valid"""
                 # Define valid transitions
         valid_transitions = {
-            GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.SHOP, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION, GameState.CREDITS],
+            GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION, GameState.CREDITS],
             GameState.WORLD_SELECTION: [GameState.TITLE, GameState.WORLD_NAMING, GameState.WORLD_GENERATION, GameState.USERNAME_REQUIRED],
             GameState.WORLD_NAMING: [GameState.WORLD_SELECTION, GameState.WORLD_GENERATION],
             GameState.WORLD_GENERATION: [GameState.GAME, GameState.TITLE],
             GameState.USERNAME_REQUIRED: [GameState.TITLE],
-            GameState.GAME: [GameState.PAUSED, GameState.BACKPACK, GameState.SHOP, GameState.TITLE],
+            GameState.GAME: [GameState.PAUSED, GameState.BACKPACK, GameState.TITLE],
             GameState.PAUSED: [GameState.GAME, GameState.TITLE, GameState.OPTIONS],
             GameState.BACKPACK: [GameState.GAME],
-            GameState.SHOP: [GameState.GAME, GameState.TITLE],
             GameState.MULTIPLAYER: [GameState.TITLE, GameState.GAME],
             GameState.OPTIONS: [GameState.TITLE, GameState.PAUSED],
             GameState.CONTROLS: [GameState.TITLE],
             GameState.ABOUT: [GameState.TITLE],
             GameState.CREDITS: [GameState.TITLE],
             GameState.USERNAME_CREATE: [GameState.TITLE],
-            GameState.SKIN_CREATOR: [GameState.SHOP],
+            GameState.SKIN_CREATOR: [GameState.TITLE],
             GameState.LOADING: [GameState.GAME, GameState.ERROR],
             GameState.ERROR: [GameState.TITLE]
         }
@@ -15753,7 +15752,7 @@ while running:
             if chest_open and event.key in (pygame.K_e, pygame.K_u, pygame.K_ESCAPE):
                 close_chest_ui()
                 continue
-            # Open shop with P key
+            # Open shop with P key (now opens in-game overlay)
             if event.key == pygame.K_p:
                 # Auto-save when opening shop to prevent losing progress
                 if game_state == GameState.GAME:
@@ -15763,8 +15762,7 @@ while running:
                     except Exception as e:
                         print(f"⚠️ Auto-save failed: {e}")
                 open_shop()
-                game_state = GameState.SHOP
-                update_pause_state()  # Pause time when opening shop
+                # Shop now opens as an overlay, no state change needed
                 continue
             
             # T key now opens inventory instead of chat
@@ -16614,13 +16612,11 @@ while running:
                         # Refresh server list
                         multiplayer_ui.refresh_server_list()
                         print("🔄 Refreshing server list...")
-            elif game_state == GameState.SHOP:
+            # Shop is now an in-game overlay, handle it during game state
+            if shop_open and game_state == GameState.GAME:
                 # Handle shop clicks
                 handle_shop_click(event.pos)
-                # Check if shop was closed
-                if not shop_open:
-                    game_state = GameState.TITLE
-                    update_pause_state()  # Resume time when returning to title
+                # Shop closing is handled by handle_shop_click
             elif game_state == GameState.BACKPACK:
                 # Handle backpack clicks
                 if event.button == 3:  # RIGHT CLICK - Eat food
