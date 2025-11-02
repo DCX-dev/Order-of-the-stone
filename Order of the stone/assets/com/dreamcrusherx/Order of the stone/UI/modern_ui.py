@@ -654,11 +654,13 @@ class ModernUI:
             "back": back_btn
         }
 
-    def draw_achievements_screen(self, mouse_pos: tuple, achievements: dict, scroll_offset: int = 0) -> Dict[str, pygame.Rect]:
+    def draw_achievements_screen(self, mouse_pos: tuple, achievements_data: dict, scroll_offset: int = 0) -> Dict[str, pygame.Rect]:
         """Draw beautiful achievements screen with scrolling"""
         # Enhanced background
         self.draw_gradient_background()
         self.draw_decorative_elements()
+        # Local alias to satisfy static analyzers
+        ach = achievements_data or {}
         
         # Title
         title = self.big_font.render("🏆 Achievements", True, self.colors["text"])
@@ -727,7 +729,7 @@ class ModernUI:
             for achievement_id in achievement_list:
                 if achievement_id in achievement_info:
                     name, description, reward = achievement_info[achievement_id]
-                    is_unlocked = achievements.get(achievement_id, False)
+                    is_unlocked = ach.get(achievement_id, False)
                     
                     # Only draw achievement if it's visible on screen
                     if 150 <= y_offset <= screen_height - 100:
@@ -853,11 +855,14 @@ class ModernUI:
             "input": input_rect
         }
     
-    def draw_multiplayer_screen(self, mouse_pos: tuple) -> Dict[str, pygame.Rect]:
+    def draw_multiplayer_screen(self, mouse_pos: tuple, achievements_data: dict = None) -> Dict[str, pygame.Rect]:
         """Draw beautiful multiplayer screen"""
         # Enhanced background
         self.draw_gradient_background()
         self.draw_decorative_elements()
+        
+        # Local alias for achievements data
+        ach = achievements_data or {}
         
         # Title
         title = self.big_font.render("🏆 Achievements", True, self.colors["text"])
@@ -925,7 +930,7 @@ class ModernUI:
             y_pos = y_start + i * spacing
             
             # Check if achievement is unlocked
-            is_unlocked = achievements.get(achievement_id, False)
+            is_unlocked = ach.get(achievement_id, False)
             
             # Achievement box
             box_width = 600

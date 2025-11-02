@@ -881,6 +881,44 @@ class WorldUI:
                     seed += event.unicode
         
         return world_name, seed, active_field
+
+    def handle_world_creation_textinput(self, event, world_name: str, seed: str, active_field: str):
+        """
+        Handle TEXTINPUT for world creation so physical keyboards work reliably.
+        Returns (new_world_name, new_seed, new_active_field)
+        """
+        try:
+            if not hasattr(event, 'text') or not event.text:
+                return world_name, seed, active_field
+            text = event.text
+            if active_field == "name":
+                # Limit and allow common characters
+                if len(world_name) < 32:
+                    for ch in text:
+                        if ch.isalnum() or ch in [' ', '_', '-']:
+                            world_name += ch
+            elif active_field == "seed":
+                if len(seed) < 20:
+                    for ch in text:
+                        if ch.isalnum():
+                            seed += ch
+            return world_name, seed, active_field
+        except Exception:
+            return world_name, seed, active_field
+
+    def start_text_input(self):
+        """Begin native text input (for physical keyboard typing)."""
+        try:
+            pygame.key.start_text_input()
+        except Exception:
+            pass
+
+    def stop_text_input(self):
+        """Stop native text input."""
+        try:
+            pygame.key.stop_text_input()
+        except Exception:
+            pass
     
     def _draw_gradient_background(self):
         """Draw a beautiful gradient background"""

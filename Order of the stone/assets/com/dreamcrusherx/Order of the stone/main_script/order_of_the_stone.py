@@ -792,108 +792,54 @@ TILE_SIZE = 32
 # =============================================================================
 # FORTRESS SYSTEM CONFIGURATION
 # =============================================================================
+# New fortress system - red brick fortresses with optional monsters
 
-# Fortress types with different rarities and characteristics
+# Fortress types - all made of red brick, some have monsters, some don't
 FORTRESS_TYPES = {
-    "ancient_ruins": {
-        "name": "Ancient Ruins",
-        "rarity": "common",
-        "spawn_chance": 0.15,
-        "min_size": 8,
-        "max_size": 12,
-        "materials": ["stone", "dirt", "grass"],
-        "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "basic"
-    },
-    "temple": {
-        "name": "Ancient Temple",
-        "rarity": "uncommon",
+    "safe_outpost": {
+        "name": "Safe Outpost",
+        "has_monsters": False,
         "spawn_chance": 0.12,
-        "min_size": 12,
-        "max_size": 18,
-        "materials": ["stone", "red_brick"],
-        "special_blocks": ["diamond", "gold"],
-        "loot_tier": "epic"
+        "min_size": 8,
+        "max_size": 12
     },
-    "pyramid": {
-        "name": "Desert Pyramid",
-        "rarity": "rare",
+    "guarded_fort": {
+        "name": "Guarded Fort",
+        "has_monsters": True,
+        "spawn_chance": 0.10,
+        "min_size": 12,
+        "max_size": 16,
+        "monster_count": 3
+    },
+    "abandoned_castle": {
+        "name": "Abandoned Castle",
+        "has_monsters": False,
         "spawn_chance": 0.08,
         "min_size": 15,
-        "max_size": 25,
-        "materials": ["sand", "stone"],
-        "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "treasure"
+        "max_size": 20
     },
-    "wizard_tower": {
-        "name": "Wizard Tower",
-        "rarity": "uncommon",
-        "spawn_chance": 0.10,
-        "min_size": 6,
-        "max_size": 12,
-        "materials": ["oak_planks", "stone"],
-        "special_blocks": ["diamond"],
-        "loot_tier": "magic"
-    },
-    "dungeon": {
-        "name": "Underground Dungeon",
-        "rarity": "rare",
+    "monster_stronghold": {
+        "name": "Monster Stronghold",
+        "has_monsters": True,
         "spawn_chance": 0.07,
-        "min_size": 10,
-        "max_size": 20,
-        "materials": ["stone", "red_brick"],
-        "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "epic"
+        "min_size": 14,
+        "max_size": 18,
+        "monster_count": 5
     },
-    "dragon_keep": {
-        "name": "Dragon Keep",
-        "rarity": "rare",
+    "ancient_fortress": {
+        "name": "Ancient Fortress",
+        "has_monsters": False,
+        "spawn_chance": 0.06,
+        "min_size": 18,
+        "max_size": 24
+    },
+    "defended_keep": {
+        "name": "Defended Keep",
+        "has_monsters": True,
         "spawn_chance": 0.05,
-        "min_size": 15,
-        "max_size": 20,
-        "materials": ["red_brick", "stone"],
-        "special_blocks": ["diamond", "gold", "iron", "coal"],
-        "loot_tier": "epic"
-    },
-    "bandit_camp": {
-        "name": "Bandit Camp",
-        "rarity": "common",
-        "spawn_chance": 0.12,
-        "min_size": 5,
-        "max_size": 8,
-        "materials": ["dirt", "grass", "oak_planks"],
-        "special_blocks": ["iron", "coal"],
-        "loot_tier": "basic"
-    },
-    "demon_castle": {
-        "name": "Demon Castle",
-        "rarity": "epic",
-        "spawn_chance": 0.03,
-        "min_size": 18,
+        "min_size": 16,
         "max_size": 22,
-        "materials": ["red_brick", "stone"],
-        "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "epic"
-    },
-    "treasure_vault": {
-        "name": "Treasure Vault",
-        "rarity": "rare",
-        "spawn_chance": 0.06,
-        "min_size": 8,
-        "max_size": 12,
-        "materials": ["stone", "dirt"],
-        "special_blocks": ["diamond", "gold", "iron", "coal"],
-        "loot_tier": "treasure"
-    },
-    "castle_ruins": {
-        "name": "Castle Ruins",
-        "rarity": "rare",
-        "spawn_chance": 0.06,
-        "min_size": 18,
-        "max_size": 28,
-        "materials": ["red_brick", "stone"],
-        "special_blocks": ["diamond", "gold", "iron"],
-        "loot_tier": "epic"
+        "monster_count": 8
     }
 }
 
@@ -917,6 +863,18 @@ MAX_BLOCK_PARTICLES = 150  # Limit for performance
 
 # Shift key state tracking for reliable movement detection
 shift_key_pressed = False
+
+# Achievement toast system (top-right popups)
+achievement_popups = []  # List of {text, until}
+
+# Text input state
+text_input_active = False
+
+# Ensure achievements dict exists early to avoid NameError before full init below
+try:
+    _ = achievements
+except NameError:
+    achievements = {}
 
 
 def apply_display_mode():
@@ -2836,55 +2794,69 @@ def fix_player_spawn_position():
     # Keep the current X position but find proper Y position
     spawn_x = int(player["x"])
     
-    # CRITICAL: Generate terrain at spawn point first!
-    # This ensures terrain exists before we try to find a surface
-    print(f"🌍 Generating terrain at spawn point ({spawn_x}) to ensure surface exists")
+    # NEW WORLD GENERATION: Terrain is already generated by world_gen.py
+    # Don't call generate_terrain_column() as it would overwrite the beautiful terrain!
+    print(f"🌍 Using pre-generated terrain from world generator at spawn point ({spawn_x})")
+    print(f"✅ Terrain already exists, now finding surface...")
     
-    # Generate terrain for a small area around spawn point
-    for x in range(spawn_x - 5, spawn_x + 6):  # 11 columns around spawn
-        generate_terrain_column(x)
-        # Replace dirt/stone blocks adjacent to water with sand for natural beaches
-    
-    print(f"✅ Terrain generated around spawn point, now finding surface...")
-    
-    # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location
+    # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location (NEVER in water/ocean)
     # Search from the correct range for new world generation system
-    for y in range(110, 125):  # Search in the new world generation range
+    # World generator uses base_height=115, so search around that area
+    for y in range(105, 130):  # Search in the new world generation range (around Y=115)
         # Check if this position is safe for spawning (no blocks at player position)
         head_block = get_block(spawn_x, y)
         feet_block = get_block(spawn_x, y + 1)
         ground_block = get_block(spawn_x, y + 2)
         
-        # Player needs 2 blocks of air above ground
+        # Player needs 2 blocks of AIR (not water!) above GRASS/DIRT ground
+        # CRITICAL: Check that player is NOT in water or above water
         if (is_non_solid_block(head_block) and 
             is_non_solid_block(feet_block) and 
-            ground_block and ground_block not in ["water", "lava"]):
+            head_block not in ["water", "lava"] and  # NOT in water!
+            feet_block not in ["water", "lava"] and  # NOT in water!
+            ground_block and ground_block in ["grass", "dirt"] and  # ONLY spawn on grass/dirt (NOT stone!)
+            ground_block not in ["water", "lava"]):  # NOT on water
             
-            # Found safe spawn location
-            player["y"] = float(y)  # Place player with air above and solid ground below
-            player["vel_y"] = 0.0
-            player["on_ground"] = False
-            print(f"✅ COLLISION-FREE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
+            # Double-check: verify no water nearby (within 2 blocks)
+            water_nearby = False
+            for check_x in range(spawn_x - 2, spawn_x + 3):
+                for check_y in range(y - 1, y + 4):
+                    if get_block(check_x, check_y) == "water":
+                        water_nearby = True
+                        break
+                if water_nearby:
+                    break
             
-            # Place starter chest next to player
-            place_starter_chest(spawn_x, y)
-            
-            return True
+            if not water_nearby:
+                # Found safe spawn location FAR from water
+                player["y"] = float(y)  # Place player with air above and solid ground below
+                player["vel_y"] = 0.0
+                player["on_ground"] = False
+                print(f"✅ SAFE DRY LAND SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) on {ground_block}, FAR from water")
+                
+                # Place starter chest next to player
+                place_starter_chest(spawn_x, y)
+                
+                return True
     
-    # Fallback: search wider range and ensure collision-free spawn
+    # Fallback: search wider range and ensure collision-free spawn (NEVER in water)
+    print("⚠️ Primary spawn search failed, searching wider range...")
     for y in range(50, 150):
         head_block = get_block(spawn_x, y)
         feet_block = get_block(spawn_x, y + 1)
         ground_block = get_block(spawn_x, y + 2)
         
+        # Same strict checks: NO water allowed, prefer grass
         if (is_non_solid_block(head_block) and 
             is_non_solid_block(feet_block) and 
-            ground_block and ground_block not in ["water", "lava"]):
+            head_block not in ["water", "lava"] and  # NOT in water!
+            feet_block not in ["water", "lava"] and  # NOT in water!
+            ground_block and ground_block == "grass"):  # ONLY spawn on grass in fallback
             
             player["y"] = float(y)
             player["vel_y"] = 0.0
             player["on_ground"] = False
-            print(f"✅ FALLBACK SAFE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
+            print(f"✅ FALLBACK DRY LAND SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) on {ground_block}")
             
             # Place starter chest next to player
             place_starter_chest(spawn_x, y)
@@ -4707,18 +4679,9 @@ def draw_fortress_discovery():
     # Get fortress info
     fortress_info = FORTRESS_TYPES.get(current_fortress_discovery, {})
     fortress_name = fortress_info.get("name", "Unknown Fortress")
-    rarity = fortress_info.get("rarity", "common")
     
-    # Choose colors based on rarity
-    rarity_colors = {
-        "common": (200, 200, 200),      # Gray
-        "uncommon": (0, 255, 0),        # Green
-        "rare": (0, 100, 255),          # Blue
-        "epic": (150, 0, 255),          # Purple
-        "legendary": (255, 215, 0)      # Gold
-    }
-    
-    text_color = rarity_colors.get(rarity, (255, 255, 255))
+    # Color based on whether it has monsters
+    text_color = (255, 100, 100) if fortress_info.get("has_monsters", False) else (150, 200, 255)
     
     # BIG ANIMATION: Start big and fade/scale down
     # Animation lasts for first 180 frames (3 seconds), then disappears
@@ -4739,7 +4702,7 @@ def draw_fortress_discovery():
     
     # Create discovery text
     discovery_text = f"🏰 DISCOVERED: {fortress_name}"
-    rarity_text = f"Rarity: {rarity.upper()}"
+    monster_text = "⚠️ Contains Monsters!" if fortress_info.get("has_monsters", False) else "✓ Safe Zone"
     
     # Use larger font scaled by animation
     base_large_size = int(48 * fortress_discovery_animation_scale)
@@ -4749,21 +4712,21 @@ def draw_fortress_discovery():
     
     # Render text
     discovery_surface = large_font.render(discovery_text, True, text_color)
-    rarity_surface = medium_font.render(rarity_text, True, text_color)
+    monster_surface = medium_font.render(monster_text, True, text_color)
     
     # Apply alpha
     discovery_surface.set_alpha(alpha)
-    rarity_surface.set_alpha(alpha)
+    monster_surface.set_alpha(alpha)
     
     # Center the text on screen
     discovery_x = (SCREEN_WIDTH - discovery_surface.get_width()) // 2
     discovery_y = SCREEN_HEIGHT // 2 - 50
-    rarity_x = (SCREEN_WIDTH - rarity_surface.get_width()) // 2
-    rarity_y = discovery_y + discovery_surface.get_height() + 10
+    monster_x = (SCREEN_WIDTH - monster_surface.get_width()) // 2
+    monster_y = discovery_y + discovery_surface.get_height() + 10
     
     # Draw background with scaled size
-    bg_width = int((max(discovery_surface.get_width(), rarity_surface.get_width()) + 40))
-    bg_height = int((discovery_surface.get_height() + rarity_surface.get_height() + 60))
+    bg_width = int((max(discovery_surface.get_width(), monster_surface.get_width()) + 40))
+    bg_height = int((discovery_surface.get_height() + monster_surface.get_height() + 60))
     bg_x = (SCREEN_WIDTH - bg_width) // 2
     bg_y = discovery_y - 20
     
@@ -4777,7 +4740,29 @@ def draw_fortress_discovery():
     
     # Draw text
     screen.blit(discovery_surface, (discovery_x, discovery_y))
-    screen.blit(rarity_surface, (rarity_x, rarity_y))
+    screen.blit(monster_surface, (monster_x, monster_y))
+
+def draw_achievement_popups():
+    """Draw queued achievement toasts at top-right"""
+    if not achievement_popups:
+        return
+    now = pygame.time.get_ticks()
+    # Keep only active popups
+    active = []
+    y = 10
+    for popup in achievement_popups:
+        if popup.get("until", 0) > now:
+            text = popup.get("text", "🏆 Achievement!")
+            surf = font.render(text, True, (255, 255, 255))
+            bg = pygame.Surface((surf.get_width() + 16, surf.get_height() + 10), pygame.SRCALPHA)
+            bg.fill((0, 0, 0, 160))
+            x = SCREEN_WIDTH - bg.get_width() - 10
+            screen.blit(bg, (x, y))
+            screen.blit(surf, (x + 8, y + 5))
+            y += bg.get_height() + 6
+            active.append(popup)
+    # Replace with active ones only
+    achievement_popups[:] = active
 
 def draw_fortress_minimap():
     """Draw discovered fortresses on minimap in corner"""
@@ -4806,18 +4791,9 @@ def draw_fortress_minimap():
     for fortress_type in discovered_fortresses:
         fortress_info = FORTRESS_TYPES.get(fortress_type, {})
         fortress_name = fortress_info.get("name", "Unknown")
-        rarity = fortress_info.get("rarity", "common")
         
-        # Choose colors based on rarity
-        rarity_colors = {
-            "common": (200, 200, 200),      # Gray
-            "uncommon": (0, 255, 0),        # Green
-            "rare": (0, 100, 255),          # Blue
-            "epic": (150, 0, 255),          # Purple
-            "legendary": (255, 215, 0)      # Gold
-        }
-        
-        text_color = rarity_colors.get(rarity, (255, 255, 255))
+        # Color based on whether it has monsters
+        text_color = (255, 100, 100) if fortress_info.get("has_monsters", False) else (150, 200, 255)
         
         # Truncate long names
         display_name = fortress_name[:15] + "..." if len(fortress_name) > 15 else fortress_name
@@ -7280,68 +7256,42 @@ def damage_boss(damage):
             show_message(" FINAL BOSS PHASE DEFEATED! Victory!", 2000)
 
 
-def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
-    """Build a fortress of the specified type with unique characteristics"""
+def build_fortress(origin_x, ground_y, fortress_type="safe_outpost"):
+    """Build a red brick fortress of the specified type"""
     global discovered_fortresses, current_fortress_discovery, discovery_timer
     
-    fortress_info = FORTRESS_TYPES.get(fortress_type, FORTRESS_TYPES["ancient_ruins"])
+    fortress_info = FORTRESS_TYPES.get(fortress_type, FORTRESS_TYPES["safe_outpost"])
     
     # Get fortress dimensions
     width = random.randint(fortress_info["min_size"], fortress_info["max_size"])
-    height = random.randint(8, 12)
+    height = random.randint(10, 14)
     
-    # Choose materials based on fortress type
-    materials = fortress_info["materials"]
-    primary_material = materials[0] if materials else "stone"
+    # All fortresses are made of red brick
+    primary_material = "red_brick"
     
-    # Build fortress ABOVE ground level
-    fortress_base_y = ground_y - height
+    # Build fortress ON the ground surface
+    # ground_y is the surface level - build base ON top of it (one block above = ground_y - 1)
+    base_level = ground_y - 1  # Base of fortress sits on the surface
     
-    # Foundation
+    # Build fortress base platform ON the surface
     for dx in range(width):
-        set_block(origin_x + dx, ground_y, primary_material)
+        set_block(origin_x + dx, base_level, primary_material)
     
-    # Main walls
+    # Main walls - red brick exterior (build UP from base)
     for dy in range(1, height + 1):
         for dx in range(width):
             x = origin_x + dx
-            y = ground_y - dy
+            y = base_level - dy  # Walls go UP from base (lower Y = higher position)
             if dx == 0 or dx == width - 1 or dy == height:  # Exterior walls
                 set_block(x, y, primary_material)
             else:
-                # Interior air
-                if get_block(x, y) not in (None, "air"):
-                    world_data.pop((x, y), None)
+                # Interior air - clear any existing blocks
+                key = f"{x},{y}"
+                if key in world_data and world_data[key] not in (None, "air"):
+                    world_data.pop(key, None)
     
-    # Add floors and special features based on fortress type
-    floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9]
-    
-    # Special fortress features
-    if fortress_type == "dragon_keep":
-        # Dragon Keep - larger, more floors, special blocks
-        floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9, ground_y - 12]
-        # Add special blocks
-        for dx in range(2, width - 2):
-            if random.random() < 0.3:
-                set_block(origin_x + dx, ground_y - 1, "diamond")
-    elif fortress_type == "wizard_tower":
-        # Wizard Tower - tall and narrow
-        height = 15
-        width = 8
-        floor_levels = [ground_y - 4, ground_y - 8, ground_y - 12]
-        # Add magical blocks
-        for dx in range(2, width - 2):
-            if random.random() < 0.4:
-                set_block(origin_x + dx, ground_y - 1, "gold")
-    elif fortress_type == "demon_castle":
-        # Demon Castle - dark and menacing
-        floor_levels = [ground_y - 3, ground_y - 6, ground_y - 9, ground_y - 12]
-        # Add dark blocks
-        for dx in range(2, width - 2):
-            if random.random() < 0.3:
-                set_block(origin_x + dx, ground_y - 1, "coal")
-    
-    # Add floors
+    # Add floors inside the fortress (above base level)
+    floor_levels = [base_level - 3, base_level - 6, base_level - 9]
     for floor_y in floor_levels:
         for dx in range(2, width - 2):
             set_block(origin_x + dx, floor_y, primary_material)
@@ -7351,53 +7301,70 @@ def build_fortress(origin_x, ground_y, fortress_type="ancient_ruins"):
         set_block(ladder_x, floor_y + 1, "ladder")
         set_block(ladder_x, floor_y + 2, "ladder")
     
-    # Add chests with fortress-specific loot using existing chest system
+    # Add entrance - place door at the base level (ground level)
+    entrance_x = origin_x + width // 2
+    # Place door at base level (on the ground)
+    door_y = base_level - 1  # Just above the base platform (one block up from base)
+    if get_block(entrance_x, door_y) in (None, "air"):
+        set_block(entrance_x, door_y, "door")
+    else:
+        # Fallback: try placing at base level itself
+        set_block(entrance_x, base_level, "door")
+    
+    # Add chests with fortress loot
     for i, floor_y in enumerate(floor_levels):
         chest_x = origin_x + 2 + (i * 3) % (width - 4)
-        set_block(chest_x, floor_y + 1, "chest")
-        # Use existing chest system to generate loot
-        chest_system.place_chest(world_system, chest_x, floor_y + 1, "fortress")
+        if get_block(chest_x, floor_y + 1) in (None, "air"):
+            chest_system.place_chest(world_system, chest_x, floor_y + 1, "fortress")
     
-    # Add enemies based on fortress type
-    enemy_count = 3 if fortress_type in ["common", "uncommon"] else 5 if fortress_type in ["rare", "epic"] else 8
-    for i in range(enemy_count):
-        enemy_x = origin_x + random.randint(2, width - 3)
-        enemy_y = ground_y - random.randint(2, height - 2)
-        if get_block(enemy_x, enemy_y) == "air":
-            # Different enemy types for different fortresses
-            if fortress_type == "demon_castle":
-                enemy_type = "zombie"
-            elif fortress_type == "dragon_keep":
-                enemy_type = "zombie"  # Could add dragon later
-            else:
-                enemy_type = "zombie"
-            
-            entities.append({
-                "type": enemy_type,
-                "x": float(enemy_x),
-                "y": float(enemy_y),
-                "hp": 10,
-                "dir": random.choice([-1, 1])
-            })
+    # Add monsters only if this fortress type has monsters
+    if fortress_info.get("has_monsters", False):
+        monster_count = fortress_info.get("monster_count", 3)
+        for i in range(monster_count):
+            # Try to place monster in a valid location
+            for attempt in range(10):  # Try up to 10 times to find a spot
+                monster_x = origin_x + random.randint(2, width - 3)
+                monster_y = base_level - random.randint(2, height - 2)
+                
+                # Make sure there's no block at the monster position
+                if get_block(monster_x, monster_y) in (None, "air"):
+                    # Randomly choose monster or zombie
+                    monster_type = "zombie" if random.random() < 0.3 else "monster"
+                    entities.append({
+                        "type": monster_type,
+                        "x": float(monster_x),
+                        "y": float(monster_y),
+                        "hp": 10 if monster_type == "zombie" else 6,
+                        "cooldown": 0,
+                        "image": textures.get(monster_type, textures.get("monster"))
+                    })
+                    break
     
     # Trigger discovery if this is a new fortress type
+    is_first_fortress = len(discovered_fortresses) == 0  # Check if this is the VERY first fortress
     if fortress_type not in discovered_fortresses:
         discovered_fortresses.add(fortress_type)
         current_fortress_discovery = fortress_type
         discovery_timer = 180  # 3 seconds at 60 FPS
-        print(f"🏰 DISCOVERED NEW FORTRESS: {fortress_info['name']} ({fortress_info['rarity'].upper()})")
+        print(f"🏰 DISCOVERED NEW FORTRESS: {fortress_info['name']}")
+        # Trigger achievement ONLY for the very first fortress discovered
+        if is_first_fortress:
+            try:
+                check_achievement("first_fortress", 150, "Discover your first fortress!")
+                print(f"🏆 First fortress achievement triggered!")
+            except Exception as e:
+                print(f"⚠️ Error triggering first fortress achievement: {e}")
     
     print(f"🏰 {fortress_info['name']} built at ({origin_x}, {ground_y}) with {len(floor_levels)} floors!")
 
 def maybe_generate_fortress_for_chunk(chunk_id, base_x):
-    """Generate a random fortress type in this chunk based on rarity."""
-    
-    # Don't generate if chunk already exists (village system removed)
-    return
-    
+    """Generate a random fortress type in this chunk"""
     rng = random.Random(f"fortress-{chunk_id}")
+    global discovered_fortresses
+    # Prevent overlap by checking an exclusion radius against existing fortresses (tracked via discovery list)
+    exclusion_radius = 40
     
-    # Select fortress type based on rarity
+    # Select fortress type based on spawn chances
     fortress_type = select_fortress_type(rng)
     if fortress_type is None:
         return
@@ -7409,17 +7376,28 @@ def maybe_generate_fortress_for_chunk(chunk_id, base_x):
         return
     
     fortress_x = base_x + rng.randint(10, 40)
+    # Simple overlap avoidance: ensure no other fortress is within exclusion_radius on X
+    # We approximate by checking a handful of nearby columns for existing red_brick walls
+    for check_x in range(fortress_x - exclusion_radius, fortress_x + exclusion_radius, 2):
+        for check_y in range(80, 130):
+            if get_block(check_x, check_y) == "red_brick":
+                return  # Skip spawning here; too close to an existing fortress
     fortress_y = ground_y_of_column(fortress_x)
     if fortress_y is None:
-        fortress_y = 0 + int(2 * math.sin(fortress_x * 0.2))
+        # Find surface level
+        for y in range(80, 130):
+            if get_block(fortress_x, y) == "grass":
+                fortress_y = y
+                break
+        if fortress_y is None:
+            fortress_y = 100  # Default surface level
         set_block(fortress_x, fortress_y, "grass")
     
     # Build the fortress with the selected type
     build_fortress(fortress_x, fortress_y, fortress_type)
-    # Village generation removed
 
 def select_fortress_type(rng):
-    """Select a fortress type based on rarity weights"""
+    """Select a fortress type based on spawn chances"""
     # Calculate total weight
     total_weight = sum(fortress["spawn_chance"] for fortress in FORTRESS_TYPES.values())
     
@@ -11058,12 +11036,25 @@ def open_skin_creator():
 def check_achievement(achievement_name, coin_reward, message):
     """Check and reward an achievement if it hasn't been earned yet"""
     global achievements
+    # Safety: ensure achievements dict exists
+    try:
+        _ = achievements
+    except NameError:
+        achievements = {}
     
     if not achievements.get(achievement_name, False):
         achievements[achievement_name] = True
         if coins_manager:
             coins_manager.add_coins(coin_reward)
-        show_message(f" {message} +{coin_reward} coins!")
+        # Enqueue top-right achievement toast
+        try:
+            achievement_popups.append({
+                "text": f"🏆 {message} (+{coin_reward})",
+                "until": pygame.time.get_ticks() + 3000
+            })
+        except Exception:
+            # Fallback
+            show_message(f" {message} +{coin_reward} coins!")
         print(f"🏆 Achievement unlocked: {achievement_name} - {message} (+{coin_reward} coins)")
         # Play achievement sound
         play_achievement_sound()
@@ -12107,7 +12098,7 @@ def update_player():
     player_head_block = get_block(int(px), int(py))
     player_feet_block = get_block(int(px), int(py + 0.5))
     in_water = (player_head_block == "water" or player_feet_block == "water")
-    
+
     if on_ladder:
         # Normal horizontal movement while on ladder
         if move_left:
@@ -12532,6 +12523,16 @@ def cleanup_distant_entities():
             continue
             
         if entity["type"] in ["monster", "zombie", "slime"]:
+            entity_x = int(entity["x"])
+            entity_y = int(entity["y"])
+            
+            # IMPORTANT: Don't despawn monsters that are under blocks (trapped)
+            # Check if there's a solid block above the monster
+            block_above = get_block(entity_x, entity_y - 1)  # Remember: higher Y = deeper, so subtract 1 to go up
+            if block_above is not None and block_above not in ["air", None]:
+                # Monster is under a block - don't despawn it!
+                continue
+            
             dx = abs(entity["x"] - player_x)
             dy = abs(entity["y"] - player_y)
             distance = math.sqrt(dx*dx + dy*dy)
@@ -12640,6 +12641,16 @@ def cleanup_night_monsters():
     monsters_removed = 0
     for mob in entities[:]:
         if mob["type"] in ["monster", "zombie"]:
+            mob_x = int(mob["x"])
+            mob_y = int(mob["y"])
+            
+            # IMPORTANT: Don't burn monsters that are under blocks (trapped)
+            # Check if there's a solid block above the monster
+            block_above = get_block(mob_x, mob_y - 1)  # Remember: higher Y = deeper, so subtract 1 to go up
+            if block_above is not None and block_above not in ["air", None]:
+                # Monster is under a block - don't burn it in sunlight!
+                continue
+            
             # Create burn effect
             burn_x = (mob["x"] * TILE_SIZE) - camera_x
             burn_y = (mob["y"] * TILE_SIZE) - camera_y
@@ -13881,8 +13892,8 @@ def generate_initial_world(world_seed=None):
     if beach_count > 0:
         print(f"🏖️ Generated {beach_count} beaches in the world!")
     
-    # Fortress generation removed - will be replaced with cool structures
-    print("🏗️ Structure generation disabled (fortresses removed)")
+    # Fortress generation enabled - red brick fortresses with optional monsters
+    print("🏗️ Red brick fortress generation enabled")
     
     # Generate Lost Ruins (very rare but important)
     ruins_count = 0
@@ -14697,6 +14708,11 @@ def draw_title_screen():
 # --- Credits Screen Drawing Function ---
 def draw_achievements_screen():
     global achievements_back_btn, achievements_scroll_offset
+    # Safety: ensure achievements dict exists
+    try:
+        _ = achievements
+    except NameError:
+        achievements = {}
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14853,6 +14869,7 @@ def draw_world_selection_screen():
 def draw_world_naming_screen():
     """Draw the world naming screen with keyboard input (NO mobile keyboard!)"""
     global world_name_input, world_name_cursor_pos, world_name_cursor_blink, world_seed_input
+    global world_name_input_rect
     global world_name_buttons, world_name_confirm_btn, world_name_cancel_btn, world_name_skip_btn
     
     # Update cursor blink
@@ -14886,8 +14903,9 @@ def draw_world_naming_screen():
     input_box_y = 200
     
     # Draw input box background
-    pygame.draw.rect(screen, (40, 40, 50), (input_box_x, input_box_y, input_box_width, input_box_height))
-    pygame.draw.rect(screen, (100, 100, 120), (input_box_x, input_box_y, input_box_width, input_box_height), 2)
+    world_name_input_rect = pygame.Rect(input_box_x, input_box_y, input_box_width, input_box_height)
+    pygame.draw.rect(screen, (40, 40, 50), world_name_input_rect)
+    pygame.draw.rect(screen, (100, 100, 120), world_name_input_rect, 2)
     
     # Draw input text
     input_font = pygame.font.Font(None, 32)
@@ -14900,90 +14918,43 @@ def draw_world_naming_screen():
         cursor_x = input_box_x + 10 + input_font.size(world_name_input[:world_name_cursor_pos])[0]
         pygame.draw.line(screen, (255, 255, 255), (cursor_x, input_box_y + 10), (cursor_x, input_box_y + 40), 2)
     
-    # On-screen keyboard
-    keyboard_y = 300
-    keyboard_width = 600
-    keyboard_x = (screen_width - keyboard_width) // 2
+    # Physical keyboard instructions (NO on-screen keyboard!)
+    world_name_buttons = {}  # Keep this for compatibility, but empty
     
-    # Keyboard layout
-    keyboard_rows = [
-        "1234567890",
-        "qwertyuiop",
-        "asdfghjkl",
-        "zxcvbnm"
+    # Instructions panel
+    instructions_y = 280
+    instructions_panel_width = 600
+    instructions_panel_height = 180
+    instructions_x = (screen_width - instructions_panel_width) // 2
+    
+    # Draw instructions panel background
+    instructions_rect = pygame.Rect(instructions_x, instructions_y, instructions_panel_width, instructions_panel_height)
+    pygame.draw.rect(screen, (45, 45, 65), instructions_rect, border_radius=10)
+    pygame.draw.rect(screen, (100, 200, 255), instructions_rect, 3, border_radius=10)
+    
+    # Instructions title
+    instruction_title_font = pygame.font.Font(None, 32)
+    instruction_title = instruction_title_font.render("⌨️ Use Your Physical Keyboard!", True, (100, 200, 255))
+    title_x = instructions_x + (instructions_panel_width - instruction_title.get_width()) // 2
+    screen.blit(instruction_title, (title_x, instructions_y + 15))
+    
+    # Instruction lines
+    instruction_font = pygame.font.Font(None, 24)
+    instructions = [
+        "Type with your keyboard to name your world",
+        "ENTER - Create world",
+        "BACKSPACE - Delete character | ARROW KEYS - Move cursor",
+        "ESC - Cancel and go back"
     ]
     
-    key_width = 50
-    key_height = 40
-    key_spacing = 5
-    
-    world_name_buttons = {}
-    
-    for row_idx, row in enumerate(keyboard_rows):
-        row_width = len(row) * (key_width + key_spacing) - key_spacing
-        row_x = keyboard_x + (keyboard_width - row_width) // 2
-        
-        for col_idx, char in enumerate(row):
-            key_x = row_x + col_idx * (key_width + key_spacing)
-            key_y = keyboard_y + row_idx * (key_height + key_spacing)
-            
-            # Check if mouse is over this key
-            key_rect = pygame.Rect(key_x, key_y, key_width, key_height)
-            is_hovered = key_rect.collidepoint(mouse_pos)
-            
-            # Draw key
-            key_color = (80, 80, 100) if is_hovered else (60, 60, 80)
-            pygame.draw.rect(screen, key_color, key_rect)
-            pygame.draw.rect(screen, (100, 100, 120), key_rect, 1)
-            
-            # Draw key text
-            key_font = pygame.font.Font(None, 24)
-            key_text = key_font.render(char.upper(), True, (255, 255, 255))
-            key_text_rect = key_text.get_rect(center=key_rect.center)
-            screen.blit(key_text, key_text_rect)
-            
-            # Store button reference
-            world_name_buttons[char] = key_rect
-    
-    # Special keys
-    special_keys_y = keyboard_y + len(keyboard_rows) * (key_height + key_spacing) + 20
-    
-    # Space bar
-    space_width = 200
-    space_x = keyboard_x + (keyboard_width - space_width) // 2
-    space_rect = pygame.Rect(space_x, special_keys_y, space_width, key_height)
-    is_space_hovered = space_rect.collidepoint(mouse_pos)
-    
-    space_color = (80, 80, 100) if is_space_hovered else (60, 60, 80)
-    pygame.draw.rect(screen, space_color, space_rect)
-    pygame.draw.rect(screen, (100, 100, 120), space_rect, 1)
-    
-    space_font = pygame.font.Font(None, 20)
-    space_text = space_font.render("SPACE", True, (255, 255, 255))
-    space_text_rect = space_text.get_rect(center=space_rect.center)
-    screen.blit(space_text, space_text_rect)
-    
-    world_name_buttons[' '] = space_rect
-    
-    # Backspace
-    backspace_width = 100
-    backspace_x = space_x + space_width + 20
-    backspace_rect = pygame.Rect(backspace_x, special_keys_y, backspace_width, key_height)
-    is_backspace_hovered = backspace_rect.collidepoint(mouse_pos)
-    
-    backspace_color = (80, 80, 100) if is_backspace_hovered else (60, 60, 80)
-    pygame.draw.rect(screen, backspace_color, backspace_rect)
-    pygame.draw.rect(screen, (100, 100, 120), backspace_rect, 1)
-    
-    backspace_font = pygame.font.Font(None, 20)
-    backspace_text = backspace_font.render("⌫", True, (255, 255, 255))
-    backspace_text_rect = backspace_text.get_rect(center=backspace_rect.center)
-    screen.blit(backspace_text, backspace_text_rect)
-    
-    world_name_buttons['backspace'] = backspace_rect
+    instruction_start_y = instructions_y + 55
+    for i, instruction in enumerate(instructions):
+        instruction_text = instruction_font.render(instruction, True, (220, 220, 220))
+        text_x = instructions_x + (instructions_panel_width - instruction_text.get_width()) // 2
+        screen.blit(instruction_text, (text_x, instruction_start_y + i * 28))
     
     # Action buttons
-    button_y = special_keys_y + key_height + 40
+    button_y = instructions_y + instructions_panel_height + 30
     button_width = 120
     button_height = 50
     button_spacing = 20
@@ -15079,16 +15050,16 @@ def draw_multiplayer_screen():
         
         info_text = font.render("Multiplayer features are not currently available", True, (200, 200, 200))
         screen.blit(info_text, (SCREEN_WIDTH // 2 - info_text.get_width() // 2, 300))
-        
-        # Back button
-        back_rect = pygame.Rect(SCREEN_WIDTH // 2 - 150, 400, 300, 50)
-        pygame.draw.rect(screen, (100, 0, 0), back_rect)
-        pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
-        back_text = font.render("⬅️ Back to Title", True, (255, 255, 255))
-        screen.blit(back_text, (back_rect.centerx - back_text.get_width() // 2, back_rect.centery - back_text.get_height() // 2))
-        
-        global multiplayer_back_btn
-        multiplayer_back_btn = back_rect
+    
+    # Back button
+    back_rect = pygame.Rect(SCREEN_WIDTH // 2 - 150, 400, 300, 50)
+    pygame.draw.rect(screen, (100, 0, 0), back_rect)
+    pygame.draw.rect(screen, (255, 255, 255), back_rect, 2)
+    back_text = font.render("⬅️ Back to Title", True, (255, 255, 255))
+    screen.blit(back_text, (back_rect.centerx - back_text.get_width() // 2, back_rect.centery - back_text.get_height() // 2))
+    
+    global multiplayer_back_btn
+    multiplayer_back_btn = back_rect
 
 # --- Main Game Loop ---
 # Add game menu toggle state
@@ -15583,6 +15554,25 @@ while running:
     
     # Update weather system
     update_weather()
+
+    # Ensure native text input is active on the world naming screen
+    try:
+        if game_state == GameState.WORLD_NAMING:
+            if not text_input_active:
+                pygame.key.start_text_input()
+                text_input_active = True
+            # If we have the input rect, inform pygame for better IME/cursor placement
+            if 'world_name_input_rect' in globals() and world_name_input_rect:
+                try:
+                    pygame.key.set_text_input_rect(world_name_input_rect)
+                except Exception:
+                    pass
+        else:
+            if text_input_active:
+                pygame.key.stop_text_input()
+                text_input_active = False
+    except Exception:
+        pass
     
     # Safety check: if we've been running for more than 10 seconds without user input, allow force quit
     if frame_count % 600 == 0:  # Check every 600 frames (about 10 seconds at 60 FPS)
@@ -15596,6 +15586,9 @@ while running:
         screen.fill((0, 0, 0))  # Night sky
 
 
+
+    # Draw achievement popups before events so they are visible every frame
+    draw_achievement_popups()
 
     for event in pygame.event.get():
         
@@ -15626,7 +15619,56 @@ while running:
             if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
                 shift_key_pressed = True
             
-            if event.key == pygame.K_ESCAPE:
+            # WORLD_NAMING keyboard handling
+            if game_state == GameState.WORLD_NAMING:
+                print(f"⌨️ KEYDOWN in WORLD_NAMING: key={event.key}")
+                if event.key == pygame.K_BACKSPACE:
+                    # Handle backspace
+                    if world_name_input and world_name_cursor_pos > 0:
+                        world_name_input = world_name_input[:world_name_cursor_pos-1] + world_name_input[world_name_cursor_pos:]
+                        world_name_cursor_pos -= 1
+                        print(f"⌫ Backspace! Current input: '{world_name_input}'")
+                elif event.key == pygame.K_DELETE:
+                    # Handle delete
+                    if world_name_cursor_pos < len(world_name_input):
+                        world_name_input = world_name_input[:world_name_cursor_pos] + world_name_input[world_name_cursor_pos+1:]
+                elif event.key == pygame.K_LEFT:
+                    # Move cursor left
+                    if world_name_cursor_pos > 0:
+                        world_name_cursor_pos -= 1
+                elif event.key == pygame.K_RIGHT:
+                    # Move cursor right
+                    if world_name_cursor_pos < len(world_name_input):
+                        world_name_cursor_pos += 1
+                elif event.key == pygame.K_HOME:
+                    # Move cursor to beginning
+                    world_name_cursor_pos = 0
+                elif event.key == pygame.K_END:
+                    # Move cursor to end
+                    world_name_cursor_pos = len(world_name_input)
+                elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                    # Create world with entered name
+                    print(f"✅ ENTER pressed! Creating world with name: '{world_name_input.strip()}'")
+                    create_world_with_name(world_name_input.strip())
+                    try:
+                        if text_input_active:
+                            pygame.key.stop_text_input()
+                            text_input_active = False
+                    except Exception:
+                        pass
+                elif event.key == pygame.K_ESCAPE:
+                    # Cancel - go back to world selection
+                    game_state = GameState.WORLD_SELECTION
+                    update_pause_state()
+                    print("⬅️ Cancelled world naming, returning to world selection")
+                    try:
+                        if text_input_active:
+                            pygame.key.stop_text_input()
+                            text_input_active = False
+                    except Exception:
+                        pass
+            
+            elif event.key == pygame.K_ESCAPE:
                 if merchant_shop_open:
                     # Close merchant shop if it's open
                     close_merchant_shop()
@@ -15743,6 +15785,40 @@ while running:
                 print("🔄 Force quit with Ctrl+Q")
                 running = False
                 break
+
+            # --- PAUSE MENU KEYBOARD SHORTCUTS ---
+            if game_state == GameState.PAUSED:
+                # Resume with R or Enter
+                if event.key in (pygame.K_r, pygame.K_RETURN, pygame.K_KP_ENTER):
+                    game_state = GameState.GAME
+                    update_pause_state()
+                    print("▶️ Resumed game from pause (keyboard)")
+                # Save with S
+                elif event.key == pygame.K_s:
+                    if save_game():
+                        show_message(" Game saved successfully!")
+                        print("💾 Saved game from pause (keyboard)")
+                    else:
+                        show_message(" Failed to save game!")
+                # Quit to title with Q
+                elif event.key == pygame.K_q:
+                    # Cleanup multiplayer before quitting
+                    if multiplayer_ui:
+                        lan_server = multiplayer_ui.get_lan_server()
+                        lan_client = multiplayer_ui.get_lan_client()
+                        if lan_server:
+                            print("🛑 Shutting down LAN server (host left)")
+                            lan_server.stop()
+                            multiplayer_ui.set_lan_server(None)
+                        if lan_client:
+                            print("🔌 Disconnecting from server (client left)")
+                            lan_client.disconnect()
+                            multiplayer_ui.set_lan_client(None)
+                    save_game()
+                    reset_game_state_to_title()
+                    game_state = GameState.TITLE
+                    update_pause_state()
+                    print("🏠 Returned to title from pause (keyboard)")
             # Toggle performance stats with F3
             if event.key == pygame.K_F3:
                 performance_monitor["show_stats"] = not performance_monitor["show_stats"]
@@ -15902,6 +15978,16 @@ while running:
             # Handle shift key release
             if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
                 shift_key_pressed = False
+        
+        # TEXTINPUT handler for physical keyboard input (WORLD_NAMING)
+        elif event.type == pygame.TEXTINPUT:
+            if game_state == GameState.WORLD_NAMING:
+                # Text input from physical keyboard (more reliable)
+                print(f"⌨️ TEXTINPUT event received: '{event.text}'")
+                if len(world_name_input) < 32 and event.text:
+                    world_name_input = world_name_input[:world_name_cursor_pos] + event.text + world_name_input[world_name_cursor_pos:]
+                    world_name_cursor_pos += len(event.text)
+                    print(f"✅ Text added! Current input: '{world_name_input}'")
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == GameState.GAME:
@@ -16274,8 +16360,20 @@ while running:
                     else:
                         # Go to world naming screen instead of directly creating world
                         game_state = GameState.WORLD_NAMING
+                        # Reset world naming variables
+                        world_name_input = ""
+                        world_name_cursor_pos = 0
+                        world_name_cursor_blink = 0
                         update_pause_state()  # Pause time when entering world naming
                         print("🌍 Opening world naming screen!")
+                        print("⌨️ Physical keyboard is now active - start typing!")
+                        try:
+                            pygame.key.start_text_input()
+                            text_input_active = True
+                            print("✅ Text input mode activated successfully")
+                        except Exception as e:
+                            print(f"❌ Failed to activate text input: {e}")
+                            text_input_active = False
                 elif action == "import_world":
                     print("📥 Import World button clicked!")
                     # Open file dialog to import world
@@ -16311,87 +16409,29 @@ while running:
                         if world_name_skip_btn and world_name_skip_btn.collidepoint(event.pos):
                             # Skip naming - use default name
                             create_world_with_name("")
+                            try:
+                                if text_input_active:
+                                    pygame.key.stop_text_input()
+                            except Exception:
+                                pass
                         elif world_name_cancel_btn and world_name_cancel_btn.collidepoint(event.pos):
                             # Cancel - go back to world selection
                             game_state = GameState.WORLD_SELECTION
                             update_pause_state()
                             print("⬅️ Cancelled world naming, returning to world selection")
+                            try:
+                                if text_input_active:
+                                    pygame.key.stop_text_input()
+                            except Exception:
+                                pass
                         elif world_name_confirm_btn and world_name_confirm_btn.collidepoint(event.pos):
                             # Create world with entered name
                             create_world_with_name(world_name_input.strip())
-                
-                elif event.type == pygame.KEYDOWN:
-                    # Handle physical keyboard input
-                    if event.key == pygame.K_BACKSPACE:
-                        # Handle backspace
-                        if world_name_input and world_name_cursor_pos > 0:
-                            world_name_input = world_name_input[:world_name_cursor_pos-1] + world_name_input[world_name_cursor_pos:]
-                            world_name_cursor_pos -= 1
-                    elif event.key == pygame.K_DELETE:
-                        # Handle delete
-                        if world_name_cursor_pos < len(world_name_input):
-                            world_name_input = world_name_input[:world_name_cursor_pos] + world_name_input[world_name_cursor_pos+1:]
-                    elif event.key == pygame.K_LEFT:
-                        # Move cursor left
-                        if world_name_cursor_pos > 0:
-                            world_name_cursor_pos -= 1
-                    elif event.key == pygame.K_RIGHT:
-                        # Move cursor right
-                        if world_name_cursor_pos < len(world_name_input):
-                            world_name_cursor_pos += 1
-                    elif event.key == pygame.K_HOME:
-                        # Move cursor to beginning
-                        world_name_cursor_pos = 0
-                    elif event.key == pygame.K_END:
-                        # Move cursor to end
-                        world_name_cursor_pos = len(world_name_input)
-                    elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
-                        # Create world with entered name
-                        create_world_with_name(world_name_input.strip())
-                    elif event.key == pygame.K_ESCAPE:
-                        # Cancel - go back to world selection
-                        game_state = GameState.WORLD_SELECTION
-                        update_pause_state()
-                        print("⬅️ Cancelled world naming, returning to world selection")
-                    elif event.unicode and event.unicode.isprintable() and len(world_name_input) < 32:
-                        # Add printable character at cursor position
-                        world_name_input = world_name_input[:world_name_cursor_pos] + event.unicode + world_name_input[world_name_cursor_pos:]
-                        world_name_cursor_pos += 1
-            elif game_state == GameState.PAUSED:
-                if resume_btn.collidepoint(event.pos):
-                    game_state = GameState.GAME
-                    update_pause_state()  # Resume time when returning to game
-                    
-                    # Give starting items if player doesn't have them
-                    if not player["inventory"]:
-                        give_starting_items()
-                elif save_btn.collidepoint(event.pos):
-                    if save_game():
-                        show_message(" Game saved successfully!")
-                    else:
-                        show_message(" Failed to save game!")
-                elif quit_btn.collidepoint(event.pos):
-                    # Cleanup multiplayer before quitting
-                    if multiplayer_ui:
-                        lan_server = multiplayer_ui.get_lan_server()
-                        lan_client = multiplayer_ui.get_lan_client()
-                        
-                        if lan_server:
-                            print("🛑 Shutting down LAN server (host left)")
-                            lan_server.stop()
-                            multiplayer_ui.set_lan_server(None)
-                            is_multiplayer_host = False
-                        
-                        if lan_client:
-                            print("🔌 Disconnecting from server (client left)")
-                            lan_client.disconnect()
-                            multiplayer_ui.set_lan_client(None)
-                            is_multiplayer_client = False
-                    
-                    save_game()
-                    reset_game_state_to_title()  # Reset everything before returning
-                    game_state = GameState.TITLE
-                    update_pause_state()  # Pause time when returning to title
+                            try:
+                                if text_input_active:
+                                    pygame.key.stop_text_input()
+                            except Exception:
+                                pass
             elif game_state == GameState.USERNAME_CREATE:
                 # Handle virtual keyboard clicks
                 if event.button == 1:  # Left click
@@ -16505,7 +16545,7 @@ while running:
                         game_state = GameState.TITLE
                         update_pause_state()
                         print("⬅️ Returning to title screen from multiplayer")
-                    
+                
                     elif action == "start_server":
                         # Start hosting server with NEW WORLD every time
                         world_name = multiplayer_ui.get_world_name_input()
@@ -16622,6 +16662,43 @@ while running:
                 else:
                     handle_backpack_click(event.pos)
                 continue
+            elif game_state == GameState.PAUSED and event.button == 1:
+                # Handle pause menu clicks
+                # Buttons are created in draw_game_menu() - they should exist from previous frame
+                if resume_btn and resume_btn.collidepoint(event.pos):
+                    game_state = GameState.GAME
+                    update_pause_state()  # Resume time when returning to game
+                    
+                    # Give starting items if player doesn't have them
+                    if not player["inventory"]:
+                        give_starting_items()
+                elif save_btn and save_btn.collidepoint(event.pos):
+                    if save_game():
+                        show_message("✅ Game saved successfully!")
+                    else:
+                        show_message("❌ Failed to save game!")
+                elif quit_btn and quit_btn.collidepoint(event.pos):
+                    # Cleanup multiplayer before quitting
+                    if multiplayer_ui:
+                        lan_server = multiplayer_ui.get_lan_server()
+                        lan_client = multiplayer_ui.get_lan_client()
+                        
+                        if lan_server:
+                            print("🛑 Shutting down LAN server (host left)")
+                            lan_server.stop()
+                            multiplayer_ui.set_lan_server(None)
+                            is_multiplayer_host = False
+                        
+                        if lan_client:
+                            print("🔌 Disconnecting from server (client left)")
+                            lan_client.disconnect()
+                            multiplayer_ui.set_lan_client(None)
+                            is_multiplayer_client = False
+                    
+                    save_game()
+                    reset_game_state_to_title()  # Reset everything before returning
+                    game_state = GameState.TITLE
+                    update_pause_state()  # Pause time when returning to title
             elif game_state == GameState.SKIN_CREATOR:
                 # Handle skin creator clicks
                 handle_skin_creator_click(event.pos)
@@ -16678,8 +16755,8 @@ while running:
         chunk_right = right_edge // 50
         for ch in range(chunk_left, chunk_right + 1):
             base_x = ch * 50
-            # Generate structures for chunk - DISABLED (fortress system removed)
-            # maybe_generate_fortress_for_chunk(ch, base_x)
+            # Generate fortresses for chunk - red brick fortresses
+            maybe_generate_fortress_for_chunk(ch, base_x)
         for x in range(left_edge, right_edge):
             # CRITICAL FIX: Only generate terrain for columns that have NEVER been generated
             # This prevents broken blocks from being replaced by terrain regeneration
