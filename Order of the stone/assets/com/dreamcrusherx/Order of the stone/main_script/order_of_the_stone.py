@@ -2791,8 +2791,8 @@ def fix_player_spawn_position():
         player["y"] = bed_y
         return
     
-    # NEW WORLD GENERATION: The world generator (world_gen.py) already found a perfect spawn!
-    # Check if the current spawn position is valid - if so, USE IT!
+    # NEW WORLD GENERATION: The world generator (world_gen.py) already found the BEST spawn!
+    # Just verify it and use it - DON'T search elsewhere unless absolutely necessary
     spawn_x = int(player["x"])
     spawn_y = int(player["y"])
     
@@ -2805,14 +2805,15 @@ def fix_player_spawn_position():
     
     print(f"   Blocks: head={head_block}, feet={feet_block}, ground={ground_block}")
     
-    # If world generator gave us a valid spawn (air above, solid below), TRUST IT!
-    if (is_non_solid_block(head_block) and 
-        is_non_solid_block(feet_block) and 
-        ground_block and ground_block in ["grass", "dirt", "sand"]):
-        print(f"✅ World generator spawn is PERFECT! Using it as-is.")
+    # TRUST the world generator! It found grass farthest from water
+    # Only do a basic safety check
+    if ground_block and ground_block != "water":
+        print(f"✅ World generator spawn is GOOD! Using it.")
+        player["vel_y"] = 0.0
+        player["on_ground"] = False
         return True
     
-    print(f"⚠️ World generator spawn needs adjustment - searching nearby for grass...")
+    print(f"⚠️ World generator spawn has water as ground - searching for grass...")
     
     # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location (NEVER in water/ocean)
     # Search in MULTIPLE X positions around the spawn point, not just spawn_x

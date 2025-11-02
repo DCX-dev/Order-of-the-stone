@@ -600,94 +600,58 @@ class WorldGenerator:
         print(f"⛏️ Generated {ore_count} ore veins with proper rarity distribution (coal=common, iron=uncommon, gold=slightly rare, diamond=rare)")
     
     def _find_spawn_location(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
-        """Find a good spawn location on grass land (NEVER in ocean/beach)"""
+        """Find a good spawn location on grass land (NEVER in ocean/beach) - GUARANTEED"""
         
         print(f"🔍 Searching for spawn location in world with {len(blocks)} blocks")
         print(f"   World width: {world_width}, searching from X={-world_width//2} to X={world_width//2}")
         
-        # First, let's see what blocks we have near center
-        print(f"   Checking blocks near X=0:")
-        for check_x in range(-10, 11, 5):
-            for check_y in range(110, 120):
-                block = blocks.get(f"{check_x},{check_y}")
-                if block:
-                    print(f"     Block at ({check_x},{check_y}): {block}")
-        
-        # Strategy 1: Search from center outward in both directions for grass
-        # This ensures we find the closest grass to center
-        search_ranges = [
-            range(0, 150, 5),      # Right side first (positive X)
-            range(-5, -150, -5),   # Then left side (negative X)
-        ]
-        
-        for search_range in search_ranges:
-            for spawn_x in search_range:
-                # Find grass surface at this x
-                for y in range(90, 140):
-                    block = blocks.get(f"{spawn_x},{y}")
-                    if block == "grass":
-                        print(f"   Found grass at ({spawn_x},{y})!")
-                        # Verify this is NOT near water/sand (not a beach/ocean)
-                        # Check blocks around and below to make sure it's solid grass land
-                        is_safe_land = True
-                        
-                        # Check for water nearby (within 3 blocks)
-                        for check_x in range(spawn_x - 3, spawn_x + 4):
-                            for check_y in range(y - 2, y + 3):
-                                check_block = blocks.get(f"{check_x},{check_y}")
-                                if check_block in ["water", "sand"]:
-                                    is_safe_land = False
-                                    break
-                            if not is_safe_land:
-                                break
-                        
-                        # Also verify there's solid ground below (not floating)
-                        if is_safe_land:
-                            has_solid_ground = False
-                            for check_y in range(y + 1, y + 5):
-                                check_block = blocks.get(f"{spawn_x},{check_y}")
-                                if check_block in ["dirt", "stone"]:
-                                    has_solid_ground = True
-                                    break
-                            if not has_solid_ground:
-                                is_safe_land = False
-                        
-                        if is_safe_land:
-                            # Found safe grass! Spawn here
-                            print(f"🏠 Safe spawn location found on grass at ({spawn_x}, {y})")
-                            print(f"   ✅ Far from water/sand, with solid ground below")
-                            return spawn_x, y - 2  # Spawn 2 blocks above surface
-        
-        # Fallback - search every block more carefully
-        print("⚠️ Primary spawn search failed, doing thorough search...")
-        for spawn_x in range(-world_width//2, world_width//2, 3):
-            for y in range(90, 140):
-                block = blocks.get(f"{spawn_x},{y}")
-                if block == "grass":
-                    # Quick check - just make sure not directly on/in water
-                    water_nearby = False
-                    for check_x in range(spawn_x - 1, spawn_x + 2):
-                        check_block = blocks.get(f"{check_x},{y}")
-                        if check_block in ["water"]:
-                            water_nearby = True
-                            break
-                    
-                    if not water_nearby:
-                        print(f"🏠 Fallback spawn found at ({spawn_x}, {y})")
-                        return spawn_x, y - 2
-        
-        # Last resort - find ANY grass block
-        print("⚠️ Thorough search failed, finding ANY grass...")
+        # AGGRESSIVE SEARCH: Search ENTIRE world for ANY grass block first
+        all_grass_locations = []
         for spawn_x in range(-world_width//2, world_width//2):
             for y in range(90, 140):
                 block = blocks.get(f"{spawn_x},{y}")
                 if block == "grass":
-                    print(f"⚠️ Emergency spawn on grass at ({spawn_x}, {y})")
-                    return spawn_x, y - 2
+                    # Check if there's dirt/stone below (valid grass)
+                    below_block = blocks.get(f"{spawn_x},{y + 1}")
+                    if below_block in ["dirt", "stone"]:
+                        all_grass_locations.append((spawn_x, y))
         
-        # Absolute last resort - spawn at a safe height
-        print("❌ NO GRASS FOUND! Spawning at default safe location")
-        return 0, 100
+        print(f"   Found {len(all_grass_locations)} grass locations in world!")
+        
+        if not all_grass_locations:
+            print("❌ ERROR: NO GRASS BLOCKS GENERATED IN WORLD!")
+            return 0, 110  # Return default, emergency platform will be created
+        
+        # Now find the BEST grass location (farthest from water)
+        best_spawn = None
+        best_distance_from_water = -1
+        
+        for spawn_x, y in all_grass_locations:
+            # Calculate distance to nearest water
+            min_water_distance = 999
+            for check_x in range(spawn_x - 10, spawn_x + 11):
+                for check_y in range(y - 5, y + 6):
+                    check_block = blocks.get(f"{check_x},{check_y}")
+                    if check_block == "water":
+                        distance = abs(check_x - spawn_x) + abs(check_y - y)
+                        if distance < min_water_distance:
+                            min_water_distance = distance
+            
+            # If this location is farther from water, it's better
+            if min_water_distance > best_distance_from_water:
+                best_distance_from_water = min_water_distance
+                best_spawn = (spawn_x, y)
+        
+        if best_spawn:
+            spawn_x, y = best_spawn
+            print(f"🏠 BEST spawn found on grass at ({spawn_x}, {y})")
+            print(f"   ✅ Distance from water: {best_distance_from_water} blocks")
+            return spawn_x, y - 2  # Spawn 2 blocks above surface
+        
+        # Fallback: just use first grass found
+        spawn_x, y = all_grass_locations[0]
+        print(f"🏠 Using first grass location at ({spawn_x}, {y})")
+        return spawn_x, y - 2
 
 def generate_world(seed: str = None, world_width: int = 400) -> Dict:
     """
