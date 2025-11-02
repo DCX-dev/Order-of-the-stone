@@ -67,7 +67,11 @@ class WorldGenerator:
         # Count ocean and beach blocks
         ocean_blocks = sum(1 for block in world_data["blocks"].values() if block == "water")
         sand_blocks = sum(1 for block in world_data["blocks"].values() if block == "sand")
-        print(f"🌊 Generated {ocean_blocks} water blocks and {sand_blocks} sand blocks")
+        grass_blocks = sum(1 for block in world_data["blocks"].values() if block == "grass")
+        dirt_blocks = sum(1 for block in world_data["blocks"].values() if block == "dirt")
+        stone_blocks = sum(1 for block in world_data["blocks"].values() if block == "stone")
+        print(f"🌊 Generated {ocean_blocks} water blocks, {sand_blocks} sand blocks")
+        print(f"🌱 Generated {grass_blocks} grass blocks, {dirt_blocks} dirt blocks, {stone_blocks} stone blocks")
         
         # Add some basic structures
         print("🌳 Adding trees...")
@@ -598,6 +602,17 @@ class WorldGenerator:
     def _find_spawn_location(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
         """Find a good spawn location on grass land (NEVER in ocean/beach)"""
         
+        print(f"🔍 Searching for spawn location in world with {len(blocks)} blocks")
+        print(f"   World width: {world_width}, searching from X={-world_width//2} to X={world_width//2}")
+        
+        # First, let's see what blocks we have near center
+        print(f"   Checking blocks near X=0:")
+        for check_x in range(-10, 11, 5):
+            for check_y in range(110, 120):
+                block = blocks.get(f"{check_x},{check_y}")
+                if block:
+                    print(f"     Block at ({check_x},{check_y}): {block}")
+        
         # Strategy 1: Search from center outward in both directions for grass
         # This ensures we find the closest grass to center
         search_ranges = [
@@ -611,6 +626,7 @@ class WorldGenerator:
                 for y in range(90, 140):
                     block = blocks.get(f"{spawn_x},{y}")
                     if block == "grass":
+                        print(f"   Found grass at ({spawn_x},{y})!")
                         # Verify this is NOT near water/sand (not a beach/ocean)
                         # Check blocks around and below to make sure it's solid grass land
                         is_safe_land = True
