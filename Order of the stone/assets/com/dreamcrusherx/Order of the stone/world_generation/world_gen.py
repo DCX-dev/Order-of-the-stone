@@ -22,19 +22,27 @@ class WorldGenerator:
         self.freq3_offset = self.rng.uniform(0, 1000)
         self.freq4_offset = self.rng.uniform(0, 1000)
         
-        # Random frequency multipliers (how wavy the terrain is)
-        self.freq1_mult = self.rng.uniform(0.03, 0.07)   # Large rolling hills
-        self.freq2_mult = self.rng.uniform(0.1, 0.2)     # Medium hills
-        self.freq3_mult = self.rng.uniform(0.25, 0.35)   # Small variations
-        self.freq4_mult = self.rng.uniform(0.4, 0.6)     # Fine details
+        # Random frequency multipliers (how wavy the terrain is) - MORE VARIATION!
+        self.freq1_mult = self.rng.uniform(0.02, 0.10)   # Large rolling hills (wider range)
+        self.freq2_mult = self.rng.uniform(0.08, 0.25)   # Medium hills (wider range)
+        self.freq3_mult = self.rng.uniform(0.2, 0.4)     # Small variations (wider range)
+        self.freq4_mult = self.rng.uniform(0.3, 0.7)     # Fine details (wider range)
         
         # Random ocean placement - make oceans RARE (70% chance of no ocean)
         ocean_options = ["left", "right", "center", "none", "none", "none", "none"]
         self.ocean_side = self.rng.choice(ocean_options)
         
+        # Random biome characteristics for MORE VARIETY
+        self.tree_density = self.rng.uniform(0.4, 0.8)  # How many tree clusters (40-80%)
+        self.fortress_chance = self.rng.uniform(0.2, 0.5)  # Fortress spawn chance (20-50%)
+        self.base_height_variation = self.rng.randint(110, 120)  # Base terrain height (110-120)
+        self.terrain_roughness = self.rng.uniform(0.5, 1.5)  # Terrain height multiplier (0.5=flat, 1.5=mountainous)
+        
         print(f"🌍 World Generator initialized with seed: {seed}")
         print(f"🎲 Truly random terrain: freq offsets=({self.freq1_offset:.1f}, {self.freq2_offset:.1f}, {self.freq3_offset:.1f}, {self.freq4_offset:.1f})")
         print(f"🌊 Ocean placement: {self.ocean_side}")
+        print(f"🌳 Tree density: {self.tree_density:.1%}, 🏰 Fortress chance: {self.fortress_chance:.1%}")
+        print(f"⛰️  Base height: {self.base_height_variation}")
     
     def generate_world(self, world_width: int = 400, world_height: int = 200) -> Dict:
         """Generate a simple, clean world"""
@@ -103,15 +111,16 @@ class WorldGenerator:
         
         # Clean, organized terrain generation - consistent but varied per world
         # Y increases downward (like screen coordinates): Y=115 is ground, Y=120 is below ground
-        base_height = 115  # Consistent base height for land (ground level)
-        water_level = 120  # Water level BELOW ground (higher Y = deeper in world, so 120 is below 115)
-        ocean_floor_y = water_level + 15  # Deep flat ocean floor (15 blocks below water level, deeper in ground)
-        flat_land_height = 115  # Flat land height around oceans (same as base_height for proper beach transition)
+        base_height = self.base_height_variation  # RANDOMIZED base height for land (110-120)
+        water_level = base_height + 5  # Water level BELOW ground (5 blocks below land)
+        ocean_floor_y = water_level + 15  # Deep flat ocean floor (15 blocks below water level)
+        flat_land_height = base_height  # Flat land height around oceans (same as base_height for proper beach transition)
         
         # First pass: Determine ocean regions and create FLAT areas
         ocean_regions = []
-        ocean_zone_size = 120  # Longer oceans - 120 blocks wide
-        beach_zone_size = 60  # Wider beach transition for better visibility
+        # RANDOMIZE ocean and beach sizes for variety!
+        ocean_zone_size = self.rng.randint(100, 150)  # Random ocean width (100-150 blocks)
+        beach_zone_size = self.rng.randint(40, 70)  # Random beach width (40-70 blocks)
         
         if self.ocean_side == "center":
             # Ocean in center - long and flat
@@ -206,14 +215,16 @@ class WorldGenerator:
                     surface_y = flat_land_height + reduced_height_variation
                     surface_y = max(flat_land_height - 2, min(flat_land_height + 3, surface_y))
                 else:
-                    # Normal terrain away from oceans
+                    # Normal terrain away from oceans - with RANDOMIZED roughness
                     primary_wave = 8 * math.sin((x + self.freq1_offset) * self.freq1_mult)
                     secondary_wave = 4 * math.sin((x + self.freq2_offset) * self.freq2_mult)
                     tertiary_wave = 2 * math.sin((x + self.freq3_offset) * self.freq3_mult)
                     detail_wave = 1 * math.sin((x + self.freq4_offset) * self.freq4_mult)
-                    height_variation = int(primary_wave + secondary_wave + tertiary_wave + detail_wave)
+                    # Apply terrain roughness multiplier for variety (0.5=flat, 1.5=mountainous)
+                    height_variation = int((primary_wave + secondary_wave + tertiary_wave + detail_wave) * self.terrain_roughness)
                     surface_y = base_height + height_variation
-                    surface_y = max(100, min(125, surface_y))
+                    # Adjust limits based on base height
+                    surface_y = max(base_height - 15, min(base_height + 15, surface_y))
             
             # NATURAL TERRAIN GENERATION: Build layers from bottom to top
             
@@ -283,11 +294,11 @@ class WorldGenerator:
         tree_count = 0
         placed_positions = set()
         
-        # Generate clean, organized tree clusters
+        # Generate clean, organized tree clusters with RANDOM density
         cluster_centers = []
         tree_spacing = 30  # Consistent tree spacing
         for x in range(-world_width//2, world_width//2, tree_spacing):
-            if self.rng.random() < 0.6:  # 60% chance for cluster
+            if self.rng.random() < self.tree_density:  # Use randomized tree density (40-80%)
                 cluster_centers.append(x)
         
         # Generate VERY sparse desert trees (much rarer)
@@ -298,8 +309,8 @@ class WorldGenerator:
                 desert_tree_centers.append(x)
         
         for cluster_x in cluster_centers:
-            # Generate 2-3 trees in each cluster (clean, organized)
-            cluster_size = self.rng.randint(2, 3)
+            # Generate 2-4 trees in each cluster (randomized for variety)
+            cluster_size = self.rng.randint(2, 4)  # RANDOMIZED cluster size
             for _ in range(cluster_size):
                 # Clean position within cluster (within 5 blocks of center)
                 tree_x = cluster_x + self.rng.randint(-5, 5)
@@ -441,7 +452,7 @@ class WorldGenerator:
         spawn_safe_zone = 100  # No fortresses within 100 blocks of spawn
         
         for x in range(-world_width//2, world_width//2, 120):  # Fortress every 120 blocks
-            if self.rng.random() < 0.3:  # 30% chance for fortress
+            if self.rng.random() < self.fortress_chance:  # RANDOMIZED fortress chance (20-50%)
                 # Skip if too close to spawn
                 if abs(x) < spawn_safe_zone:
                     continue
@@ -470,9 +481,9 @@ class WorldGenerator:
                     print(f"⚠️ Skipping fortress at X={x} - no solid ground beneath surface")
                     continue
                 
-                # Place red brick fortress at calculated surface
-                width = self.rng.randint(10, 18)
-                height = self.rng.randint(10, 14)
+                # Place red brick fortress at calculated surface with RANDOMIZED size
+                width = self.rng.randint(8, 20)  # Wider range for fortress width (8-20)
+                height = self.rng.randint(8, 16)  # Wider range for fortress height (8-16)
                 
                 # Base platform - red brick
                 for dx in range(width):
