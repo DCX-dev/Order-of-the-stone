@@ -28,8 +28,8 @@ class WorldGenerator:
         self.freq3_mult = self.rng.uniform(0.2, 0.4)     # Small variations (wider range)
         self.freq4_mult = self.rng.uniform(0.3, 0.7)     # Fine details (wider range)
         
-        # Random ocean placement - make oceans RARE (70% chance of no ocean)
-        ocean_options = ["left", "right", "center", "none", "none", "none", "none"]
+        # Random ocean placement - make oceans EXTREMELY RARE (90% chance of no ocean)
+        ocean_options = ["left", "right", "center", "none", "none", "none", "none", "none", "none", "none"]
         self.ocean_side = self.rng.choice(ocean_options)
         
         # Random biome characteristics for MAXIMUM VARIETY - each world is unique!
@@ -659,7 +659,7 @@ class WorldGenerator:
         print(f"🔍 Searching for spawn location in world with {len(blocks)} blocks")
         print(f"   World width: {world_width}, searching from X={-world_width//2} to X={world_width//2}")
         
-        # AGGRESSIVE SEARCH: Search ENTIRE world for ANY grass block first
+        # AGGRESSIVE SEARCH: Find grass on LARGE landmasses ONLY (not tiny islands!)
         all_grass_locations = []
         for spawn_x in range(-world_width//2, world_width//2):
             for y in range(90, 140):
@@ -668,43 +668,78 @@ class WorldGenerator:
                     # Check if there's dirt/stone below (valid grass)
                     below_block = blocks.get(f"{spawn_x},{y + 1}")
                     if below_block in ["dirt", "stone"]:
-                        all_grass_locations.append((spawn_x, y))
+                        # CRITICAL: Check if this grass is on a LARGE landmass (not island)
+                        # Count how many grass blocks are nearby (within 10 blocks)
+                        nearby_grass_count = 0
+                        for check_x in range(spawn_x - 10, spawn_x + 11):
+                            for check_y in range(y - 2, y + 3):
+                                if blocks.get(f"{check_x},{check_y}") == "grass":
+                                    nearby_grass_count += 1
+                        
+                        # Only consider this location if there's a lot of grass nearby (big landmass)
+                        if nearby_grass_count >= 15:  # At least 15 grass blocks nearby = large land
+                            all_grass_locations.append((spawn_x, y, nearby_grass_count))
         
-        print(f"   Found {len(all_grass_locations)} grass locations in world!")
+        print(f"   Found {len(all_grass_locations)} grass locations on LARGE landmasses!")
         
         if not all_grass_locations:
-            print("❌ ERROR: NO GRASS BLOCKS GENERATED IN WORLD!")
+            print("⚠️ No large landmasses found, searching for ANY grass with less strict requirements...")
+            # Fallback with lower requirements
+            for spawn_x in range(-world_width//2, world_width//2):
+                for y in range(90, 140):
+                    block = blocks.get(f"{spawn_x},{y}")
+                    if block == "grass":
+                        below_block = blocks.get(f"{spawn_x},{y + 1}")
+                        if below_block in ["dirt", "stone"]:
+                            # At least check for some grass nearby (5+ blocks)
+                            nearby_grass = sum(1 for cx in range(spawn_x-5, spawn_x+6) 
+                                             if blocks.get(f"{cx},{y}") == "grass")
+                            if nearby_grass >= 5:
+                                all_grass_locations.append((spawn_x, y, nearby_grass))
+        
+        if not all_grass_locations:
+            print("❌ ERROR: NO SUITABLE GRASS AREAS FOUND!")
             return 0, 110  # Return default, emergency platform will be created
         
-        # Now find the BEST grass location (farthest from water)
+        # Now find the BEST location: farthest from water AND on largest landmass
         best_spawn = None
-        best_distance_from_water = -1
+        best_score = -1
         
-        for spawn_x, y in all_grass_locations:
-            # Calculate distance to nearest water
+        for spawn_x, y, grass_count in all_grass_locations:
+            # Calculate distance to nearest water - VERY STRICT check
             min_water_distance = 999
-            for check_x in range(spawn_x - 10, spawn_x + 11):
-                for check_y in range(y - 5, y + 6):
+            has_water_nearby = False
+            for check_x in range(spawn_x - 25, spawn_x + 26):  # Check wider area
+                for check_y in range(y - 8, y + 9):
                     check_block = blocks.get(f"{check_x},{check_y}")
                     if check_block == "water":
                         distance = abs(check_x - spawn_x) + abs(check_y - y)
                         if distance < min_water_distance:
                             min_water_distance = distance
+                        if distance < 20:  # Water within 20 blocks = too close!
+                            has_water_nearby = True
             
-            # If this location is farther from water, it's better
-            if min_water_distance > best_distance_from_water:
-                best_distance_from_water = min_water_distance
+            # Skip locations with water close (must be at least 20 blocks away)
+            if has_water_nearby or min_water_distance < 20:
+                continue
+            
+            # Score = distance from water + landmass size
+            # We want FAR from water AND on big land
+            score = min_water_distance + (grass_count * 0.5)
+            
+            if score > best_score:
+                best_score = score
                 best_spawn = (spawn_x, y)
         
         if best_spawn:
             spawn_x, y = best_spawn
-            print(f"🏠 BEST spawn found on grass at ({spawn_x}, {y})")
-            print(f"   ✅ Distance from water: {best_distance_from_water} blocks")
+            print(f"🏠 BEST spawn on LARGE landmass at ({spawn_x}, {y})")
+            print(f"   ✅ FAR from water on big land!")
             return spawn_x, y - 2  # Spawn 2 blocks above surface
         
-        # Fallback: just use first grass found
-        spawn_x, y = all_grass_locations[0]
-        print(f"🏠 Using first grass location at ({spawn_x}, {y})")
+        # Last resort: use any grass found
+        spawn_x, y, grass_count = all_grass_locations[0]
+        print(f"🏠 Using first available grass at ({spawn_x}, {y})")
         return spawn_x, y - 2
 
 def generate_world(seed: str = None, world_width: int = 400) -> Dict:
