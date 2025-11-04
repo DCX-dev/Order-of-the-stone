@@ -511,12 +511,12 @@ class ModernUI:
         self.screen.blit(fps_surface, (100, 200))
         self.screen.blit(music_surface, (100, 250))
         
-        # Buttons
+        # Buttons - properly spaced with 80px between each
         fullscreen_btn = self.draw_modern_button("Toggle Fullscreen", 300, mouse_pos, self.colors["info"])
-        fps_btn = self.draw_modern_button("Change FPS", 400, mouse_pos, self.colors["warning"])
-        music_btn = self.draw_modern_button("Toggle Music", 450, mouse_pos, self.colors["success"])
-        website_btn = self.draw_modern_button("🌐 Visit Website", 550, mouse_pos, self.colors["accent"])
-        back_btn = self.draw_modern_button("⬅️ Back to Title", 650, mouse_pos, self.colors["button"])
+        fps_btn = self.draw_modern_button("Change FPS", 380, mouse_pos, self.colors["warning"])
+        music_btn = self.draw_modern_button("Toggle Music", 460, mouse_pos, self.colors["success"])
+        website_btn = self.draw_modern_button("🌐 Visit Website", 540, mouse_pos, self.colors["accent"])
+        back_btn = self.draw_modern_button("⬅️ Back to Title", 620, mouse_pos, self.colors["button"])
         
         return {
             "fullscreen": fullscreen_btn,
