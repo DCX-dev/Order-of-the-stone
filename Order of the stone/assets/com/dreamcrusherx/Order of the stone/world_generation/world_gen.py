@@ -110,8 +110,12 @@ class WorldGenerator:
     
     def _add_ocean(self, blocks: Dict[str, str], world_width: int, side: str):
         """Add ocean on one side of the world with beaches"""
-        water_level = 120
-        ocean_floor = 135
+        # CORRECT COORDINATES: Y increases downward
+        # Land surface is at Y=115
+        # Ocean surface should be at SAME level (Y=115) to be visible
+        # Ocean goes DOWN from there (higher Y values = deeper)
+        water_surface = 115  # Ocean surface at GROUND LEVEL (visible!)
+        ocean_floor = 125    # Ocean floor 10 blocks DOWN (below water surface)
         ocean_width = 100
         beach_width = 40
         
@@ -128,34 +132,44 @@ class WorldGenerator:
         
         # Generate ocean
         for x in range(ocean_start, ocean_end):
-            # Sand floor
-            for y in range(ocean_floor, ocean_floor + 4):
-                blocks[f"{x},{y}"] = "sand"
-            blocks[f"{x},{ocean_floor}"] = "sand"
+            # Ocean surface (same level as land - VISIBLE!)
+            blocks[f"{x},{water_surface}"] = "water"
             
-            # Water above sand
-            for y in range(water_level, ocean_floor):
+            # Water going DOWN to ocean floor
+            for y in range(water_surface + 1, ocean_floor):
                 blocks[f"{x},{y}"] = "water"
-            blocks[f"{x},{water_level}"] = "water"
             
-            # Stone below sand
+            # Sand floor at bottom of ocean
+            blocks[f"{x},{ocean_floor}"] = "sand"
+            for y in range(ocean_floor + 1, ocean_floor + 4):
+                blocks[f"{x},{y}"] = "sand"
+            
+            # Stone below sand (deep underground)
             for y in range(ocean_floor + 4, ocean_floor + 200):
                 blocks[f"{x},{y}"] = "stone"
+            
+            # Bedrock at very bottom
+            blocks[f"{x},{ocean_floor + 200}"] = "bedrock"
         
-        # Generate beach (transition)
+        # Generate beach (smooth transition from land to ocean)
         for x in range(beach_start, beach_end):
             progress = abs(x - beach_start) / beach_width
-            beach_y = int(115 + progress * 5)  # Slope from 115 to 120
+            # Beach slopes from land (115) DOWN to ocean surface (115) - stays flat at surface!
+            beach_y = 115  # Beach stays at ground level (visible!)
             
-            # Sand layers
-            for y in range(beach_y + 1, beach_y + 4):
-                blocks[f"{x},{y}"] = "sand"
+            # Sand surface
             blocks[f"{x},{beach_y}"] = "sand"
             
-            # Add shallow water if below water level
-            if beach_y >= water_level:
-                for y in range(water_level, beach_y):
-                    blocks[f"{x},{y}"] = "water"
+            # Sand going DOWN (higher Y)
+            for y in range(beach_y + 1, beach_y + 4):
+                blocks[f"{x},{y}"] = "sand"
+            
+            # Stone below sand
+            for y in range(beach_y + 4, beach_y + 200):
+                blocks[f"{x},{y}"] = "stone"
+            
+            # Bedrock at bottom
+            blocks[f"{x},{beach_y + 200}"] = "bedrock"
     
     def _find_safe_spawn(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
         """Find spawn in CENTER of world (like Terraria) - guaranteed far from both oceans"""
