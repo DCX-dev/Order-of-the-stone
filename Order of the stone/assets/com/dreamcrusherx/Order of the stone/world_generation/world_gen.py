@@ -48,13 +48,10 @@ class WorldGenerator:
         print("⛰️  Generating terrain...")
         self._generate_terrain(blocks, world_width)
         
-        # Step 2: Add oceans (20% chance)
-        if self.rng.random() < 0.2:
-            print("🌊 Adding ocean...")
-            ocean_side = self.rng.choice(["left", "right"])
-            self._add_ocean(blocks, world_width, ocean_side)
-        else:
-            print("🌍 No ocean in this world")
+        # Step 2: Add oceans on BOTH edges (like Terraria)
+        print("🌊 Adding oceans on both edges...")
+        self._add_ocean(blocks, world_width, "left")
+        self._add_ocean(blocks, world_width, "right")
         
         # Step 3: Find safe spawn on large grassland (FAR from water)
         print("🏠 Finding spawn location...")
@@ -161,65 +158,32 @@ class WorldGenerator:
                     blocks[f"{x},{y}"] = "water"
     
     def _find_safe_spawn(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
-        """Find spawn on LARGE grassland, FAR from water"""
-        print("   Searching for large grassland far from ocean...")
+        """Find spawn in CENTER of world (like Terraria) - guaranteed far from both oceans"""
+        print("   Spawning in CENTER of world (Terraria style)...")
         
-        # Find all grass locations on large landmasses
-        safe_spawns = []
+        # Terraria style: ALWAYS spawn in the middle third of the world
+        # This guarantees you're far from both ocean edges
+        center_start = -world_width // 6  # Middle third starts here
+        center_end = world_width // 6      # Middle third ends here
         
-        for x in range(-world_width//2, world_width//2, 5):
+        # Find grass in the center area
+        for x in range(center_start, center_end, 3):
             for y in range(105, 130):
                 if blocks.get(f"{x},{y}") == "grass":
-                    # Count nearby grass (large landmass check)
-                    grass_count = 0
-                    for cx in range(x - 15, x + 16):
-                        for cy in range(y - 2, y + 3):
-                            if blocks.get(f"{cx},{cy}") == "grass":
-                                grass_count += 1
-                    
-                    # Need at least 30 grass blocks nearby = LARGE land
-                    if grass_count < 30:
-                        continue
-                    
-                    # Check for water within 60 blocks
-                    has_water = False
-                    for cx in range(x - 60, x + 61):
-                        for cy in range(y - 10, y + 11):
-                            if blocks.get(f"{cx},{cy}") == "water":
-                                has_water = True
-                                break
-                        if has_water:
-                            break
-                    
-                    # Only add if NO water within 60 blocks
-                    if not has_water:
-                        safe_spawns.append((x, y, grass_count))
+                    # Found grass in center - use it!
+                    print(f"   ✅ CENTER spawn on grass at ({x},{y}) - FAR from both oceans!")
+                    return x, y - 2
         
-        if safe_spawns:
-            # Pick the one with most grass (biggest landmass)
-            best = max(safe_spawns, key=lambda s: s[2])
-            x, y, count = best
-            print(f"   ✅ Spawn on LARGE grassland at ({x},{y}) - {count} grass nearby, FAR from ocean!")
-            return x, y - 2
-        
-        # Fallback: find ANY grass far from water
-        print("   ⚠️ Relaxing requirements...")
-        for x in range(-world_width//2, world_width//2, 3):
+        # Fallback: expand search slightly
+        print("   ⚠️ Searching slightly wider...")
+        for x in range(-world_width//4, world_width//4, 2):
             for y in range(105, 130):
                 if blocks.get(f"{x},{y}") == "grass":
-                    # Just check no water within 40 blocks
-                    water_found = False
-                    for cx in range(x - 40, x + 41, 5):
-                        if blocks.get(f"{cx},{y}") == "water":
-                            water_found = True
-                            break
-                    
-                    if not water_found:
-                        print(f"   Found grass at ({x},{y}) with no nearby water")
-                        return x, y - 2
+                    print(f"   Found grass at ({x},{y})")
+                    return x, y - 2
         
-        # Emergency: spawn at center
-        print("   ❌ Using emergency spawn")
+        # Emergency: spawn at exact center
+        print("   ❌ Using center spawn")
         return 0, 113
     
     def _add_trees(self, blocks: Dict[str, str], world_width: int):
