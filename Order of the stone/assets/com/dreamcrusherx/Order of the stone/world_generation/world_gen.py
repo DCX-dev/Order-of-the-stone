@@ -60,33 +60,37 @@ class WorldGenerator:
         print("⛰️  Generating terrain...")
         self._generate_terrain(blocks, world_width)
         
-        # Step 2: Add oceans on BOTH edges (like Terraria) - RARE (10% chance)
-        if self.rng.random() < 0.1:  # Only 10% chance for oceans
-            print("🌊 Adding oceans on both edges...")
-            self._add_ocean(blocks, world_width, "left")
-            self._add_ocean(blocks, world_width, "right")
-        else:
-            print("🌍 No oceans in this world (rare feature)")
-        
-        # Step 3: Find safe spawn on large grassland (FAR from water)
-        print("🏠 Finding spawn location...")
-        spawn_x, spawn_y = self._find_safe_spawn(blocks, world_width)
+        # Step 2: Find spawn in CENTER first (you start in grassland/forest)
+        print("🏠 Finding spawn location in center...")
+        spawn_x, spawn_y = self._find_center_spawn(blocks, world_width)
         world_data["spawn_x"] = spawn_x
         world_data["spawn_y"] = spawn_y
         world_data["player"]["x"] = float(spawn_x)
         world_data["player"]["y"] = float(spawn_y)
         
-        # Step 4: Add trees
-        print("🌳 Adding trees...")
-        self._add_trees(blocks, world_width)
+        # Step 3: Add starting forest around spawn (few trees nearby)
+        print("🌳 Adding starting forest near spawn...")
+        self._add_spawn_forest(blocks, spawn_x, spawn_y)
         
-        # Step 5: Add ores
+        # Step 4: Add trees throughout world (more as you explore)
+        print("🌳 Adding trees across world...")
+        self._add_trees(blocks, world_width, spawn_x)
+        
+        # Step 5: Add oceans FAR from spawn (rare, on edges)
+        if self.rng.random() < 0.15:  # 15% chance for ocean
+            print("🌊 Adding ocean on far edge...")
+            ocean_side = self.rng.choice(["left", "right"])  # Only ONE ocean
+            self._add_ocean(blocks, world_width, ocean_side)
+        else:
+            print("🌍 No ocean in this world")
+        
+        # Step 6: Add ores (coal/iron shallow, gold/diamonds deep)
         print("⛏️  Adding ores...")
         self._add_ores(blocks, world_width)
         
-        # Step 6: Add structures (fortresses)
+        # Step 7: Add fortresses far from spawn
         print("🏰 Adding fortresses...")
-        self._add_fortresses(blocks, world_width)
+        self._add_fortresses(blocks, world_width, spawn_x)
         
         # Note: Animals (cows, slimes) will be spawned by the main game
         # because they need texture references not available here
@@ -196,52 +200,83 @@ class WorldGenerator:
             # Bedrock at bottom
             blocks[f"{x},{beach_y + 200}"] = "bedrock"
     
-    def _find_safe_spawn(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
-        """Find spawn in CENTER of world (like Terraria) - guaranteed far from both oceans"""
-        print("   Spawning in CENTER of world (Terraria style)...")
+    def _find_center_spawn(self, blocks: Dict[str, str], world_width: int) -> Tuple[int, int]:
+        """Find spawn near CENTER - nice grassland starting area"""
+        print("   Finding nice grassland near center...")
         
-        # Terraria style: ALWAYS spawn in the middle third of the world
-        # This guarantees you're far from both ocean edges
-        center_start = -world_width // 6  # Middle third starts here
-        center_end = world_width // 6      # Middle third ends here
-        
-        # Find grass in the center area
-        for x in range(center_start, center_end, 3):
-            for y in range(105, 130):
+        # Search near center (within 30 blocks of X=0)
+        for x in range(-30, 31, 2):
+            for y in range(100, 130):
                 if blocks.get(f"{x},{y}") == "grass":
-                    # Found grass in center - use it!
-                    print(f"   ✅ CENTER spawn on grass at ({x},{y}) - FAR from both oceans!")
-                    return x, y - 2
+                    # Check it has dirt below (valid grass)
+                    if blocks.get(f"{x},{y+1}") == "dirt":
+                        print(f"   ✅ Spawn on grass at ({x},{y})")
+                        return x, y - 2  # 2 blocks ABOVE grass (Y decreases = up)
         
-        # Fallback: expand search slightly
-        print("   ⚠️ Searching slightly wider...")
-        for x in range(-world_width//4, world_width//4, 2):
-            for y in range(105, 130):
+        # Fallback: search wider
+        for x in range(-50, 51):
+            for y in range(100, 130):
                 if blocks.get(f"{x},{y}") == "grass":
                     print(f"   Found grass at ({x},{y})")
                     return x, y - 2
         
-        # Emergency: spawn at exact center
-        print("   ❌ Using center spawn")
-        return 0, 113
+        # Emergency
+        print("   ❌ Emergency spawn")
+        return 0, 110
     
-    def _add_trees(self, blocks: Dict[str, str], world_width: int):
-        """Add trees on grass"""
+    def _add_spawn_forest(self, blocks: Dict[str, str], spawn_x: int, spawn_y: int):
+        """Add a few trees near spawn for starting forest feel"""
+        trees_added = 0
+        
+        # Add 4-6 trees near spawn
+        for i in range(self.rng.randint(4, 6)):
+            tree_x = spawn_x + self.rng.randint(-20, 20)
+            
+            # Find grass at this X
+            for y in range(100, 130):
+                if blocks.get(f"{tree_x},{y}") == "grass":
+                    # Place small tree (trunk goes UP, Y decreases)
+                    trunk_height = 3
+                    
+                    # Trunk
+                    for ty in range(y - 1, y - trunk_height - 1, -1):
+                        blocks[f"{tree_x},{ty}"] = "log"
+                    
+                    # Leaves above trunk (Y decreases = up)
+                    for dx in range(-1, 2):
+                        for dy in range(-trunk_height - 1, -trunk_height - 3, -1):
+                            blocks[f"{tree_x + dx},{y + dy}"] = "leaves"
+                    
+                    trees_added += 1
+                    break
+        
+        print(f"      Added {trees_added} trees at spawn")
+    
+    def _add_trees(self, blocks: Dict[str, str], world_width: int, spawn_x: int):
+        """Add trees across world - MORE as you get farther from spawn"""
         tree_count = 0
         
-        for x in range(-world_width//2, world_width//2, 20):
-            if self.rng.random() < 0.6:  # 60% chance
+        for x in range(-world_width//2, world_width//2, 15):
+            # Skip spawn area (already has starting forest)
+            if abs(x - spawn_x) < 30:
+                continue
+            
+            # More trees farther from spawn
+            distance_from_spawn = abs(x - spawn_x)
+            tree_chance = 0.3 if distance_from_spawn < 50 else 0.6
+            
+            if self.rng.random() < tree_chance:
                 # Find grass
-                for y in range(105, 130):
+                for y in range(100, 130):
                     if blocks.get(f"{x},{y}") == "grass":
-                        # Place tree
+                        # Place tree (trunk goes UP, Y decreases)
                         trunk_height = self.rng.randint(3, 5)
                         
                         # Trunk
                         for ty in range(y - 1, y - trunk_height - 1, -1):
                             blocks[f"{x},{ty}"] = "log"
                         
-                        # Leaves
+                        # Leaves (above trunk, Y decreases)
                         for dx in range(-2, 3):
                             for dy in range(-trunk_height - 2, -trunk_height, 1):
                                 if abs(dx) + abs(dy + trunk_height) <= 2:
@@ -250,7 +285,7 @@ class WorldGenerator:
                         tree_count += 1
                         break
         
-        print(f"   🌳 Generated {tree_count} trees")
+        print(f"      Generated {tree_count} trees across world")
     
     def _add_ores(self, blocks: Dict[str, str], world_width: int):
         """Add ores in stone"""
@@ -275,12 +310,13 @@ class WorldGenerator:
         
         print(f"   ⛏️  Generated {ore_count} ores")
     
-    def _add_fortresses(self, blocks: Dict[str, str], world_width: int):
-        """Add fortresses on grass only"""
+    def _add_fortresses(self, blocks: Dict[str, str], world_width: int, spawn_x: int):
+        """Add fortresses FAR from spawn (exploration reward)"""
         fortress_count = 0
         
         for x in range(-world_width//2, world_width//2, 150):
-            if abs(x) < 80:  # Not near spawn
+            # Only spawn fortresses FAR from spawn (100+ blocks away)
+            if abs(x - spawn_x) < 100:
                 continue
             
             if self.rng.random() < 0.3:
