@@ -32,17 +32,38 @@ class WorldGenerator:
         ocean_options = ["left", "right", "center", "none", "none", "none", "none"]
         self.ocean_side = self.rng.choice(ocean_options)
         
-        # Random biome characteristics for MORE VARIETY
-        self.tree_density = self.rng.uniform(0.4, 0.8)  # How many tree clusters (40-80%)
-        self.fortress_chance = self.rng.uniform(0.2, 0.5)  # Fortress spawn chance (20-50%)
-        self.base_height_variation = self.rng.randint(110, 120)  # Base terrain height (110-120)
-        self.terrain_roughness = self.rng.uniform(0.5, 1.5)  # Terrain height multiplier (0.5=flat, 1.5=mountainous)
+        # Random biome characteristics for MAXIMUM VARIETY - each world is unique!
+        self.tree_density = self.rng.uniform(0.3, 0.9)  # How many tree clusters (30-90% - HUGE range)
+        self.fortress_chance = self.rng.uniform(0.1, 0.6)  # Fortress spawn chance (10-60% - HUGE range)
+        self.base_height_variation = self.rng.randint(105, 125)  # Base terrain height (105-125 - WIDER)
+        self.terrain_roughness = self.rng.uniform(0.3, 2.0)  # Terrain height multiplier (0.3=super flat, 2.0=mountains)
+        self.ore_abundance = self.rng.uniform(0.6, 1.2)  # Ore spawn multiplier (60%-120%)
+        
+        # Randomly decide if this is a special biome type
+        biome_types = ["normal", "forest", "plains", "hills", "desert"]
+        biome_weights = [0.5, 0.15, 0.15, 0.15, 0.05]  # 50% normal, others rarer
+        self.biome_type = self.rng.choices(biome_types, weights=biome_weights)[0]
+        
+        # Adjust parameters based on biome
+        if self.biome_type == "forest":
+            self.tree_density = self.rng.uniform(0.7, 0.95)  # Dense trees
+            self.terrain_roughness *= 0.7  # Flatter for forest
+        elif self.biome_type == "plains":
+            self.tree_density = self.rng.uniform(0.2, 0.4)  # Sparse trees
+            self.terrain_roughness *= 0.5  # Very flat
+        elif self.biome_type == "hills":
+            self.terrain_roughness *= 1.5  # Very hilly
+            self.tree_density = self.rng.uniform(0.4, 0.6)  # Medium trees
+        elif self.biome_type == "desert":
+            self.tree_density = self.rng.uniform(0.05, 0.15)  # Almost no trees
+            self.terrain_roughness *= 0.8  # Slightly flatter
         
         print(f"🌍 World Generator initialized with seed: {seed}")
+        print(f"🎲 Biome Type: {self.biome_type.upper()}")
         print(f"🎲 Truly random terrain: freq offsets=({self.freq1_offset:.1f}, {self.freq2_offset:.1f}, {self.freq3_offset:.1f}, {self.freq4_offset:.1f})")
         print(f"🌊 Ocean placement: {self.ocean_side}")
         print(f"🌳 Tree density: {self.tree_density:.1%}, 🏰 Fortress chance: {self.fortress_chance:.1%}")
-        print(f"⛰️  Base height: {self.base_height_variation}")
+        print(f"⛰️  Base height: {self.base_height_variation}, Roughness: {self.terrain_roughness:.2f}x")
     
     def generate_world(self, world_width: int = 400, world_height: int = 200) -> Dict:
         """Generate a simple, clean world"""
@@ -111,16 +132,17 @@ class WorldGenerator:
         
         # Clean, organized terrain generation - consistent but varied per world
         # Y increases downward (like screen coordinates): Y=115 is ground, Y=120 is below ground
-        base_height = self.base_height_variation  # RANDOMIZED base height for land (110-120)
+        base_height = self.base_height_variation  # RANDOMIZED base height for land (105-125)
         water_level = base_height + 5  # Water level BELOW ground (5 blocks below land)
-        ocean_floor_y = water_level + 15  # Deep flat ocean floor (15 blocks below water level)
+        # Ocean depth will be determined later using ocean_depth_variation
         flat_land_height = base_height  # Flat land height around oceans (same as base_height for proper beach transition)
         
         # First pass: Determine ocean regions and create FLAT areas
         ocean_regions = []
-        # RANDOMIZE ocean and beach sizes for variety!
-        ocean_zone_size = self.rng.randint(100, 150)  # Random ocean width (100-150 blocks)
-        beach_zone_size = self.rng.randint(40, 70)  # Random beach width (40-70 blocks)
+        # RANDOMIZE ocean and beach sizes for MAXIMUM variety!
+        ocean_zone_size = self.rng.randint(80, 180)  # Random ocean width (80-180 blocks - HUGE range)
+        beach_zone_size = self.rng.randint(30, 80)  # Random beach width (30-80 blocks - HUGE range)
+        ocean_depth_variation = self.rng.randint(10, 20)  # Random ocean depth (10-20 blocks below water)
         
         if self.ocean_side == "center":
             # Ocean in center - long and flat
@@ -173,7 +195,8 @@ class WorldGenerator:
                     break
             
             if is_ocean:
-                # OCEAN: Completely flat floor at fixed depth
+                # OCEAN: Completely flat floor at randomized depth
+                ocean_floor_y = water_level + ocean_depth_variation  # Use randomized depth
                 surface_y = ocean_floor_y
             elif is_beach:
                 # BEACH: Smooth transition from flat land to ocean
@@ -457,33 +480,50 @@ class WorldGenerator:
                 if abs(x) < spawn_safe_zone:
                     continue
                 
-                # Find surface by searching for grass block from top down (expanded range)
+                # CRITICAL: Determine fortress size FIRST before checking location
+                width = self.rng.randint(8, 20)  # Wider range for fortress width (8-20)
+                height = self.rng.randint(8, 16)  # Wider range for fortress height (8-16)
+                
+                # Find surface by searching for grass blocks across ENTIRE fortress width
                 surface_y = None
-                for y in range(90, 140):
-                    block = blocks.get(f"{x},{y}")
-                    if block == "grass":
-                        surface_y = y
+                all_grass = True
+                
+                # Check that ALL positions under the fortress have grass
+                for dx in range(width):
+                    found_grass_at_this_x = False
+                    for y in range(90, 140):
+                        block = blocks.get(f"{x + dx},{y}")
+                        if block == "grass":
+                            if surface_y is None:
+                                surface_y = y
+                            found_grass_at_this_x = True
+                            break
+                    
+                    if not found_grass_at_this_x:
+                        all_grass = False
                         break
                 
-                # Skip if no grass surface found (might be ocean/sand)
-                if surface_y is None:
+                # Skip if not all positions have grass (might be ocean/sand/air)
+                if surface_y is None or not all_grass:
                     continue
                 
-                # Verify there's solid ground beneath the surface (prevent floating fortresses)
-                has_solid_ground = False
-                for y in range(surface_y + 1, surface_y + 10):  # Check 9 blocks below surface
-                    block = blocks.get(f"{x},{y}")
-                    if block in ["dirt", "stone", "sand"]:
-                        has_solid_ground = True
+                # Verify there's solid ground beneath the ENTIRE fortress (prevent floating)
+                has_solid_ground = True
+                for dx in range(width):
+                    found_solid = False
+                    for y in range(surface_y + 1, surface_y + 10):  # Check 9 blocks below surface
+                        block = blocks.get(f"{x + dx},{y}")
+                        if block in ["dirt", "stone"]:
+                            found_solid = True
+                            break
+                    
+                    if not found_solid:
+                        has_solid_ground = False
                         break
                 
                 if not has_solid_ground:
-                    print(f"⚠️ Skipping fortress at X={x} - no solid ground beneath surface")
+                    print(f"⚠️ Skipping fortress at X={x} - no solid ground beneath entire width")
                     continue
-                
-                # Place red brick fortress at calculated surface with RANDOMIZED size
-                width = self.rng.randint(8, 20)  # Wider range for fortress width (8-20)
-                height = self.rng.randint(8, 16)  # Wider range for fortress height (8-16)
                 
                 # Base platform - red brick
                 for dx in range(width):
@@ -568,11 +608,14 @@ class WorldGenerator:
             
             bedrock_y = surface_y + 200
             
-            # Try to place multiple ores per column
-            for _ in range(3):  # Up to 3 ores per column
+            # Try to place multiple ores per column (adjusted by world's ore abundance)
+            max_ores_per_column = int(3 * self.ore_abundance)  # 2-4 ores based on abundance
+            for _ in range(max_ores_per_column):
                 ore_chance = self.rng.random()
                 
-                if ore_chance < 0.8:  # 80% chance for at least one ore per column
+                # Ore spawn chance also affected by abundance
+                base_ore_chance = 0.8 * self.ore_abundance
+                if ore_chance < base_ore_chance:  # Adjusted ore spawn chance
                     # Ore can spawn anywhere in the deep stone layer (200 blocks deep!)
                     min_ore_y = surface_y + 5
                     max_ore_y = bedrock_y - 1  # Almost to bedrock
