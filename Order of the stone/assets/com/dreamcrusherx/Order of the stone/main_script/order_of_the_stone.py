@@ -738,10 +738,16 @@ pygame.init()
 background_music = None
 music_playing = False
 music_volume = 0.3  # 30% volume
+music_enabled = True  # Music on by default
 
 def load_background_music():
-    """Load and start playing background music"""
-    global background_music, music_playing
+    """Load and start playing background music (only if music is enabled)"""
+    global background_music, music_playing, music_enabled
+    
+    # Check if music is enabled
+    if not music_enabled:
+        print("🔇 Music is disabled - not playing")
+        return False
     
     try:
         # Use PyInstaller-compatible path resolution
@@ -785,6 +791,71 @@ def set_music_volume(volume):
         print(f"🔊 Music volume set to {music_volume}")
     except Exception as e:
         print(f"❌ Error setting music volume: {e}")
+
+def toggle_music():
+    """Toggle music on/off"""
+    global music_enabled, music_playing
+    
+    music_enabled = not music_enabled
+    
+    if music_enabled:
+        # Turn music ON
+        print("🎵 Music enabled - starting playback")
+        if not music_playing:
+            load_background_music()
+    else:
+        # Turn music OFF
+        print("🔇 Music disabled - stopping playback")
+        stop_background_music()
+    
+    # Save the preference
+    save_music_preference()
+
+def save_music_preference():
+    """Save music preference to file"""
+    try:
+        settings_file = os.path.join("save_data", "settings.json")
+        settings = {}
+        
+        # Load existing settings if they exist
+        if os.path.exists(settings_file):
+            try:
+                with open(settings_file, 'r') as f:
+                    settings = json.load(f)
+            except:
+                pass
+        
+        # Update music setting
+        settings["music_enabled"] = music_enabled
+        
+        # Save settings
+        os.makedirs("save_data", exist_ok=True)
+        with open(settings_file, 'w') as f:
+            json.dump(settings, f, indent=2)
+        
+        print(f"💾 Music preference saved: {'On' if music_enabled else 'Off'}")
+    except Exception as e:
+        print(f"❌ Error saving music preference: {e}")
+
+def load_music_preference():
+    """Load music preference from file"""
+    global music_enabled
+    
+    try:
+        settings_file = os.path.join("save_data", "settings.json")
+        if os.path.exists(settings_file):
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+            
+            music_enabled = settings.get("music_enabled", True)
+            print(f"📂 Music preference loaded: {'On' if music_enabled else 'Off'}")
+            return True
+    except Exception as e:
+        print(f"❌ Error loading music preference: {e}")
+    
+    # Default to on
+    music_enabled = True
+    return False
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 TILE_SIZE = 32
@@ -896,7 +967,10 @@ def apply_display_mode():
 
 apply_display_mode()
 
-# Initialize background music after screen is created
+# Load music preference from saved settings
+load_music_preference()
+
+# Initialize background music after screen is created (only if enabled)
 load_background_music()
 
 update_chest_ui_geometry()
@@ -7639,18 +7713,19 @@ def draw_about():
     back_btn = button_states.get("back")
 
 def draw_options():
-    """Options page: toggle fullscreen, FPS limiter, website, or go back to title."""
-    global back_btn, fullscreen_btn, fps_btn, website_btn
+    """Options page: toggle fullscreen, FPS limiter, music, website, or go back to title."""
+    global back_btn, fullscreen_btn, fps_btn, website_btn, music_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
     
     # Draw modern options screen
-    button_states = modern_ui.draw_options_screen(mouse_pos, FULLSCREEN, fps_limit)
+    button_states = modern_ui.draw_options_screen(mouse_pos, FULLSCREEN, fps_limit, music_enabled)
     
     # Store button references for click handling
     fullscreen_btn = button_states.get("fullscreen")
     fps_btn = button_states.get("fps")
+    music_btn = button_states.get("music")
     website_btn = button_states.get("website")
     back_btn = button_states.get("back")
 
@@ -16538,6 +16613,10 @@ while running:
                         fps_limit = 0  # Unlimited (0 means no limit)
                     else:
                         fps_limit = 30  # Back to 30
+                elif music_btn and music_btn.collidepoint(event.pos):
+                    # Toggle music on/off
+                    toggle_music()
+                    print(f"🎵 Music toggled: {'On' if music_enabled else 'Off'}")
                 elif website_btn.collidepoint(event.pos):
                     # Open website in default browser
                     import webbrowser

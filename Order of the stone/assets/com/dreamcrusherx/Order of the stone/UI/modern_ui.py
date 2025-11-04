@@ -483,7 +483,7 @@ class ModernUI:
         # Clamp scroll offset (allow scrolling down far enough to see all content)
         self.about_scroll_offset = max(0, min(300, self.about_scroll_offset))  # Max 300px scroll
 
-    def draw_options_screen(self, mouse_pos: tuple, fullscreen: bool = False, fps_limit: int = 60) -> Dict[str, pygame.Rect]:
+    def draw_options_screen(self, mouse_pos: tuple, fullscreen: bool = False, fps_limit: int = 60, music_enabled: bool = True) -> Dict[str, pygame.Rect]:
         """Draw beautiful options screen"""
         # Enhanced background
         self.draw_gradient_background()
@@ -501,22 +501,27 @@ class ModernUI:
         # Options
         fullscreen_text = f"🖥️ Fullscreen: {'On' if fullscreen else 'Off'}"
         fps_text = f"🎯 FPS Limit: {fps_limit if fps_limit > 0 else 'Unlimited'}"
+        music_text = f"🎵 Music: {'On' if music_enabled else 'Off'}"
         
         fullscreen_surface = self.font.render(fullscreen_text, True, self.colors["text"])
         fps_surface = self.font.render(fps_text, True, self.colors["text"])
+        music_surface = self.font.render(music_text, True, self.colors["text"])
         
         self.screen.blit(fullscreen_surface, (100, 150))
         self.screen.blit(fps_surface, (100, 200))
+        self.screen.blit(music_surface, (100, 250))
         
         # Buttons
         fullscreen_btn = self.draw_modern_button("Toggle Fullscreen", 300, mouse_pos, self.colors["info"])
         fps_btn = self.draw_modern_button("Change FPS", 400, mouse_pos, self.colors["warning"])
-        website_btn = self.draw_modern_button("🌐 Visit Website", 500, mouse_pos, self.colors["accent"])
-        back_btn = self.draw_modern_button("⬅️ Back to Title", 600, mouse_pos, self.colors["button"])
+        music_btn = self.draw_modern_button("Toggle Music", 450, mouse_pos, self.colors["success"])
+        website_btn = self.draw_modern_button("🌐 Visit Website", 550, mouse_pos, self.colors["accent"])
+        back_btn = self.draw_modern_button("⬅️ Back to Title", 650, mouse_pos, self.colors["button"])
         
         return {
             "fullscreen": fullscreen_btn,
             "fps": fps_btn,
+            "music": music_btn,
             "website": website_btn,
             "back": back_btn
         }
