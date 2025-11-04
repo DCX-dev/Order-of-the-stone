@@ -28,9 +28,9 @@ class WorldGenerator:
         self.freq3_mult = self.rng.uniform(0.2, 0.4)     # Small variations (wider range)
         self.freq4_mult = self.rng.uniform(0.3, 0.7)     # Fine details (wider range)
         
-        # TEMPORARY: Disable oceans completely until spawn system is perfected
-        # Ocean placement - DISABLED for now
-        self.ocean_side = "none"  # No oceans in any world for now
+        # Random ocean placement - make oceans VERY RARE (80% chance of no ocean)
+        ocean_options = ["left", "right", "center", "none", "none", "none", "none", "none"]
+        self.ocean_side = self.rng.choice(ocean_options)
         
         # Random biome characteristics for MAXIMUM VARIETY - each world is unique!
         self.tree_density = self.rng.uniform(0.3, 0.9)  # How many tree clusters (30-90% - HUGE range)
@@ -706,21 +706,24 @@ class WorldGenerator:
         best_score = -1
         
         for spawn_x, y, grass_count in all_grass_locations:
-            # Calculate distance to nearest water - VERY STRICT check
+            # Calculate distance to nearest water - EXTREMELY STRICT check
             min_water_distance = 999
             has_water_nearby = False
-            for check_x in range(spawn_x - 25, spawn_x + 26):  # Check wider area
-                for check_y in range(y - 8, y + 9):
+            # Check a MASSIVE area around spawn (50 blocks in each direction!)
+            for check_x in range(spawn_x - 50, spawn_x + 51):
+                for check_y in range(y - 10, y + 11):
                     check_block = blocks.get(f"{check_x},{check_y}")
                     if check_block == "water":
                         distance = abs(check_x - spawn_x) + abs(check_y - y)
                         if distance < min_water_distance:
                             min_water_distance = distance
-                        if distance < 20:  # Water within 20 blocks = too close!
-                            has_water_nearby = True
+                        has_water_nearby = True
+                        break
+                if has_water_nearby:
+                    break
             
-            # Skip locations with water close (must be at least 20 blocks away)
-            if has_water_nearby or min_water_distance < 20:
+            # REJECT any location with water within 50 blocks!
+            if has_water_nearby or min_water_distance < 50:
                 continue
             
             # Score = distance from water + landmass size
