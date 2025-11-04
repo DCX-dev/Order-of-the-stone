@@ -16,7 +16,19 @@ class WorldGenerator:
         self.rng = random.Random(seed)
         self.seed = seed
         
+        # RANDOMIZE terrain parameters for UNIQUE worlds!
+        self.terrain_freq1 = self.rng.uniform(0.02, 0.08)
+        self.terrain_freq2 = self.rng.uniform(0.08, 0.15)
+        self.terrain_freq3 = self.rng.uniform(0.15, 0.25)
+        self.terrain_amplitude = self.rng.uniform(8, 15)  # Height variation
+        self.base_height = self.rng.randint(110, 120)
+        # Random offsets make the same frequencies look completely different!
+        self.offset1 = self.rng.uniform(0, 1000)
+        self.offset2 = self.rng.uniform(0, 1000)
+        self.offset3 = self.rng.uniform(0, 1000)
+        
         print(f"🌍 NEW World Generator - Seed: {seed}")
+        print(f"   Terrain: amp={self.terrain_amplitude:.1f}, base={self.base_height}, offsets=({self.offset1:.0f},{self.offset2:.0f},{self.offset3:.0f})")
     
     def generate_world(self, world_width: int = 300, world_height: int = 200) -> Dict:
         """Generate a complete Minecraft-style world"""
@@ -80,19 +92,17 @@ class WorldGenerator:
         return world_data
     
     def _generate_terrain(self, blocks: Dict[str, str], world_width: int):
-        """Generate basic terrain with variety"""
-        # Terrain parameters
-        base_height = 115
+        """Generate basic terrain with variety - RANDOMIZED per world!"""
         
         for x in range(-world_width//2, world_width//2):
-            # Create varied terrain using sine waves
+            # Create varied terrain using RANDOMIZED sine waves with offsets
             height_var = int(
-                10 * math.sin(x * 0.05) +
-                5 * math.sin(x * 0.1) +
-                3 * math.sin(x * 0.2)
+                self.terrain_amplitude * math.sin((x + self.offset1) * self.terrain_freq1) +
+                (self.terrain_amplitude * 0.5) * math.sin((x + self.offset2) * self.terrain_freq2) +
+                (self.terrain_amplitude * 0.3) * math.sin((x + self.offset3) * self.terrain_freq3)
             )
-            surface_y = base_height + height_var
-            surface_y = max(105, min(125, surface_y))
+            surface_y = self.base_height + height_var
+            surface_y = max(self.base_height - 15, min(self.base_height + 15, surface_y))
             
             # Bedrock at bottom
             blocks[f"{x},{surface_y + 200}"] = "bedrock"
@@ -130,12 +140,19 @@ class WorldGenerator:
             beach_end = ocean_start
             beach_start = ocean_start - beach_width
         
-        # Generate ocean
+        # Generate ocean - COMPLETELY REPLACE any existing terrain
         for x in range(ocean_start, ocean_end):
+            # REMOVE ALL blocks above ocean surface (clear the entire column from sky to water!)
+            # This prevents land chunks from sitting on top of ocean
+            for clear_y in range(50, water_surface):  # Clear from sky (Y=50) down to water surface
+                key = f"{x},{clear_y}"
+                if key in blocks:
+                    del blocks[key]
+            
             # Ocean surface (same level as land - VISIBLE!)
             blocks[f"{x},{water_surface}"] = "water"
             
-            # Water going DOWN to ocean floor
+            # Water going DOWN to ocean floor (Y increases = going down)
             for y in range(water_surface + 1, ocean_floor):
                 blocks[f"{x},{y}"] = "water"
             
@@ -153,14 +170,19 @@ class WorldGenerator:
         
         # Generate beach (smooth transition from land to ocean)
         for x in range(beach_start, beach_end):
-            progress = abs(x - beach_start) / beach_width
-            # Beach slopes from land (115) DOWN to ocean surface (115) - stays flat at surface!
-            beach_y = 115  # Beach stays at ground level (visible!)
+            # REMOVE ALL blocks above beach (clear from sky down!)
+            for clear_y in range(50, water_surface):  # Clear from sky to beach level
+                key = f"{x},{clear_y}"
+                if key in blocks:
+                    del blocks[key]
+            
+            # Beach at ground level (visible!)
+            beach_y = water_surface  # Same level as ocean surface
             
             # Sand surface
             blocks[f"{x},{beach_y}"] = "sand"
             
-            # Sand going DOWN (higher Y)
+            # Sand going DOWN (Y increases = down)
             for y in range(beach_y + 1, beach_y + 4):
                 blocks[f"{x},{y}"] = "sand"
             
