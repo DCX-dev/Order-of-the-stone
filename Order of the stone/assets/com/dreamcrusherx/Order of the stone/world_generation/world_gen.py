@@ -30,7 +30,7 @@ class WorldGenerator:
         print(f"🌍 NEW World Generator - Seed: {seed}")
         print(f"   Terrain: amp={self.terrain_amplitude:.1f}, base={self.base_height}, offsets=({self.offset1:.0f},{self.offset2:.0f},{self.offset3:.0f})")
     
-    def generate_world(self, world_width: int = 300, world_height: int = 200) -> Dict:
+    def generate_world(self, world_width: int = 400, world_height: int = 200) -> Dict:
         """Generate a complete Minecraft-style world"""
         print("🚀 Generating brand new world...")
         
@@ -126,8 +126,8 @@ class WorldGenerator:
         # Ocean goes DOWN from there (higher Y values = deeper)
         water_surface = 115  # Ocean surface at GROUND LEVEL (visible!)
         ocean_floor = 125    # Ocean floor 10 blocks DOWN (below water surface)
-        ocean_width = 100
-        beach_width = 40
+        ocean_width = 60     # SMALLER ocean (60 blocks instead of 100) - keeps it at edge
+        beach_width = 30     # SMALLER beach (30 blocks instead of 40)
         
         if side == "left":
             ocean_start = -world_width//2
@@ -319,7 +319,7 @@ class WorldGenerator:
         print(f"   🏰 Generated {fortress_count} fortresses")
 
 
-def generate_world(seed: str = None, world_width: int = 300) -> Dict:
+def generate_world(seed: str = None, world_width: int = 400) -> Dict:
     """
     Generate a new world
     
