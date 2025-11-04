@@ -76,11 +76,10 @@ class WorldGenerator:
         print("🏰 Adding fortresses...")
         self._add_fortresses(blocks, world_width)
         
-        # Step 7: Add animals near spawn
-        print("🐄 Adding animals...")
-        self._add_animals(world_data["entities"], spawn_x, spawn_y, blocks)
+        # Note: Animals (cows, slimes) will be spawned by the main game
+        # because they need texture references not available here
         
-        print(f"✅ World complete! {len(blocks)} blocks, {len(world_data['entities'])} entities")
+        print(f"✅ World complete! {len(blocks)} blocks generated")
         return world_data
     
     def _generate_terrain(self, blocks: Dict[str, str], world_width: int):
@@ -318,53 +317,6 @@ class WorldGenerator:
                         fortress_count += 1
         
         print(f"   🏰 Generated {fortress_count} fortresses")
-    
-    def _add_animals(self, entities: List, spawn_x: int, spawn_y: int, blocks: Dict):
-        """Add cows and slimes near spawn with proper entity data"""
-        # Add 3-4 cows
-        cow_count = self.rng.randint(3, 4)
-        for i in range(cow_count):
-            # Place near spawn but not too close
-            cow_x = spawn_x + self.rng.randint(-30, 30)
-            cow_y = spawn_y + self.rng.randint(-5, 5)
-            
-            # Make sure on ground
-            for y in range(cow_y, cow_y + 20):
-                if blocks.get(f"{int(cow_x)},{y}") in ["grass", "dirt"]:
-                    entities.append({
-                        "type": "cow",
-                        "x": float(cow_x),
-                        "y": float(y - 2),
-                        "hp": 10,
-                        "cooldown": 0,
-                        "direction": 1
-                    })
-                    break
-        
-        # Add 3-4 slimes with ALL required fields
-        slime_count = self.rng.randint(3, 4)
-        for i in range(slime_count):
-            slime_x = spawn_x + self.rng.randint(-40, 40)
-            slime_y = spawn_y + self.rng.randint(-5, 5)
-            
-            # Make sure on ground
-            for y in range(slime_y, slime_y + 20):
-                if blocks.get(f"{int(slime_x)},{y}") in ["grass", "dirt"]:
-                    entities.append({
-                        "type": "slime",
-                        "x": float(slime_x),
-                        "y": float(y - 2),
-                        "hp": 3,
-                        "cooldown": 0,
-                        "aggressive": False,
-                        "vel_y": 0,
-                        "on_ground": True,
-                        "jump_cooldown": 0,
-                        "squish_amount": 0
-                    })
-                    break
-        
-        print(f"   🐄 Added {cow_count} cows and {slime_count} slimes")
 
 
 def generate_world(seed: str = None, world_width: int = 300) -> Dict:
