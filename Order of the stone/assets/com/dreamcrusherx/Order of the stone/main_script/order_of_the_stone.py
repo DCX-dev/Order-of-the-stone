@@ -2852,143 +2852,31 @@ def fix_player_spawn_position():
     """Ensure player spawns on the surface, not underground, or at bed spawn if available"""
     global player
     
-    print(f"🏠 Checking player spawn position at ({player['x']:.1f}, {player['y']:.1f})")
+    print(f"🏠 Player spawn from world generator: ({player['x']:.1f}, {player['y']:.1f})")
     
     # Check if player has a bed spawn point set
     if player.get("has_bed_spawn", False):
         bed_x = player["spawn_x"]
         bed_y = player["spawn_y"]
         print(f"🏠 Using bed spawn point at ({bed_x}, {bed_y})")
-        
-        # Set player position to bed spawn
         player["x"] = bed_x
         player["y"] = bed_y
         return
     
-    # NEW WORLD GENERATION: The world generator (world_gen.py) already found the BEST spawn!
-    # Just verify it and use it - DON'T search elsewhere unless absolutely necessary
+    # TRUST THE WORLD GENERATOR COMPLETELY!
+    # It already found the perfect spawn in the center, far from oceans
+    # Just set the velocity and we're done
+    print(f"✅ Using world generator spawn - TRUSTED!")
+    player["vel_y"] = 0.0
+    player["on_ground"] = False
+    
+    # Debug: check what blocks are at spawn
     spawn_x = int(player["x"])
     spawn_y = int(player["y"])
-    
-    print(f"🌍 World generator chose spawn at ({spawn_x}, {spawn_y})")
-    
-    # Check blocks at current spawn position
     head_block = get_block(spawn_x, spawn_y)
     feet_block = get_block(spawn_x, spawn_y + 1)
     ground_block = get_block(spawn_x, spawn_y + 2)
-    
-    print(f"   Blocks: head={head_block}, feet={feet_block}, ground={ground_block}")
-    
-    # TRUST the world generator! It found grass farthest from water
-    # Only do a basic safety check
-    if ground_block and ground_block != "water":
-        print(f"✅ World generator spawn is GOOD! Using it.")
-        player["vel_y"] = 0.0
-        player["on_ground"] = False
-        return True
-    
-    print(f"⚠️ World generator spawn has water as ground - searching for grass...")
-    
-    # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location (NEVER in water/ocean)
-    # Search in MULTIPLE X positions around the spawn point, not just spawn_x
-    # This is critical because spawn_x might be in ocean/beach
-    for search_x in range(spawn_x - 50, spawn_x + 51, 5):  # Search nearby X positions
-        for y in range(105, 130):  # Search in the new world generation range (around Y=115)
-            # Check if this position is safe for spawning (no blocks at player position)
-            head_block = get_block(search_x, y)
-            feet_block = get_block(search_x, y + 1)
-            ground_block = get_block(search_x, y + 2)
-            
-            # Player needs 2 blocks of AIR (not water!) above GRASS/DIRT ground
-            # CRITICAL: Check that player is NOT in water or above water
-            if (is_non_solid_block(head_block) and 
-                is_non_solid_block(feet_block) and 
-                head_block not in ["water", "lava"] and  # NOT in water!
-                feet_block not in ["water", "lava"] and  # NOT in water!
-                ground_block and ground_block in ["grass", "dirt"] and  # ONLY spawn on grass/dirt (NOT stone!)
-                ground_block not in ["water", "lava"]):  # NOT on water
-                
-                print(f"   ✓ Found candidate at X={search_x}, Y={y}, ground={ground_block}")
-                
-                # Double-check: verify no water nearby (within 2 blocks)
-                water_nearby = False
-                for check_x in range(search_x - 2, search_x + 3):
-                    for check_y in range(y - 1, y + 4):
-                        if get_block(check_x, check_y) == "water":
-                            water_nearby = True
-                            break
-                    if water_nearby:
-                        break
-                
-                if not water_nearby:
-                    # Found safe spawn location FAR from water
-                    player["x"] = float(search_x)  # UPDATE X position to safe location!
-                    player["y"] = float(y)  # Place player with air above and solid ground below
-                    player["vel_y"] = 0.0
-                    player["on_ground"] = False
-                    print(f"✅ SAFE DRY LAND SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) on {ground_block}, FAR from water")
-                    
-                    # Place starter chest next to player
-                    place_starter_chest(int(player["x"]), y)
-                    
-                    return True
-    
-    # Fallback: search MUCH wider range in X and Y (NEVER in water)
-    print("⚠️ Primary spawn search failed, searching ENTIRE world for grass...")
-    for search_x in range(-100, 101, 3):  # Search wider X range
-        for y in range(50, 150):
-            head_block = get_block(search_x, y)
-            feet_block = get_block(search_x, y + 1)
-            ground_block = get_block(search_x, y + 2)
-            
-            # Same strict checks: NO water allowed, prefer grass
-            if (is_non_solid_block(head_block) and 
-                is_non_solid_block(feet_block) and 
-                head_block not in ["water", "lava"] and  # NOT in water!
-                feet_block not in ["water", "lava"] and  # NOT in water!
-                ground_block and ground_block == "grass"):  # ONLY spawn on grass in fallback
-                
-                player["x"] = float(search_x)  # UPDATE X position!
-                player["y"] = float(y)
-                player["vel_y"] = 0.0
-                player["on_ground"] = False
-                print(f"✅ FALLBACK DRY LAND SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) on {ground_block}")
-                
-                # Place starter chest next to player
-                place_starter_chest(int(player["x"]), y)
-                
-                return True
-    
-    # Emergency: Create a safe GRASS platform if no suitable location found
-    print("❌ NO GRASS FOUND IN ENTIRE WORLD! Creating emergency grass platform...")
-    safe_y = 110
-    emergency_x = 0  # Spawn at center
-    
-    # Create a wider grass platform
-    for dx in range(-5, 6):  # 11 blocks wide
-        # Clear air above
-        for clear_y in range(safe_y - 3, safe_y):
-            world_data[f"{emergency_x + dx},{clear_y}"] = None
-        
-        # Create grass surface
-        world_data[f"{emergency_x + dx},{safe_y}"] = "grass"
-        # Dirt below
-        world_data[f"{emergency_x + dx},{safe_y + 1}"] = "dirt"
-        world_data[f"{emergency_x + dx},{safe_y + 2}"] = "dirt"
-        # Stone foundation
-        for stone_y in range(safe_y + 3, safe_y + 23):
-            world_data[f"{emergency_x + dx},{stone_y}"] = "stone"
-        # Bedrock at bottom
-        world_data[f"{emergency_x + dx},{safe_y + 23}"] = "bedrock"
-    
-    player["x"] = float(emergency_x)
-    player["y"] = float(safe_y - 2)  # 2 blocks above grass surface
-    player["vel_y"] = 0.0
-    player["on_ground"] = False
-    print(f"🛠️ EMERGENCY GRASS PLATFORM: Created at ({player['x']:.1f}, {player['y']:.1f})")
-    
-    # Place starter chest
-    place_starter_chest(emergency_x, safe_y - 2)
+    print(f"   Blocks at spawn: head={head_block}, feet={feet_block}, ground={ground_block}")
     
     return True
 
