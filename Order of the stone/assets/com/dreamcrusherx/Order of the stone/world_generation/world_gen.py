@@ -60,10 +60,13 @@ class WorldGenerator:
         print("⛰️  Generating terrain...")
         self._generate_terrain(blocks, world_width)
         
-        # Step 2: Add oceans on BOTH edges (like Terraria)
-        print("🌊 Adding oceans on both edges...")
-        self._add_ocean(blocks, world_width, "left")
-        self._add_ocean(blocks, world_width, "right")
+        # Step 2: Add oceans on BOTH edges (like Terraria) - RARE (10% chance)
+        if self.rng.random() < 0.1:  # Only 10% chance for oceans
+            print("🌊 Adding oceans on both edges...")
+            self._add_ocean(blocks, world_width, "left")
+            self._add_ocean(blocks, world_width, "right")
+        else:
+            print("🌍 No oceans in this world (rare feature)")
         
         # Step 3: Find safe spawn on large grassland (FAR from water)
         print("🏠 Finding spawn location...")
