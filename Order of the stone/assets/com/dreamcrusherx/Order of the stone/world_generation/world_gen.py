@@ -28,9 +28,9 @@ class WorldGenerator:
         self.freq3_mult = self.rng.uniform(0.2, 0.4)     # Small variations (wider range)
         self.freq4_mult = self.rng.uniform(0.3, 0.7)     # Fine details (wider range)
         
-        # Random ocean placement - make oceans EXTREMELY RARE (90% chance of no ocean)
-        ocean_options = ["left", "right", "center", "none", "none", "none", "none", "none", "none", "none"]
-        self.ocean_side = self.rng.choice(ocean_options)
+        # TEMPORARY: Disable oceans completely until spawn system is perfected
+        # Ocean placement - DISABLED for now
+        self.ocean_side = "none"  # No oceans in any world for now
         
         # Random biome characteristics for MAXIMUM VARIETY - each world is unique!
         self.tree_density = self.rng.uniform(0.3, 0.9)  # How many tree clusters (30-90% - HUGE range)
