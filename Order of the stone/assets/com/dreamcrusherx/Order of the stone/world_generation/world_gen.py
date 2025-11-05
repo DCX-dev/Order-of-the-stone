@@ -60,7 +60,15 @@ class WorldGenerator:
         print("⛰️  Generating terrain...")
         self._generate_terrain(blocks, world_width)
         
-        # Step 2: Find spawn in CENTER first (you start in grassland/forest)
+        # Step 2: Add oceans FIRST (before spawn) - rare, on edges
+        if self.rng.random() < 0.15:  # 15% chance for ocean
+            print("🌊 Adding ocean on far edge...")
+            ocean_side = self.rng.choice(["left", "right"])  # Only ONE ocean
+            self._add_ocean(blocks, world_width, ocean_side)
+        else:
+            print("🌍 No ocean in this world")
+        
+        # Step 3: NOW find spawn (after oceans, so we find grass not beach!)
         print("🏠 Finding spawn location in center...")
         spawn_x, spawn_y = self._find_center_spawn(blocks, world_width)
         world_data["spawn_x"] = spawn_x
@@ -68,21 +76,13 @@ class WorldGenerator:
         world_data["player"]["x"] = float(spawn_x)
         world_data["player"]["y"] = float(spawn_y)
         
-        # Step 3: Add starting forest around spawn (few trees nearby)
+        # Step 4: Add starting forest around spawn (few trees nearby)
         print("🌳 Adding starting forest near spawn...")
         self._add_spawn_forest(blocks, spawn_x, spawn_y)
         
-        # Step 4: Add trees throughout world (more as you explore)
+        # Step 5: Add trees throughout world (more as you explore)
         print("🌳 Adding trees across world...")
         self._add_trees(blocks, world_width, spawn_x)
-        
-        # Step 5: Add oceans FAR from spawn (rare, on edges)
-        if self.rng.random() < 0.15:  # 15% chance for ocean
-            print("🌊 Adding ocean on far edge...")
-            ocean_side = self.rng.choice(["left", "right"])  # Only ONE ocean
-            self._add_ocean(blocks, world_width, ocean_side)
-        else:
-            print("🌍 No ocean in this world")
         
         # Step 6: Add ores (coal/iron shallow, gold/diamonds deep)
         print("⛏️  Adding ores...")
