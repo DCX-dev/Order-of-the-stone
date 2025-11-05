@@ -111,16 +111,18 @@ class WorldGenerator:
             surface_y = self.base_height + height_var
             surface_y = max(self.base_height - 15, min(self.base_height + 15, surface_y))
             
-            # Bedrock at bottom
-            blocks[f"{x},{surface_y + 200}"] = "bedrock"
+            # Bedrock at bottom (fixed depth for all columns)
+            bedrock_y = 315  # Fixed bedrock level for entire world
+            blocks[f"{x},{bedrock_y}"] = "bedrock"
             
-            # Stone layer (deep)
-            for y in range(surface_y + 3, surface_y + 200):
+            # Stone layer - fill from bedrock UP to near surface (no gaps!)
+            # Go from bedrock (315) up to surface+3
+            for y in range(surface_y + 3, bedrock_y):
                 blocks[f"{x},{y}"] = "stone"
             
-            # Dirt layer (2 blocks)
-            for y in range(surface_y + 1, surface_y + 3):
-                blocks[f"{x},{y}"] = "dirt"
+            # Dirt layer (2 blocks below grass)
+            blocks[f"{x},{surface_y + 1}"] = "dirt"
+            blocks[f"{x},{surface_y + 2}"] = "dirt"
             
             # Grass surface
             blocks[f"{x},{surface_y}"] = "grass"
