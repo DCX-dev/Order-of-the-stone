@@ -970,6 +970,9 @@ apply_display_mode()
 # Load music preference from saved settings
 load_music_preference()
 
+# Load achievements from file
+load_achievements()
+
 # Initialize background music after screen is created (only if enabled)
 load_background_music()
 
@@ -5499,6 +5502,7 @@ achievements = {
     "first_sleep": False,    # First time sleeping in bed (25 coins)
     "explorer": False,       # Walk 1000 blocks (100 coins)
     "fortress_finder": False, # Find a fortress (200 coins)
+    "first_fortress": False,  # Discover first fortress (150 coins)
     
     # Building Achievements
     "first_torch": False,    # Place first torch (20 coins)
@@ -5519,6 +5523,51 @@ achievement_progress = {
     "nights_survived": 0,
     "fortresses_found": 0
 }
+
+def save_achievements():
+    """Save achievements to JSON file"""
+    try:
+        achievements_file = os.path.join("save_data", "achievements.json")
+        os.makedirs("save_data", exist_ok=True)
+        
+        data = {
+            "achievements": achievements,
+            "progress": achievement_progress,
+            "last_updated": time.time()
+        }
+        
+        with open(achievements_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        
+        print(f"💾 Achievements saved!")
+    except Exception as e:
+        print(f"❌ Error saving achievements: {e}")
+
+def load_achievements():
+    """Load achievements from JSON file"""
+    global achievements, achievement_progress
+    
+    try:
+        achievements_file = os.path.join("save_data", "achievements.json")
+        if os.path.exists(achievements_file):
+            with open(achievements_file, 'r') as f:
+                data = json.load(f)
+            
+            # Load achievements
+            if "achievements" in data:
+                achievements.update(data["achievements"])
+            
+            # Load progress
+            if "progress" in data:
+                achievement_progress.update(data["progress"])
+            
+            unlocked_count = sum(1 for v in achievements.values() if v)
+            print(f"📂 Achievements loaded - {unlocked_count}/{len(achievements)} unlocked!")
+            return True
+    except Exception as e:
+        print(f"❌ Error loading achievements: {e}")
+    
+    return False
 
 # Achievements screen scrolling and animation
 achievements_scroll_offset = 0
@@ -11046,6 +11095,10 @@ def check_achievement(achievement_name, coin_reward, message):
     
     if not achievements.get(achievement_name, False):
         achievements[achievement_name] = True
+        
+        # SAVE achievements immediately when unlocked!
+        save_achievements()
+        
         if coins_manager:
             coins_manager.add_coins(coin_reward)
         # Enqueue top-right achievement toast
@@ -16254,11 +16307,11 @@ while running:
                     game_state = GameState.WORLD_SELECTION
                     update_pause_state()  # Pause time when leaving title
                     print("🌍 Opening world selection screen!")
-                # elif multiplayer_btn and multiplayer_btn.collidepoint(event.pos):
-                #     # Open multiplayer menu (disabled for now)
-                #     game_state = GameState.MULTIPLAYER
-                #     update_pause_state()
-                #     print("🌐 Opening multiplayer menu!")
+                elif multiplayer_btn and multiplayer_btn.collidepoint(event.pos):
+                    # Open multiplayer menu
+                    game_state = GameState.MULTIPLAYER
+                    update_pause_state()
+                    print("🌐 Opening multiplayer menu!")
                 elif achievements_btn.collidepoint(event.pos):
                     game_state = GameState.ACHIEVEMENTS
                     update_pause_state()  # Pause time when leaving title
