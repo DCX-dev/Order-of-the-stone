@@ -970,9 +970,6 @@ apply_display_mode()
 # Load music preference from saved settings
 load_music_preference()
 
-# Load achievements from file
-load_achievements()
-
 # Initialize background music after screen is created (only if enabled)
 load_background_music()
 
@@ -15606,6 +15603,9 @@ def auto_save_game():
                 print("✅ Auto-save completed")
             else:
                 print("❌ Auto-save failed")
+
+# Load achievements from file (after functions are defined)
+load_achievements()
 
 # Main game loop
 while running:
