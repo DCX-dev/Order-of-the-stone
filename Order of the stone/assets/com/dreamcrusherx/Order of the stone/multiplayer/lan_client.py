@@ -28,12 +28,18 @@ class LANClient:
         self.world_data = None
         self.other_players = {}  # {username: {"position": (x, y), "health": 10, etc}}
         
+        # Game state sync
+        self.game_time = 0
+        self.is_day = True
+        self.weather = "clear"
+        
         # Callbacks for game integration
         self.on_player_joined = None  # Callback(username, position)
         self.on_player_left = None  # Callback(username)
         self.on_player_update = None  # Callback(username, position, health, facing_direction)
         self.on_block_change = None  # Callback(username, x, y, block_type)
         self.on_chat_message = None  # Callback(username, message)
+        self.on_time_sync = None  # Callback(game_time, is_day, weather)
         
         # Receive thread
         self.receive_thread = None
@@ -261,10 +267,22 @@ class LANClient:
             health = message.get("health")
             facing_direction = message.get("facing_direction", 1)
             
+            # Store old position for smooth interpolation
             if username in self.other_players:
+                self.other_players[username]["old_position"] = self.other_players[username]["position"]
                 self.other_players[username]["position"] = position
                 self.other_players[username]["health"] = health
                 self.other_players[username]["facing_direction"] = facing_direction
+                self.other_players[username]["last_update"] = time.time()
+            else:
+                # New player we just learned about
+                self.other_players[username] = {
+                    "position": position,
+                    "old_position": position,
+                    "health": health,
+                    "facing_direction": facing_direction,
+                    "last_update": time.time()
+                }
             
             if self.on_player_update:
                 self.on_player_update(username, position, health, facing_direction)
@@ -286,12 +304,45 @@ class LANClient:
             
             if self.on_chat_message:
                 self.on_chat_message(username, text)
+        
+        elif msg_type == "time_sync":
+            # Server is syncing game time to us
+            self.game_time = message.get("game_time", 0)
+            self.is_day = message.get("is_day", True)
+            self.weather = message.get("weather", "clear")
+            
+            if self.on_time_sync:
+                self.on_time_sync(self.game_time, self.is_day, self.weather)
     
     def is_connected(self) -> bool:
         """Check if client is connected to a server"""
         return self.connected
     
     def get_other_players(self) -> Dict:
-        """Get dictionary of other players"""
-        return self.other_players.copy()
+        """Get dictionary of other players with smooth interpolation"""
+        result = {}
+        current_time = time.time()
+        
+        for username, player_data in self.other_players.items():
+            # Create a copy
+            player_copy = player_data.copy()
+            
+            # Smooth interpolation for position (prevents teleporting)
+            if "old_position" in player_data and "last_update" in player_data:
+                time_since_update = current_time - player_data["last_update"]
+                # Interpolate over 0.1 seconds (100ms)
+                t = min(time_since_update / 0.1, 1.0)
+                
+                old_x, old_y = player_data["old_position"]
+                new_x, new_y = player_data["position"]
+                
+                # Linear interpolation
+                smooth_x = old_x + (new_x - old_x) * t
+                smooth_y = old_y + (new_y - old_y) * t
+                
+                player_copy["position"] = (smooth_x, smooth_y)
+            
+            result[username] = player_copy
+        
+        return result
 

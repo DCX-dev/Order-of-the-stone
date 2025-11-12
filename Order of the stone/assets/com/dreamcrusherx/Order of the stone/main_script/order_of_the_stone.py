@@ -8125,8 +8125,9 @@ def send_multiplayer_updates():
     if not multiplayer_ui:
         return
     
-    # Only send updates every few frames to avoid spam
-    if frame_count % 3 != 0:  # Send 20 times per second instead of 60
+    # Only send updates every 6 frames to avoid spam (10 times per second)
+    # This prevents ghost trails and reduces network traffic
+    if frame_count % 6 != 0:  # Send 10 times per second instead of 60
         return
     
     # Get LAN client (if we're connected as a client)
@@ -8159,6 +8160,46 @@ def send_multiplayer_updates():
             "health": player.get("health", 10),
             "facing_direction": player.get("facing_direction", 1)
         })
+
+def send_time_sync():
+    """Send game time sync to server (if hosting) - called less frequently"""
+    if not multiplayer_ui:
+        return
+    
+    # Only send time sync every 60 frames (once per second at 60fps)
+    if frame_count % 60 != 0:
+        return
+    
+    lan_server = multiplayer_ui.get_lan_server()
+    if lan_server:
+        # Update server's game time (server will broadcast to all clients)
+        lan_server.game_time = time.time() - day_start_time
+        lan_server.is_day = is_day
+        lan_server.weather = "clear"  # Add weather sync when weather system is ready
+
+def on_time_sync_received(game_time, sync_is_day, weather):
+    """Callback when client receives time sync from server"""
+    global is_day, day_start_time, paused_time
+    
+    # If day/night state changed, update it
+    if sync_is_day != is_day:
+        is_day = sync_is_day
+        # Reset day transition timing
+        day_start_time = time.time() - game_time
+        paused_time = 0
+        print(f"🌐 Time synced from server: {'Day' if is_day else 'Night'}")
+
+def setup_multiplayer_callbacks():
+    """Set up callbacks for multiplayer client (if connected)"""
+    if not multiplayer_ui:
+        return
+    
+    lan_client = multiplayer_ui.get_lan_client()
+    if lan_client and lan_client.is_connected():
+        # Set up time sync callback if not already set
+        if lan_client.on_time_sync is None:
+            lan_client.on_time_sync = on_time_sync_received
+            print("🔗 Time sync callback registered")
 
 def draw_multiplayer_players():
     """Draw all other players in multiplayer"""
@@ -8708,6 +8749,12 @@ def draw_world():
     
     # Send position updates in multiplayer
     send_multiplayer_updates()
+    
+    # Send time sync if hosting (less frequently)
+    send_time_sync()
+    
+    # Set up multiplayer callbacks (if not already done)
+    setup_multiplayer_callbacks()
     
     # Draw multiplayer chat if connected
     if is_connected:

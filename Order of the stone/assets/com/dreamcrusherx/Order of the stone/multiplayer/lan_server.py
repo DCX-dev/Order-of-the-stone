@@ -35,6 +35,11 @@ class LANServer:
         self.world_blocks = {}  # Shared block changes
         self.world_data = None
         
+        # Game state (time/weather sync)
+        self.game_time = 0  # Server is the source of truth for time
+        self.is_day = True
+        self.weather = "clear"
+        
         print(f"🌐 LAN Server initialized: {self.server_name}")
     
     def start(self, world_data: Dict) -> bool:
@@ -67,6 +72,10 @@ class LANServer:
             # Start discovery responder (so others can find this server)
             discovery_thread = threading.Thread(target=self._discovery_responder, daemon=True)
             discovery_thread.start()
+            
+            # Start game state sync broadcaster (time/weather)
+            sync_thread = threading.Thread(target=self._broadcast_game_state, daemon=True)
+            sync_thread.start()
             
             print(f"✅ LAN Server started on port {self.port}")
             print(f"🔍 Server discoverable on port {self.discovery_port}")
@@ -264,6 +273,12 @@ class LANServer:
                 "message": chat_text
             })
             print(f"💬 {username}: {chat_text}")
+        
+        elif msg_type == "time_update":
+            # Host is updating the game time (server should sync this)
+            self.game_time = message.get("game_time", 0)
+            self.is_day = message.get("is_day", True)
+            self.weather = message.get("weather", "clear")
     
     def _send_to_client(self, client_socket: socket.socket, message: Dict):
         """Send a message to a specific client"""
@@ -327,4 +342,23 @@ class LANServer:
         """Get list of connected player usernames"""
         with self.player_lock:
             return list(self.players.keys())
+    
+    def _broadcast_game_state(self):
+        """Periodically broadcast game state (time/weather) to all clients"""
+        while self.running:
+            try:
+                # Broadcast game state every second (not every frame!)
+                time.sleep(1.0)
+                
+                # Send time sync to all clients
+                self._broadcast({
+                    "type": "time_sync",
+                    "game_time": self.game_time,
+                    "is_day": self.is_day,
+                    "weather": self.weather
+                })
+                
+            except Exception as e:
+                if self.running:
+                    print(f"⚠️ Error broadcasting game state: {e}")
 
