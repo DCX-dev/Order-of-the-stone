@@ -16779,18 +16779,7 @@ while running:
                 # Handle skin creator clicks
                 handle_skin_creator_click(event.pos)
                 continue
-            elif game_state == GameState.MULTIPLAYER:
-                # Handle multiplayer clicks
-                handle_multiplayer_click(event.pos)
-                continue
-            elif game_state == GameState.MULTIPLAYER:
-                # Handle host server clicks
-                handle_host_server_click(event.pos)
-                continue
-            elif game_state == GameState.MULTIPLAYER:
-                # Handle join server clicks
-                handle_join_server_click(event.pos)
-                continue
+            # Old multiplayer handlers removed - using multiplayer_ui system now
             # World selection states removed - game goes directly to play
             # All world management is now automatic
         elif event.type == pygame.MOUSEMOTION:
