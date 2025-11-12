@@ -188,7 +188,7 @@ class ModernUI:
         # Buttons with enhanced styling - normal size now
         button_states = {}
         button_y = 200  # Nice spacing from top
-        spacing = 70    # Good spacing between buttons
+        spacing = 85    # More spread out spacing between buttons
         
         buttons = [
             ("Play", "play", self.colors["success"]),
