@@ -1,0 +1,31 @@
+{
+  "achievements": {
+    "first_diamond": false,
+    "first_gold": false,
+    "first_iron": false,
+    "first_coal": false,
+    "first_monster_kill": false,
+    "monster_hunter": false,
+    "zombie_slayer": false,
+    "pigeon_hunter": false,
+    "first_carrot": true,
+    "first_sleep": false,
+    "explorer": false,
+    "fortress_finder": false,
+    "first_fortress": true,
+    "first_torch": false,
+    "builder": false,
+    "night_survivor": false,
+    "ultimate_achievement": false
+  },
+  "progress": {
+    "monsters_killed": 0,
+    "zombies_killed": 0,
+    "pigeons_killed": 0,
+    "blocks_walked": 0,
+    "blocks_placed": 0,
+    "nights_survived": 0,
+    "fortresses_found": 0
+  },
+  "last_updated": 1762922483.8139641
+}
