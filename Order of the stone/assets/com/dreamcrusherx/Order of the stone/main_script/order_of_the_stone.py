@@ -5744,7 +5744,7 @@ def validate_world_integrity():
     print(f"✅ World validation complete: {issues_found} issues found, {fixes_applied} fixes applied")
     return issues_found == 0
 
-def set_block(x, y, block_type):
+def set_block(x, y, block_type, sync_multiplayer=False):
     """Set block at coordinates with validation and error handling"""
     try:
         # Convert coordinates to integers if they're floats
@@ -5763,6 +5763,11 @@ def set_block(x, y, block_type):
         
         # Set the block
         world_data[f"{x},{y}"] = block_type
+        
+        # MULTIPLAYER: Sync block placement to other players
+        if sync_multiplayer:
+            sync_block_change(x, y, block_type)
+        
         return True
         
     except Exception as e:
@@ -8189,17 +8194,58 @@ def on_time_sync_received(game_time, sync_is_day, weather):
         paused_time = 0
         print(f"🌐 Time synced from server: {'Day' if is_day else 'Night'}")
 
+def on_block_change_received(username, x, y, block_type):
+    """Callback when another player breaks/places a block"""
+    global world_data
+    
+    # Update our local world data with the block change
+    block_key = f"{x},{y}"
+    if block_type is None or block_type == "air":
+        # Block was broken
+        if block_key in world_data:
+            del world_data[block_key]
+            print(f"🔨 {username} broke block at ({x}, {y})")
+    else:
+        # Block was placed
+        world_data[block_key] = block_type
+        print(f"🧱 {username} placed {block_type} at ({x}, {y})")
+
+def sync_block_change(x, y, block_type):
+    """Send block change to multiplayer server/clients"""
+    if not multiplayer_ui:
+        return
+    
+    # Send to server if we're a client
+    lan_client = multiplayer_ui.get_lan_client()
+    if lan_client and lan_client.is_connected():
+        lan_client.send_block_change(x, y, block_type)
+    
+    # Broadcast to all clients if we're the server
+    lan_server = multiplayer_ui.get_lan_server()
+    if lan_server:
+        host_username = get_current_username() or "Host"
+        lan_server._broadcast({
+            "type": "block_change",
+            "username": host_username,
+            "x": x,
+            "y": y,
+            "block_type": block_type
+        })
+
 def setup_multiplayer_callbacks():
-    """Set up callbacks for multiplayer client (if connected)"""
+    """Set up callbacks for multiplayer client (if connected) - CALL ONLY ONCE!"""
     if not multiplayer_ui:
         return
     
     lan_client = multiplayer_ui.get_lan_client()
     if lan_client and lan_client.is_connected():
-        # Set up time sync callback if not already set
-        if lan_client.on_time_sync is None:
-            lan_client.on_time_sync = on_time_sync_received
-            print("🔗 Time sync callback registered")
+        # Set up time sync callback
+        lan_client.on_time_sync = on_time_sync_received
+        
+        # Set up block change callback for syncing broken/placed blocks
+        lan_client.on_block_change = on_block_change_received
+        
+        print("🔗 Multiplayer callbacks registered")
 
 def draw_multiplayer_players():
     """Draw all other players in multiplayer"""
@@ -8753,9 +8799,6 @@ def draw_world():
     # Send time sync if hosting (less frequently)
     send_time_sync()
     
-    # Set up multiplayer callbacks (if not already done)
-    setup_multiplayer_callbacks()
-    
     # Draw multiplayer chat if connected
     if is_connected:
         draw_multiplayer_chat()
@@ -9171,6 +9214,9 @@ def break_block(mx, my):
         if block_key in world_data:
             world_data.pop(block_key, None)
         
+        # MULTIPLAYER: Sync block break to other players
+        sync_block_change(bx, by, None)
+        
         # Check for mining achievements
         if block == "diamond":
             check_achievement("first_diamond", 50, "Mined first diamond!")
@@ -9206,6 +9252,9 @@ def break_block(mx, my):
         # Verify removal
         if block_key in world_data:
             world_data.pop(block_key, None)
+        
+        # MULTIPLAYER: Sync block break to other players
+        sync_block_change(bx, by, None)
         
         # Clear carve count for this log (if it was being carved)
         if "log_carve_counts" in player and block_key in player["log_carve_counts"]:
@@ -9255,6 +9304,10 @@ def break_block(mx, my):
         # Remove chest from world
         if block_key in world_data:
             del world_data[block_key]
+        
+        # MULTIPLAYER: Sync block break to other players
+        sync_block_change(bx, by, None)
+        
         if block_key in world_data:
             world_data.pop(block_key, None)
         
@@ -9283,10 +9336,16 @@ def break_block(mx, my):
             del crops[crop_key]
             if block_key in world_data:
                 del world_data[block_key]
+            
+            # MULTIPLAYER: Sync block break to other players
+            sync_block_change(bx, by, None)
         else:
             # No crop data, just remove block
             if block_key in world_data:
                 del world_data[block_key]
+            
+            # MULTIPLAYER: Sync block break to other players
+            sync_block_change(bx, by, None)
         
         return True
     
@@ -9318,6 +9377,9 @@ def break_block(mx, my):
             del world_data[block_key]
         if block_key in world_data:
             world_data.pop(block_key, None)
+        
+        # MULTIPLAYER: Sync block break to other players
+        sync_block_change(bx, by, None)
         
         # Check for sand blocks above that need to fall
         check_sand_falling(bx, by)
@@ -16729,6 +16791,9 @@ while running:
                                 if lan_client.connect_to_server(server_ip, server_port):
                                     # Store client reference
                                     multiplayer_ui.set_lan_client(lan_client)
+                                    
+                                    # Set up multiplayer callbacks ONCE after connecting
+                                    setup_multiplayer_callbacks()
                                     
                                     # Wait a moment for world data
                                     import time
