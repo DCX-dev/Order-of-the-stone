@@ -192,7 +192,7 @@ class ModernUI:
         
         buttons = [
             ("Play", "play", self.colors["success"]),
-            # ("Multiplayer", "multiplayer", (100, 100, 255)),  # Disabled for now - will add back later
+            ("Multiplayer", "multiplayer", (100, 100, 255)),
             ("Achievements", "achievements", self.colors["accent"]),
             ("Username", "username", self.colors["info"]),
             ("Controls", "controls", self.colors["button"]),

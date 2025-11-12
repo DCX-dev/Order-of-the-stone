@@ -5450,6 +5450,9 @@ controls_btn = None
 about_btn = None
 options_btn = None
 quit_btn = None
+multiplayer_btn = None
+achievements_btn = None
+credits_btn = None
 resume_btn = None
 inventory_close_button = None
 backpack_close_button = None
@@ -14715,7 +14718,7 @@ def update_loading_progress():
         game_state = GameState.TITLE
 
 def draw_title_screen():
-    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, achievements_btn
+    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, achievements_btn, multiplayer_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14726,7 +14729,7 @@ def draw_title_screen():
         
         # Store button references for click handling
         play_btn = button_states.get("play")
-        # multiplayer_btn = button_states.get("multiplayer")  # Disabled for now
+        multiplayer_btn = button_states.get("multiplayer")  # Re-enabled!
         achievements_btn = button_states.get("achievements")
         username_btn = button_states.get("username")
         controls_btn = button_states.get("controls")
