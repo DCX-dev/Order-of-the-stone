@@ -47,8 +47,8 @@ class ModernUI:
         }
         
         # Button dimensions
-        self.button_width = 280
-        self.button_height = 45  # Smaller buttons to fit more on screen
+        self.button_width = 300
+        self.button_height = 60  # Normal size - multiplayer removed so more space
         self.button_spacing = 20
         
         # Animation state
@@ -185,14 +185,14 @@ class ModernUI:
         # Draw the splash text
         self.screen.blit(rotated_splash, (splash_x, splash_y))
         
-        # Buttons with enhanced styling - SMALLER and closer together to fit all
+        # Buttons with enhanced styling - normal size now
         button_states = {}
-        button_y = 180  # Start higher
-        spacing = 50    # Closer spacing (was 80)
+        button_y = 200  # Nice spacing from top
+        spacing = 70    # Good spacing between buttons
         
         buttons = [
             ("Play", "play", self.colors["success"]),
-            ("Multiplayer", "multiplayer", (100, 100, 255)),
+            # Multiplayer removed - causing performance issues
             ("Achievements", "achievements", self.colors["accent"]),
             ("Username", "username", self.colors["info"]),
             ("Controls", "controls", self.colors["button"]),

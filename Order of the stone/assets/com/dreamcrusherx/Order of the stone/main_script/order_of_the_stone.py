@@ -436,7 +436,7 @@ class StateManager:
         """Check if state transition is valid"""
                 # Define valid transitions
         valid_transitions = {
-            GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.MULTIPLAYER, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION, GameState.CREDITS],
+            GameState.TITLE: [GameState.OPTIONS, GameState.CONTROLS, GameState.ABOUT, GameState.USERNAME_CREATE, GameState.WORLD_SELECTION, GameState.CREDITS],
             GameState.WORLD_SELECTION: [GameState.TITLE, GameState.WORLD_NAMING, GameState.WORLD_GENERATION, GameState.USERNAME_REQUIRED],
             GameState.WORLD_NAMING: [GameState.WORLD_SELECTION, GameState.WORLD_GENERATION],
             GameState.WORLD_GENERATION: [GameState.GAME, GameState.TITLE],
@@ -15651,16 +15651,10 @@ else:
     world_system = None
     world_ui = None
 
-# Initialize multiplayer UI
-try:
-    from ui.multiplayer_ui import MultiplayerUI
-    multiplayer_ui = MultiplayerUI(SCREEN_WIDTH, SCREEN_HEIGHT)
-    multiplayer_ui.set_fonts(font, small_font, title_font)
-    print("✅ Multiplayer UI initialized")
-except Exception as e:
-    print(f"⚠️ Warning: Multiplayer UI not available: {e}")
-    MultiplayerUI = None
-    multiplayer_ui = None
+# Multiplayer disabled - removed due to performance and sync issues
+multiplayer_ui = None
+MultiplayerUI = None
+print("ℹ️ Multiplayer disabled")
 
 # Game state variables
 game_state = GameState.STUDIO_LOADING  # Start with studio loading screen
