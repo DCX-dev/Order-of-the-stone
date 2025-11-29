@@ -207,14 +207,37 @@ class ModernUI:
             btn_rect = self.draw_modern_button(text, y_pos, mouse_pos, color)
             button_states[action] = btn_rect
         
+        # Dedicated "More Games" button anchored to the lower-right corner
+        corner_size = 110
+        corner_padding = 25
+        footer_baseline = self.screen.get_height() - 30
+        vertical_gap = 20  # Space between button and footer text
+        more_games_rect = pygame.Rect(
+            self.screen.get_width() - corner_size - corner_padding,
+            footer_baseline - corner_size - vertical_gap,
+            corner_size,
+            corner_size
+        )
+        self.draw_square_corner_button(
+            more_games_rect,
+            mouse_pos,
+            self.colors["info"],
+            ["More", "Games"]
+        )
+        button_states["more_games"] = more_games_rect
+        
         # Version info
         version_text = self.small_font.render("v1.3.1 Beta - Modern UI Edition", True, self.colors["text_dim"])
         self.screen.blit(version_text, (10, self.screen.get_height() - 30))
         
-        # Copyright text - Bottom right corner
-        copyright_bottom_text = self.small_font.render("Copyright © 2025 Team Banana Labs Studios. All rights reserved.", True, self.colors["text_dim"])
+        # Copyright text - stick to the very bottom-right
+        copyright_bottom_text = self.small_font.render(
+            "Copyright © 2025 Team Banana Labs Studios. All rights reserved.",
+            True,
+            self.colors["text_dim"]
+        )
         copyright_bottom_x = self.screen.get_width() - copyright_bottom_text.get_width() - 10
-        copyright_bottom_y = self.screen.get_height() - 30
+        copyright_bottom_y = footer_baseline
         self.screen.blit(copyright_bottom_text, (copyright_bottom_x, copyright_bottom_y))
         
         return button_states
@@ -264,6 +287,55 @@ class ModernUI:
         self.screen.blit(text_surface, (text_x, text_y))
         
         return btn_rect
+    
+    def draw_square_corner_button(
+        self,
+        rect: pygame.Rect,
+        mouse_pos: tuple,
+        base_color: tuple,
+        text_lines: List[str]
+    ) -> pygame.Rect:
+        """Draw a square-styled call-to-action button (e.g., More Games)"""
+        is_hovered = rect.collidepoint(mouse_pos)
+        if is_hovered:
+            color = tuple(min(255, c + 35) for c in base_color)
+            glow_color = tuple(min(255, c + 55) for c in base_color)
+            border_color = self.colors["text"]
+        else:
+            color = base_color
+            glow_color = base_color
+            border_color = self.colors["text_dim"]
+        
+        # Glow
+        glow_rect = pygame.Rect(rect.x - 4, rect.y - 4, rect.width + 8, rect.height + 8)
+        pygame.draw.rect(self.screen, glow_color, glow_rect, border_radius=20)
+        
+        # Button body
+        pygame.draw.rect(self.screen, color, rect, border_radius=18)
+        pygame.draw.rect(self.screen, border_color, rect, 3, border_radius=18)
+        
+        # Highlight
+        highlight_rect = pygame.Rect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height // 2)
+        highlight_color = tuple(min(255, int(c * 1.4)) for c in color)
+        pygame.draw.rect(self.screen, highlight_color, highlight_rect, border_radius=14)
+        
+        # Text lines stacked vertically
+        line_surfaces = [self.small_font.render(line, True, self.colors["text"]) for line in text_lines]
+        total_text_height = sum(surface.get_height() for surface in line_surfaces)
+        total_text_height += 4 * (len(line_surfaces) - 1) if len(line_surfaces) > 1 else 0
+        current_y = rect.y + (rect.height - total_text_height) // 2
+        for surface in line_surfaces:
+            text_x = rect.x + (rect.width - surface.get_width()) // 2
+            self.screen.blit(surface, (text_x, current_y))
+            current_y += surface.get_height() + 4
+        
+        # Decorative arrow in the corner
+        arrow_surface = self.small_font.render("↗", True, self.colors["text"])
+        arrow_x = rect.x + rect.width - arrow_surface.get_width() - 10
+        arrow_y = rect.y + 10
+        self.screen.blit(arrow_surface, (arrow_x, arrow_y))
+        
+        return rect
     
     def draw_pause_menu(self, mouse_pos: tuple) -> Dict[str, pygame.Rect]:
         """Draw beautiful pause menu"""
@@ -445,6 +517,10 @@ class ModernUI:
             "  3 Oak Planks + 2 Leaves → Bed",
             "  5 Oak Planks → 3 Ladders",
             "  1 Coal + 1 Oak Plank → 4 Torches",
+            "  4 Oak Planks → Chair",
+            "  6 Oak Planks → Table",
+            "  8 Oak Planks → Wagon",
+            "  3 Leaves + 2 Oak Planks → Saddle",
             "",
             "🍞 FOOD:",
             "  3 Wheat → Bread",

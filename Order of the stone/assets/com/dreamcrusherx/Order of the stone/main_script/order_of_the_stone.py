@@ -1247,6 +1247,37 @@ def make_torch_texture(size):
     
     return surf
 
+def make_saddle_texture(size):
+    """Generate a saddle item texture"""
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    
+    # Leather color (brown)
+    leather_color = (139, 69, 19)
+    leather_dark = (101, 67, 33)
+    
+    # Draw saddle shape (U-shape)
+    rect_w = int(size * 0.6)
+    rect_h = int(size * 0.5)
+    rect_x = (size - rect_w) // 2
+    rect_y = (size - rect_h) // 2 + 2
+    
+    # Main seat
+    pygame.draw.rect(surf, leather_color, (rect_x, rect_y, rect_w, rect_h), border_radius=5)
+    pygame.draw.rect(surf, leather_dark, (rect_x, rect_y, rect_w, rect_h), 2, border_radius=5)
+    
+    # Stirrups (straps hanging down)
+    strap_w = 4
+    strap_h = int(size * 0.3)
+    pygame.draw.rect(surf, leather_dark, (rect_x + 2, rect_y + rect_h - 2, strap_w, strap_h))
+    pygame.draw.rect(surf, leather_dark, (rect_x + rect_w - 6, rect_y + rect_h - 2, strap_w, strap_h))
+    
+    # Stirrup loops (silver)
+    stirrup_color = (192, 192, 192)
+    pygame.draw.rect(surf, stirrup_color, (rect_x, rect_y + rect_h + strap_h - 4, 8, 4))
+    pygame.draw.rect(surf, stirrup_color, (rect_x + rect_w - 8, rect_y + rect_h + strap_h - 4, 8, 4))
+    
+    return surf
+
 # --- Bed Texture Generator ---
 def make_bed_texture(size):
     """Procedurally draw a simple bed (wood base, mattress, pillow, blanket)."""
@@ -2852,7 +2883,7 @@ def fix_player_spawn_position():
     """Ensure player spawns on the surface, not underground, or at bed spawn if available"""
     global player
     
-    print(f"🏠 Player spawn from world generator: ({player['x']:.1f}, {player['y']:.1f})")
+    print(f"🏠 Fixing player spawn position from ({player['x']:.1f}, {player['y']:.1f})")
     
     # Check if player has a bed spawn point set
     if player.get("has_bed_spawn", False):
@@ -2861,23 +2892,79 @@ def fix_player_spawn_position():
         print(f"🏠 Using bed spawn point at ({bed_x}, {bed_y})")
         player["x"] = bed_x
         player["y"] = bed_y
-        return
+        return True
     
-    # TRUST THE WORLD GENERATOR COMPLETELY!
-    # It already found the perfect spawn in the center, far from oceans
-    # Just set the velocity and we're done
-    print(f"✅ Using world generator spawn - TRUSTED!")
+    # Keep the current X position but find proper Y position
+    spawn_x = int(player["x"])
+    
+    # CRITICAL: Generate terrain at spawn point first!
+    # This ensures terrain exists before we try to find a surface
+    print(f"🌍 Generating terrain at spawn point ({spawn_x}) to ensure surface exists")
+    
+    # Generate terrain for a small area around spawn point
+    for x in range(spawn_x - 5, spawn_x + 6):  # 11 columns around spawn
+        generate_terrain_column(x)
+    
+    print(f"✅ Terrain generated around spawn point, now finding surface...")
+    
+    # ENHANCED COLLISION-FREE SPAWNING: Find safe spawn location
+    # Search from the correct range for new world generation system
+    for y in range(110, 125):  # Search in the new world generation range
+        # Check if this position is safe for spawning (no blocks at player position)
+        head_block = get_block(spawn_x, y)
+        feet_block = get_block(spawn_x, y + 1)
+        ground_block = get_block(spawn_x, y + 2)
+        
+        # Player needs 2 blocks of air above ground
+        if (is_non_solid_block(head_block) and 
+            is_non_solid_block(feet_block) and 
+            ground_block and ground_block not in ["water", "lava"]):
+            
+            # Found safe spawn location
+            player["y"] = float(y)  # Place player with air above and solid ground below
+            player["vel_y"] = 0.0
+            player["on_ground"] = False
+            print(f"✅ COLLISION-FREE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
+            
+            # Place starter chest next to player
+            place_starter_chest(spawn_x, y)
+            
+            return True
+    
+    # Fallback: search wider range and ensure collision-free spawn
+    for y in range(50, 150):
+        head_block = get_block(spawn_x, y)
+        feet_block = get_block(spawn_x, y + 1)
+        ground_block = get_block(spawn_x, y + 2)
+        
+        if (is_non_solid_block(head_block) and 
+            is_non_solid_block(feet_block) and 
+            ground_block and ground_block not in ["water", "lava"]):
+            
+            player["y"] = float(y)
+            player["vel_y"] = 0.0
+            player["on_ground"] = False
+            print(f"✅ FALLBACK SAFE SPAWN: Player at ({player['x']:.1f}, {player['y']:.1f}) with ground: {ground_block}")
+            
+            # Place starter chest next to player
+            place_starter_chest(spawn_x, y)
+            
+            return True
+    
+    # Emergency: Create a safe platform if no suitable location found
+    safe_y = 10
+    # Clear any blocks above and create a platform
+    for clear_y in range(safe_y, safe_y + 3):
+        world_data[f"{spawn_x},{clear_y}"] = None
+    
+    world_data[f"{spawn_x},{safe_y + 3}"] = "stone"  # Create ground
+    world_data[f"{spawn_x - 1},{safe_y + 3}"] = "stone"
+    world_data[f"{spawn_x + 1},{safe_y + 3}"] = "stone"
+    
+    player["y"] = float(safe_y)
     player["vel_y"] = 0.0
     player["on_ground"] = False
-    
-    # Debug: check what blocks are at spawn
-    spawn_x = int(player["x"])
-    spawn_y = int(player["y"])
-    head_block = get_block(spawn_x, spawn_y)
-    feet_block = get_block(spawn_x, spawn_y + 1)
-    ground_block = get_block(spawn_x, spawn_y + 2)
-    print(f"   Blocks at spawn: head={head_block}, feet={feet_block}, ground={ground_block}")
-    
+    print(f"🛠️ EMERGENCY SAFE SPAWN: Created platform at ({player['x']:.1f}, {player['y']:.1f})")
     return True
 
 
@@ -2912,6 +2999,7 @@ textures = {
     "cooked_fish": load_texture(os.path.join(ITEM_DIR, "cooked_fish.png")),
     "steak": load_texture(os.path.join(ITEM_DIR, "steak.png")),
     "honey_jar": load_texture(os.path.join(ITEM_DIR, "honey_jar.png")),
+    "saddle": make_saddle_texture(TILE_SIZE),  # Procedural saddle item texture
     "stick": load_texture(os.path.join(TILE_DIR, "log.png")),  # Using log as stick for now
     "seeds": make_seeds_texture(TILE_SIZE),  # Procedural green dots
     "crop_young": make_crop_texture(TILE_SIZE, 0),  # Green growing crop
@@ -2980,6 +3068,27 @@ except Exception:
 
 # --- Mad Pigeon texture (procedurally generated) ---
 textures["mad_pigeon"] = make_mad_pigeon_texture(TILE_SIZE)
+
+# --- Horse textures (tries file, falls back to procedural) ---
+try:
+    textures["horse"] = load_texture(os.path.join(MOB_DIR, "horse.png"))
+    print("✅ Loaded horse.png texture")
+except Exception:
+    # Fallback to placeholder
+    horse_image = pygame.Surface((TILE_SIZE * 2, TILE_SIZE * 1.5), pygame.SRCALPHA)
+    horse_image.fill((120, 80, 50))
+    textures["horse"] = horse_image
+    print("⚠️ Using placeholder texture for horse")
+
+try:
+    textures["horse_saddle"] = load_texture(os.path.join(MOB_DIR, "horse_saddle.png"))
+    print("✅ Loaded horse_saddle.png texture")
+except Exception:
+    # Fallback to placeholder
+    horse_saddle_image = pygame.Surface((TILE_SIZE * 2, TILE_SIZE * 1.5), pygame.SRCALPHA)
+    horse_saddle_image.fill((150, 100, 60))
+    textures["horse_saddle"] = horse_saddle_image
+    print("⚠️ Using placeholder texture for horse_saddle")
 
 # --- Cow texture ---
 try:
@@ -3368,8 +3477,10 @@ player = {
 MAX_FALL_SPEED = 10
 GRAVITY = 1
 JUMP_STRENGTH = -12  # Increased from -8 to -12 for higher jumping to clear blocks
+HORSE_SPEED = 0.35  # Faster than player (0.15)
 # Movement speeds - frame-rate independent for consistent gameplay across devices
 MOVE_SPEED = 0.15  # Fast, responsive movement
+HORSE_SPEED = 0.25 # Faster than walking, slower than flying
 SLOW_SPEED = 0.08  # Slower when holding shift
 
 # Fall damage system
@@ -3380,6 +3491,11 @@ FALL_DAMAGE_MULTIPLIER = 1.5  # Damage per block above threshold
 # World and camera
 world_data = {}
 entities = []
+
+# --- Horse / Mounting System state ---
+player_mounted = False           # Is the player currently riding a horse?
+mounted_horse = None             # Reference to the horse entity being ridden
+player_has_saddle_control = False  # True if the horse has a saddle and the player controls movement
 dropped_items = []  # List of dropped items with physics
 crops = {}  # Dictionary of crops: {(x, y): {"planted_time": time, "growth_progress": 0-1}}
 camera_x = 0
@@ -3521,6 +3637,28 @@ CRAFTING_RECIPES = {
         "materials": {"coal": 1, "oak_planks": 1},
         "output_count": 4,
         "description": "Light source (4 torches per craft)"
+    },
+    
+    # New Furniture & Vehicles
+    "chair": {
+        "materials": {"oak_planks": 4},
+        "output_count": 1,
+        "description": "Simple wooden chair for decoration"
+    },
+    "table": {
+        "materials": {"oak_planks": 6},
+        "output_count": 1,
+        "description": "Wooden table for your house"
+    },
+    "wagon": {
+        "materials": {"oak_planks": 8},
+        "output_count": 1,
+        "description": "Decorative wooden wagon"
+    },
+    "saddle": {
+        "materials": {"leaves": 3, "oak_planks": 2},
+        "output_count": 1,
+        "description": "Basic leaf-and-wood saddle for mounting horses"
     },
     
     # Food
@@ -5453,6 +5591,7 @@ quit_btn = None
 multiplayer_btn = None
 achievements_btn = None
 credits_btn = None
+more_games_btn = None
 resume_btn = None
 inventory_close_button = None
 backpack_close_button = None
@@ -8565,6 +8704,22 @@ def draw_world():
                 cow_img = pygame.transform.flip(cow_img, True, False)
             
             screen.blit(cow_img, (ex, ey))
+        elif entity["type"] == "horse":
+            # Draw horse or saddled horse
+            ex = int(entity["x"] * TILE_SIZE) - camera_x
+            ey = int(entity["y"] * TILE_SIZE) - camera_y
+            
+            if ex < -TILE_SIZE * 2 or ex > SCREEN_WIDTH + TILE_SIZE * 2 or ey < -TILE_SIZE * 2 or ey > SCREEN_HEIGHT + TILE_SIZE * 2:
+                continue
+            
+            img_key = "horse_saddle" if entity.get("has_saddle") else "horse"
+            horse_img = textures.get(img_key, textures.get("horse"))
+            
+            facing_direction = entity.get("facing_direction", 1)
+            if facing_direction == -1:
+                horse_img = pygame.transform.flip(horse_img, True, False)
+            
+            screen.blit(horse_img, (ex, ey))
         elif entity["type"] == "mad_pigeon":
             # Draw mad pigeon with visual states
             ex = int(entity["x"] * TILE_SIZE) - camera_x
@@ -12231,14 +12386,6 @@ def update_player():
     # This prevents the shift key from getting "stuck" in the pressed state
     global shift_key_pressed
     
-    # Movement speed - normal speed by default, slow when shift is held
-    base_speed = SLOW_SPEED if shift_key_pressed else MOVE_SPEED
-    speed = base_speed  # Use the speed directly without frame-rate complications
-    
-    # Clamp speed to reasonable bounds
-    speed = max(0.08, min(0.25, speed))
-    
-
     # Horizontal movement intent - Use BOTH WASD and Arrow keys for movement AND character flipping
     move_left = keys[pygame.K_LEFT] or keys[pygame.K_a]  # Left arrow OR A key
     move_right = keys[pygame.K_RIGHT] or keys[pygame.K_d]  # Right arrow OR D key
@@ -12253,6 +12400,54 @@ def update_player():
     # Store current position for next frame comparison
     player["last_x"] = player["x"]
 
+    # --- HORSE RIDING CONTROL ---
+    if player_mounted and mounted_horse and player_has_saddle_control:
+        # Player controls the horse
+        horse_speed = HORSE_SPEED
+        
+        # Horizontal movement (set velocity for update_animals to handle)
+        if move_left:
+            mounted_horse["facing_direction"] = -1
+            mounted_horse["vel_x"] = -horse_speed
+        elif move_right:
+            mounted_horse["facing_direction"] = 1
+            mounted_horse["vel_x"] = horse_speed
+        else:
+             mounted_horse["vel_x"] = 0
+        
+        # Horse Jumping
+        if keys[pygame.K_SPACE] and mounted_horse.get("on_ground", False):
+            mounted_horse["vel_y"] = -0.5  # Jump strength (approx 4-5 blocks)
+            mounted_horse["on_ground"] = False
+            
+        # Sync player to horse
+        player["x"] = mounted_horse["x"]
+        player["y"] = mounted_horse["y"] - 0.5
+        player["vel_y"] = 0  # Zero player velocity so they don't fall off
+        player["on_ground"] = False # Player is effectively not on ground (on horse)
+        
+        return # Skip normal player movement logic
+        
+    # --- END HORSE RIDING CONTROL ---
+
+    # Movement speed:
+    # - Normal speed by default (or slow when shift is held)
+    # - If mounted on a saddled horse, player controls horse at increased speed.
+    if player_mounted and player_has_saddle_control and mounted_horse:
+        base_speed = HORSE_SPEED
+    else:
+        base_speed = SLOW_SPEED if shift_key_pressed else MOVE_SPEED
+    speed = base_speed  # Use the speed directly without frame-rate complications
+    
+    # Clamp speed to reasonable bounds
+    speed = max(0.08, min(0.35, speed))
+    
+    
+    # If mounted on a horse, tie player position to horse (always ride on top)
+    if player_mounted and mounted_horse:
+        player["x"] = mounted_horse["x"]
+        player["y"] = mounted_horse["y"] - 0.5
+    
     # Check for ladder at player position (current or feet)
     px, py = player["x"], player["y"]
     on_ladder = (get_block(int(px), int(py)) == "ladder" or
@@ -12478,7 +12673,7 @@ def update_player():
 
 def load_world_data():
     """Load world data from the world system into the game"""
-    global world_data, entities, player, dropped_items, crops
+    global world_data, entities, player, dropped_items, crops, player_mounted, mounted_horse, player_has_saddle_control
     
     if not world_system.current_world_data:
         print("⚠️ No world data available to load")
@@ -12492,6 +12687,11 @@ def load_world_data():
         dropped_items.clear()
         crops.clear()
         
+        # Reset riding state
+        player_mounted = False
+        mounted_horse = None
+        player_has_saddle_control = False
+        
         # Load world data - UPDATE the existing globals, don't create new objects!
         new_blocks = world_system.current_world_data.get("blocks", {})
         world_data.update(new_blocks)  # Use update to modify the global dict
@@ -12504,6 +12704,26 @@ def load_world_data():
         
         print(f"✅ Loaded fresh world data with {len(world_data)} blocks, {len(entities)} entities")
         
+        # Restore player state
+        player_data = world_system.current_world_data.get("player", {})
+        if player_data:
+            # Update player with loaded data, preserving any missing fields
+            for key, value in player_data.items():
+                if key in player:
+                    player[key] = value
+            
+            # RESTORE MOUNTED STATE
+            mounted_id = player.get("mounted_entity_id")
+            if mounted_id:
+                # Find the entity with this ID
+                for entity in entities:
+                    if entity.get("id") == mounted_id:
+                        player_mounted = True
+                        mounted_horse = entity
+                        player_has_saddle_control = player.get("has_saddle_control", False)
+                        print(f"🐎 Restored mounted state on horse {mounted_id}")
+                        break
+        
         # Load crop data (convert string keys back to tuples)
         crops_data = world_system.current_world_data.get("crops", {})
         crops.clear()
@@ -12514,18 +12734,13 @@ def load_world_data():
                 crops[crop_key] = crop_info
             except (ValueError, IndexError):
                 print(f"⚠️ Invalid crop key format: {key_str}")
+        global villages
         villages = world_system.current_world_data.get("villages", [])
         
         # Load player data with validation
-        player_data = world_system.current_world_data.get("player", {})
         if not isinstance(player_data, dict):
             print("⚠️ Invalid player data, using defaults")
             player_data = {}
-        
-        # Update player with loaded data, preserving any missing fields
-        for key, value in player_data.items():
-            if key in player:
-                player[key] = value
         
         # Ensure critical player fields exist
         if "health" not in player or player["health"] <= 0:
@@ -12619,7 +12834,7 @@ def load_world_data():
         
         # Place starter chest at spawn location (don't fail if this errors)
         try:
-            place_starter_chest()
+            place_starter_chest(int(player["x"]), int(player["y"]))
         except Exception as chest_error:
             print(f"⚠️ Could not place starter chest: {chest_error}")
         
@@ -12757,6 +12972,150 @@ def update_crops():
             # Still growing - green
             world_data[block_key] = "crop_young"
 
+def update_animals():
+    """Update physics and behavior for animals (horses, cows, etc.)"""
+    global player_mounted, mounted_horse
+    
+    for entity in entities:
+        if entity["type"] in ["horse", "cow", "pig", "sheep", "donkey", "mule"]:
+            # Initialize velocity if missing
+            if "vel_y" not in entity:
+                entity["vel_y"] = 0
+            if "vel_x" not in entity:
+                entity["vel_x"] = 0
+                
+            # Apply gravity
+            entity["vel_y"] += GRAVITY
+            if entity["vel_y"] > MAX_FALL_SPEED:
+                entity["vel_y"] = MAX_FALL_SPEED
+                
+            # Check if this is the mounted horse
+            is_mounted = (player_mounted and mounted_horse is entity)
+            
+            # Horizontal movement and collision
+            # For mounted horses, x-movement is handled by player input in update_player
+            # For unmounted, we apply friction or random wandering
+            if not is_mounted:
+                entity["vel_x"] *= 0.8  # Friction
+                if abs(entity["vel_x"]) < 0.01:
+                    entity["vel_x"] = 0
+            
+            # Apply horizontal velocity
+            new_x = entity["x"] + entity["vel_x"]
+            
+            # Check horizontal collision
+            # Use a slightly smaller bounding box for animals to avoid getting stuck
+            has_collision, block_type, collision_pos = check_collision_at_position(new_x, entity["y"], 1.0, 1.0)
+            
+            if not has_collision:
+                entity["x"] = new_x
+            else:
+                entity["vel_x"] = 0
+                
+            # Vertical movement (Gravity)
+            new_y = entity["y"] + entity["vel_y"] / TILE_SIZE
+            
+            # Check vertical collision (Ground/Ceiling)
+            target_y_int = int(new_y + 1)
+            
+            if entity["vel_y"] > 0: # Falling
+                 has_ground, ground_block, ground_pos = check_collision_at_position(entity["x"], target_y_int, 1.0, 1.0)
+                 if has_ground:
+                     entity["y"] = int(new_y)
+                     entity["vel_y"] = 0
+                     entity["on_ground"] = True
+                 else:
+                     entity["y"] = new_y
+                     entity["on_ground"] = False
+            elif entity["vel_y"] < 0: # Jumping
+                 # Check ceiling
+                 has_ceiling, ceiling_block, ceiling_pos = check_collision_at_position(entity["x"], int(new_y), 1.0, 1.0)
+                 if has_ceiling:
+                     entity["vel_y"] = 0
+                     entity["y"] = int(new_y) + 1
+                 else:
+                     entity["y"] = new_y
+                     entity["on_ground"] = False
+            
+            # Keep within world bounds
+            if entity["y"] > 200: # Void
+                entity["y"] = 0
+                entity["vel_y"] = 0
+
+def update_animals():
+    """Update physics and behavior for animals (horses, cows, etc.)"""
+    global player_mounted, mounted_horse
+    
+    for entity in entities:
+        if entity["type"] in ["horse", "cow", "pig", "sheep", "donkey", "mule"]:
+            # Initialize velocity if missing
+            if "vel_y" not in entity:
+                entity["vel_y"] = 0
+            if "vel_x" not in entity:
+                entity["vel_x"] = 0
+                
+            # Apply gravity
+            entity["vel_y"] += GRAVITY
+            if entity["vel_y"] > MAX_FALL_SPEED:
+                entity["vel_y"] = MAX_FALL_SPEED
+                
+            # Check if this is the mounted horse
+            is_mounted = (player_mounted and mounted_horse is entity)
+            
+            # Horizontal friction for unmounted animals
+            if not is_mounted:
+                entity["vel_x"] *= 0.8
+                if abs(entity["vel_x"]) < 0.01:
+                    entity["vel_x"] = 0
+            
+            # Apply horizontal velocity
+            new_x = entity["x"] + entity["vel_x"]
+            
+            # Check horizontal collision
+            has_collision, block_type, collision_pos = check_collision_at_position(new_x, entity["y"], 1.0, 1.0)
+            
+            if not has_collision:
+                entity["x"] = new_x
+            else:
+                # If mounted, try auto-step up
+                stepped_up = False
+                if is_mounted:
+                    # Check block above collision
+                    if not check_collision_at_position(new_x, entity["y"] - 1, 1.0, 1.0)[0]:
+                         entity["x"] = new_x
+                         entity["y"] -= 1
+                         stepped_up = True
+                
+                if not stepped_up:
+                    entity["vel_x"] = 0
+                
+            # Vertical movement (Gravity)
+            new_y = entity["y"] + entity["vel_y"] / TILE_SIZE
+            
+            # Check vertical collision
+            if entity["vel_y"] > 0: # Falling
+                 has_ground, ground_block, ground_pos = check_collision_at_position(entity["x"], int(new_y + 1), 1.0, 1.0)
+                 if has_ground:
+                     entity["y"] = int(new_y)
+                     entity["vel_y"] = 0
+                     entity["on_ground"] = True
+                 else:
+                     entity["y"] = new_y
+                     entity["on_ground"] = False
+            elif entity["vel_y"] < 0: # Jumping
+                 has_ceiling, ceiling_block, ceiling_pos = check_collision_at_position(entity["x"], int(new_y), 1.0, 1.0)
+                 if has_ceiling:
+                     entity["vel_y"] = 0
+                     entity["y"] = int(new_y) + 1
+                 else:
+                     entity["y"] = new_y
+                     entity["on_ground"] = False
+            
+            # Keep within world bounds
+            if entity["y"] > 200:
+                entity["y"] = 0
+                entity["vel_y"] = 0
+
 def update_monsters():
     global entities, night_monster_spawn_timer, night_monsters_spawned
     
@@ -12799,8 +13158,12 @@ def update_monsters():
     if is_day:
         spawn_cows_randomly()
     
-    # Spawn mad pigeons on trees
-    spawn_pigeons_on_trees()
+    # Spawn horses in grassy fields
+    spawn_horses_randomly()
+    
+    # Spawn mad pigeons on trees ONLY at night and only in the overworld (not inside fortresses)
+    if not is_day:
+        spawn_pigeons_on_trees()
     
     # Update monster movement and combat
     update_monster_movement_and_combat()
@@ -12808,17 +13171,19 @@ def update_monsters():
     update_slime_behavior()
     # Update cow behavior
     update_cow_behavior()
+    # Update horse behavior
+    update_horse_behavior()
     # Update pigeon behavior
     update_pigeon_behavior()
 
 def cleanup_night_monsters():
-    """Burn ALL monsters and zombies when it becomes day (slimes and pigeons are safe)"""
+    """Burn ALL monsters, zombies and mad pigeons when it becomes day (slimes are safe)"""
     global entities
     
-    # Burn monsters and zombies in daylight
+    # Burn monsters, zombies and mad pigeons in daylight
     monsters_removed = 0
     for mob in entities[:]:
-        if mob["type"] in ["monster", "zombie"]:
+        if mob["type"] in ["monster", "zombie", "mad_pigeon"]:
             mob_x = int(mob["x"])
             mob_y = int(mob["y"])
             
@@ -12838,7 +13203,7 @@ def cleanup_night_monsters():
             monsters_removed += 1
     
     if monsters_removed > 0:
-        print(f"☀️ Daytime: {monsters_removed} monsters/zombies burned in sunlight!")
+        print(f"☀️ Daytime: {monsters_removed} monsters/zombies/mad_pigeons burned in sunlight!")
 
 def update_night_overlay():
     """Update the nighttime overlay effect"""
@@ -13050,7 +13415,10 @@ def find_surface_level(x):
 slime_spawn_timer = 0
 slime_spawn_cooldown = 600  # 10 seconds at 60 FPS
 max_slimes = 100  # Maximum slimes in the world
-slime_aggro_distance = 3  # Distance at which slimes become aggressive
+# Distance at which slimes become aggressive and can hurt the player.
+# We keep aggro distance a bit larger so they start moving toward you,
+# but tighten the actual damage range so they only hit when truly adjacent.
+slime_aggro_distance = 3
 
 def spawn_slimes_randomly():
     """Spawn slimes randomly across the world (harmless until approached)"""
@@ -13176,8 +13544,8 @@ def update_slime_behavior():
                         slime["on_ground"] = False
                         slime["jump_cooldown"] = random.randint(30, 60)  # 0.5-1 second between jumps
                     
-                    # Attack player if very close
-                    if slime["cooldown"] <= 0 and distance < 1.5:
+                    # Attack player only when extremely close (right next to player)
+                    if slime["cooldown"] <= 0 and distance < 1.0:
                         player["health"] -= 1
                         play_damage_sound()
                         slime["cooldown"] = 120
@@ -13362,6 +13730,156 @@ def update_cow_behavior():
         # Update cooldown
         if cow.get("wander_cooldown", 0) > 0:
             cow["wander_cooldown"] -= 1
+
+
+# Horse spawning and behavior
+horse_spawn_timer = 0
+horse_spawn_cooldown = 2400  # 40 seconds at 60 FPS
+max_horses = 10
+
+def spawn_horses_randomly():
+    """Spawn horses in grassy areas far from oceans and underground."""
+    global entities, horse_spawn_timer
+    horse_spawn_timer += 1
+    
+    if horse_spawn_timer < horse_spawn_cooldown:
+        return
+    
+    # Count existing horses
+    horse_count = sum(1 for e in entities if e.get("type") == "horse")
+    if horse_count >= max_horses:
+        horse_spawn_timer = 0
+        return
+    
+    # Try a few random positions near player
+    for _ in range(10):
+        spawn_distance = random.uniform(20, 60)
+        angle = random.uniform(0, 2 * math.pi)
+        spawn_x = int(player["x"] + math.cos(angle) * spawn_distance)
+        
+        surface_y = find_surface_level(spawn_x)
+        if surface_y is None:
+            continue
+        
+        # Check the block BELOW the surface air (which should be the ground)
+        block = get_block(spawn_x, surface_y + 1)
+        # Only spawn on grass (nice fields)
+        if block != "grass":
+            continue
+        
+        # Don't spawn in water or lava nearby (avoid oceans)
+        unsafe = False
+        for check_y in range(surface_y + 1, surface_y + 4):
+            b = get_block(spawn_x, check_y)
+            if b in ("water", "lava"):
+                unsafe = True
+                break
+        if unsafe:
+            continue
+        
+        # Spawn a horse entity
+        entities.append({
+            "id": str(uuid.uuid4()),  # Unique ID for saving/loading
+            "type": "horse",
+            "x": float(spawn_x),
+            "y": float(surface_y),
+            "image": "horse",
+            "has_saddle": False,
+            "tamed": False,  # Untamed by default
+            "owner": None,
+            "vel_y": 0.0,
+            "on_ground": True,
+            "wander_target": None,
+            "wander_cooldown": 0,
+            "facing_direction": 1,
+        })
+        print(f"🐎 Horse spawned at ({spawn_x}, {surface_y})")
+        break
+    
+    horse_spawn_timer = 0
+
+def update_horse_behavior():
+    """Update horse gravity, wandering, and movement when not controlled by the player."""
+    global mounted_horse
+    
+    for horse in entities[:]:
+        if horse.get("type") != "horse":
+            continue
+        
+        # If this is the mounted horse and player has saddle control,
+        # its position is driven by player movement, so only apply gravity when not mounted.
+        if horse is mounted_horse and player_mounted and player_has_saddle_control:
+            continue
+        
+        # Apply gravity
+        horse["vel_y"] = horse.get("vel_y", 0.0) + 0.02
+        horse["y"] += horse["vel_y"]
+        
+        hx = int(horse["x"])
+        hy = int(horse["y"])
+        block_below = get_block(hx, hy + 1)
+        if block_below and block_below not in ("air", "water", "lava"):
+            horse["y"] = float(hy)
+            horse["vel_y"] = 0.0
+            horse["on_ground"] = True
+        else:
+            horse["on_ground"] = False
+        
+        # Simple wandering when on ground and not mounted
+        if horse.get("on_ground", False) and (horse is not mounted_horse):
+            # Check if tamed and should follow owner
+            if horse.get("tamed", False) and horse.get("owner") == player["username"]:
+                dist_to_player = math.sqrt((horse["x"] - player["x"])**2 + (horse["y"] - player["y"])**2)
+                
+                # If too far, follow player
+                if dist_to_player > 5:  # Follow if more than 5 blocks away
+                    dx = player["x"] - horse["x"]
+                    move_speed = 0.12  # Faster than wandering to keep up
+                    
+                    # Move towards player
+                    move_direction = 1 if dx > 0 else -1
+                    next_x = horse["x"] + move_direction * move_speed
+                    
+                    # Update facing
+                    horse["facing_direction"] = move_direction
+                    
+                    # Check collision
+                    if get_block(int(next_x), int(horse["y"])) in (None, "air", "grass"):
+                        horse["x"] = next_x
+                        
+                        # Jump if blocked and player is higher
+                        block_ahead = get_block(int(next_x + move_direction), int(horse["y"]))
+                        if block_ahead and block_ahead not in ("air", "grass") and player["y"] < horse["y"]:
+                            horse["vel_y"] = -0.4  # Jump
+                            horse["on_ground"] = False
+                    
+                    # Don't wander while following
+                    horse["wander_target"] = None
+                    continue
+
+            if horse.get("wander_target") is None or horse.get("wander_cooldown", 0) <= 0:
+                wander_distance = random.uniform(5, 12)
+                direction = random.choice([-1, 1])
+                horse["wander_target"] = horse["x"] + wander_distance * direction
+                horse["wander_cooldown"] = random.randint(180, 420)
+            
+            target_x = horse["wander_target"]
+            dx = target_x - horse["x"]
+            if abs(dx) > 0.1:
+                speed = 0.04
+                move_x = speed if dx > 0 else -speed
+                next_x = horse["x"] + move_x
+                # Check for solid wall at new x
+                if get_block(int(next_x), int(horse["y"])) in (None, "air", "grass"):
+                    horse["x"] = next_x
+                    horse["facing_direction"] = 1 if move_x > 0 else -1
+                else:
+                    horse["wander_target"] = None
+            else:
+                horse["wander_target"] = None
+        
+        if horse.get("wander_cooldown", 0) > 0:
+            horse["wander_cooldown"] -= 1
 
 # Mad Pigeon spawning system  
 pigeon_spawn_timer = 0
@@ -14827,7 +15345,7 @@ def update_loading_progress():
         game_state = GameState.TITLE
 
 def draw_title_screen():
-    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, achievements_btn, multiplayer_btn
+    global play_btn, controls_btn, about_btn, options_btn, quit_btn, username_btn, credits_btn, achievements_btn, multiplayer_btn, more_games_btn
     
     # Get mouse position for hover detection
     mouse_pos = pygame.mouse.get_pos()
@@ -14846,6 +15364,7 @@ def draw_title_screen():
         options_btn = button_states.get("options")
         credits_btn = button_states.get("credits")
         quit_btn = button_states.get("quit")
+        more_games_btn = button_states.get("more_games")
     else:
         # Fallback: Draw basic title screen
         title_text = title_font.render("Order of the Stone", True, (255, 255, 255))
@@ -14882,6 +15401,7 @@ def draw_title_screen():
         about_btn = None
         options_btn = None
         credits_btn = None
+        more_games_btn = None
 
 # --- Credits Screen Drawing Function ---
 def draw_achievements_screen():
@@ -15323,21 +15843,36 @@ print_chest_system_info()
 def save_game():
     """Save current game state with robust fallback system"""
     try:
+        # Save player riding status
+        if player_mounted and mounted_horse:
+            # Ensure mounted horse has an ID
+            if "id" not in mounted_horse:
+                mounted_horse["id"] = str(uuid.uuid4())
+            player["mounted_entity_id"] = mounted_horse["id"]
+            player["has_saddle_control"] = player_has_saddle_control
+        else:
+            player["mounted_entity_id"] = None
+            
+        # Ensure all entities have IDs for future referencing
+        for entity in entities:
+            if "id" not in entity:
+                entity["id"] = str(uuid.uuid4())
+
         # Try to use world system first
         if world_system and hasattr(world_system, 'current_world_name') and world_system.current_world_name:
             print(f"💾 Saving to world system: '{world_system.current_world_name}'")
             
             # Prepare save data
-        save_data = {
-            "name": world_system.current_world_name,
-            "blocks": world_data.copy() if world_data else {},
-            "entities": entities.copy() if entities else [],
-            "player": player.copy() if player else {},
+            save_data = {
+                "name": world_system.current_world_name,
+                "blocks": world_data.copy() if world_data else {},
+                "entities": entities.copy() if entities else [],
+                "player": player.copy() if player else {},
                 "dropped_items": dropped_items.copy() if dropped_items else [],  # Save dropped items too
                 "crops": {f"{k[0]},{k[1]}": v for k, v in crops.items()},  # Save crop data
-            "world_settings": {
-                "time": time.time(),
-                "day": is_day,
+                "world_settings": {
+                    "time": time.time(),
+                    "day": is_day,
                     "weather": current_weather
                 },
                 "monster_data": {
@@ -15351,15 +15886,15 @@ def save_game():
             }
             
             # Update world system with current data
-        world_system.current_world_data = save_data
-        
+            world_system.current_world_data = save_data
+            
             # Save using world system
-        if world_system.save_world():
-            print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
-            print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
-            return True
-        else:
-            print("⚠️ World system save failed, trying fallback...")
+            if world_system.save_world():
+                print(f"✅ Game saved successfully to world: {world_system.current_world_name}")
+                print(f"   📊 Save statistics: {len(save_data['blocks'])} blocks, {len(save_data['entities'])} entities")
+                return True
+            else:
+                print("⚠️ World system save failed, trying fallback...")
         
         # Fallback: Direct file save
         print("💾 Using fallback save system...")
@@ -16292,6 +16827,58 @@ while running:
                             print(f"🏪 Merchant too far away: player at ({px}, {py}), merchant at ({bx}, {by})")
                         continue
                     
+                    # Horse mounting / saddling
+                    # Convert mouse click to world coordinates to find nearby horses
+                    world_click_x = (mx + camera_x) / TILE_SIZE
+                    world_click_y = (my + camera_y) / TILE_SIZE
+                    
+                    # Try to interact with a nearby horse
+                    clicked_horse = None
+                    for entity in entities:
+                        if entity.get("type") == "horse":
+                            dx_h = world_click_x - entity["x"]
+                            dy_h = world_click_y - entity["y"]
+                            if abs(dx_h) <= 1.5 and abs(dy_h) <= 1.5:
+                                clicked_horse = entity
+                                break
+                    
+                    if clicked_horse:
+                        # If player is already mounted on this horse, right-click to dismount
+                        if player_mounted and mounted_horse is clicked_horse:
+                            player_mounted = False
+                            player_has_saddle_control = False
+                            mounted_horse = None
+                            print("🐎 Player dismounted from horse")
+                            continue
+                        
+                        # Check if player is holding a saddle to equip it
+                        selected_item = None
+                        if player["selected"] < len(player["inventory"]):
+                            selected_item = player["inventory"][player["selected"]]
+                        if selected_item and selected_item.get("type") == "saddle" and not clicked_horse.get("has_saddle"):
+                            # Equip saddle
+                            clicked_horse["has_saddle"] = True
+                            # Consume one saddle from stack
+                            if "count" in selected_item and selected_item["count"] > 1:
+                                selected_item["count"] -= 1
+                            else:
+                                player["inventory"][player["selected"]] = None
+                                normalize_inventory()
+                            show_message(" Saddle equipped on horse!", 2000)
+                            print("🐎 Saddle equipped on horse")
+                            continue
+                        
+                        # Otherwise, mount the horse
+                        player_mounted = True
+                        mounted_horse = clicked_horse
+                        player_has_saddle_control = clicked_horse.get("has_saddle", False)
+                        show_message(" Mounted the horse! Press right-click again on the horse to dismount.", 2500)
+                        if player_has_saddle_control:
+                            print("🐎 Player mounted a saddled horse (player controls movement)")
+                        else:
+                            print("🐎 Player mounted a wild horse (horse controls movement)")
+                        continue
+                    
                     # Check if clicking on a mad pigeon to tame it
                     tamed_pigeon = False
                     if player["selected"] < len(player["inventory"]) and player["inventory"][player["selected"]]:
@@ -16443,6 +17030,10 @@ while running:
                 elif credits_btn.collidepoint(event.pos):
                     game_state = GameState.CREDITS
                     update_pause_state()  # Pause time when leaving title
+                elif more_games_btn and more_games_btn.collidepoint(event.pos):
+                    import webbrowser
+                    webbrowser.open("https://dreamcrusherx.itch.io/")
+                    print("🌐 Opening DreamCrusherX itch.io page")
                 elif quit_btn.collidepoint(event.pos):
                     save_game()
                     running = False
@@ -16990,6 +17581,7 @@ while running:
         update_water_flow()  # Update water flow
         update_world_interactions()
         update_monsters()
+        update_animals() # Update animals (horses, etc.) physics
         update_crops()  # Update crop growth
         update_villagers()
         # update_fortress_bosses()  # REMOVED - fortress system disabled

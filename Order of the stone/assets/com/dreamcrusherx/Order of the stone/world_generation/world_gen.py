@@ -354,6 +354,11 @@ class WorldGenerator:
                         
                         # Door
                         blocks[f"{x + width//2},{surface_y - 1}"] = "door"
+
+                        # Place a starter chest inside the fortress (a couple blocks above the floor)
+                        chest_x = x + width // 2 - 2
+                        chest_y = surface_y - 2
+                        blocks[f"{chest_x},{chest_y}"] = "chest"
                         
                         fortress_count += 1
         
