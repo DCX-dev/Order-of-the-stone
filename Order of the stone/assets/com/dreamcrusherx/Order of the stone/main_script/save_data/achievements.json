@@ -4,7 +4,7 @@
     "first_gold": false,
     "first_iron": false,
     "first_coal": false,
-    "first_monster_kill": false,
+    "first_monster_kill": true,
     "monster_hunter": false,
     "zombie_slayer": false,
     "pigeon_hunter": false,
@@ -19,7 +19,7 @@
     "ultimate_achievement": false
   },
   "progress": {
-    "monsters_killed": 0,
+    "monsters_killed": 1,
     "zombies_killed": 0,
     "pigeons_killed": 0,
     "blocks_walked": 0,
@@ -27,5 +27,5 @@
     "nights_survived": 0,
     "fortresses_found": 0
   },
-  "last_updated": 1762922483.8139641
+  "last_updated": 1764736694.982492
 }
